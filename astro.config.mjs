@@ -27,6 +27,13 @@ const SITE_URL = 'https://aboutmycoin.com';
 function priorityFor(url) {
   const p = url.replace(SITE_URL, '') || '/';
   if (p === '/') return 1.0;
+  // The catalogue is the site. A coin page is the page a search lands on, and
+  // its archive is how the crawler gets to the next one; both outrank the
+  // boilerplate by a wide margin.
+  if (/^\/coin-value\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return 0.9;
+  if (p === '/coin-value') return 0.9;
+  if (p.startsWith('/coin-value/tagged/')) return 0.7;
+  if (p.startsWith('/coin-value/')) return 0.8;
   if (p.startsWith('/answers/')) return 0.8;
   if (p === '/answers' || p === '/pricing') return 0.7;
   return 0.4;

@@ -13,6 +13,17 @@
 import { SITE } from './site';
 import { TIERS, PRO_MONTHLY, PRO_YEARLY, GATE_EXPLAINER, ONE_TIME_OFFER } from './pricing';
 import { ANSWERS } from '../data/answers';
+import {
+  COINS,
+  populatedGroups,
+  populatedTags,
+  coinsInGroup,
+  coinPath,
+  groupPath,
+  tagPath,
+  coinQuestion,
+  yearLabel,
+} from '../data/coins';
 
 const u = (p: string) => `${SITE.url}${p}`;
 
@@ -74,9 +85,39 @@ ${ONE_TIME_OFFER.includes.map((f) => `- ${f}`).join('\n')}
 
 Pro is $${PRO_MONTHLY}/month or $${PRO_YEARLY}/year.
 
+## How coins are organised on this site
+
+Every coin has exactly one URL, built from two facts that never change about
+it: what it is made of, and what denomination it is.
+
+    /coin-value/<composition>/<denomination>/<coin>
+
+For example ${u('/coin-value/silver/quarter/1964-washington-quarter')}.
+
+Composition is the first segment because it is the fact that puts a floor
+under the value. Country, series, key-date status and topics such as junk
+silver are tags rather than path segments, and each tag has its own page at
+/coin-value/tagged/<tag>. A series whose metal changed partway through -- the
+Washington quarter, silver to 1964 and clad from 1965 -- therefore appears in
+two composition branches and is reunited on its series tag page.
+
+### Composition groups
+
+${populatedGroups()
+  .map((g) => `- [${g.name}](${u(groupPath(g.slug))}): ${g.bluf} (${coinsInGroup(g.slug).length} in catalogue)`)
+  .join('\n')}
+
+### Cross-cutting pages
+
+${populatedTags()
+  .map((t) => `- [${t.name}](${u(tagPath(t.slug))}): ${t.bluf}`)
+  .join('\n')}
+
 ## Pages
 
 - [Home](${u('/')}): what it does.
+- [Coin values](${u('/coin-value')}): the catalogue, by composition and denomination.
+- [Topics](${u('/coin-value/tagged')}): series, countries and categories.
 - [Pricing](${u('/pricing')}): the gate, explained.
 - [Answers](${u('/answers')}): direct answers to specific questions.
 - [FAQ](${u('/faq')}): troubleshooting, grouped by stage.
@@ -91,7 +132,25 @@ export function full(): string {
     (a) => `**${a.question}**\n${a.answer}\n(${u(`/answers/${a.slug}`)})`,
   ).join('\n\n');
 
+  const coins = COINS.map(
+    (c) =>
+      `**${coinQuestion(c)}**\n${c.bluf}\nYears: ${yearLabel(c)}. Country: ${c.country}. Composition: ${
+        c.composition
+      }.${c.silverOzt ? ` Silver content: ${c.silverOzt} troy oz.` : ''}${
+        c.goldOzt ? ` Gold content: ${c.goldOzt} troy oz.` : ''
+      }\n(${u(coinPath(c))})`,
+  ).join('\n\n');
+
   return `${summary()}
+## Coins in the catalogue
+
+Each entry states the metal content as a published specification. Melt value is
+that figure multiplied by the current spot price; this site does not publish
+spot prices or graded price ranges, and says so on every coin page rather than
+printing a number it has not measured.
+
+${coins}
+
 ## Common questions and direct answers
 
 ${answers}

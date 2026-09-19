@@ -24,9 +24,14 @@ rule says "why", that is the part to preserve.
 
 ## Architecture
 
-- **No database, no auth provider, no backend framework.** If a feature seems to
-  need one, redesign the feature. State lives in Stripe metadata, in a signed
-  token, or in the user's own browser.
+- **No database, no auth provider, no backend framework *at runtime*.** If a
+  feature seems to need one, redesign the feature. State lives in Stripe
+  metadata, in a signed token, or in the user's own browser.
+  A **build-time** database is fine and is the plan for the coin catalogue: it
+  writes `src/data/coin-catalog.ts`, that file is committed, and `astro build`
+  turns it into HTML. The line is what a *visitor's request* touches, and the
+  answer to that stays "a file on a CDN". A build that fetches rows live would
+  cross it — see `src/data/coin-catalog.ts` for why the snapshot is committed.
 - **The build stays static.** `output: 'static'`, no SSR, no adapter-specific
   runtime APIs on any page. Server code goes in `src/server/` as a host-agnostic
   handler over Web `Request`/`Response`, with a thin adapter in `api/`.
@@ -34,6 +39,42 @@ rule says "why", that is the part to preserve.
   `public/_headers` express the same headers. Edit one, edit all three.
 - **Nothing large comes from the app origin.** Put it behind `SITE.assetOrigin`
   and add that origin to the CSP in all three configs at the same time.
+
+## The coin catalogue
+
+The full reasoning is in `SPEC.md` and in the header of `src/data/coins.ts`.
+These are the rules that get broken by accident.
+
+- **Two axes in a URL, everything else a tag.** A coin's path is
+  `/coin-value/<composition>/<denomination>/<coin>`, and those two facts are in
+  the path because they can never be revised. Country, series and key-date
+  status are tags, because they can be. Adding a third path segment is a
+  decision to renumber the site later.
+- **Composition belongs to the issue, not the series.** A 1964 quarter is
+  silver and a 1965 quarter is clad, so the Washington quarter lives in two
+  branches and its series tag reunites it. This looks like a bug and is the
+  design. Hoisting the group up to the series would make one coin's URL depend
+  on a fact about a different coin.
+- **A slug is never changed once published.** Not to fix a typo, not to improve
+  a keyword. There are no redirects in a static build beyond the generated
+  trailing-slash rules.
+- **Registries throw, they do not warn.** `validateTaxonomy()` fails the build
+  on an unknown group, an unregistered tag, a duplicate slug, a reserved
+  segment or two pages claiming one FAQ question. Do not relax it to get a
+  build through; every one of those failures is silent in the output.
+- **An archive page with nothing on it does not get a URL.** Groups, types and
+  tags are all filtered to the populated ones. Nine groups times eight
+  denominations is seventy-two possible archives and only eight exist.
+- **Never print a value the site did not measure.** `values` requires
+  `valueAsOf` and `sources`, enforced. A coin with no market data says so in
+  its own section rather than guessing, and the metal arithmetic — content in
+  troy ounces times spot price — carries the page in the meantime.
+- **`Product` schema carries no `offers`.** The site does not sell coins and
+  does not know what one will fetch. A price in machine-readable form that the
+  visible page refuses to state is the mismatch Google issues manual actions
+  for; `tests/build-smoke.test.mjs` checks the built HTML for it.
+- **The generator gets no exemption from "name the person who types this".**
+  A registry makes ten thousand thin pages as easy as ten good ones.
 
 ## Secrets and privacy
 
@@ -71,7 +112,9 @@ rule says "why", that is the part to preserve.
 
 - Visible HTML and structured data are built from the same object. Google
   penalises schema that does not match the page, and hand-duplicated copy always
-  drifts.
+  drifts. This includes breadcrumbs: `Base.astro` renders the trail and builds
+  `BreadcrumbList` from one `crumbs` array, and a build check fails if a page
+  has the markup without the trail.
 - Every page: canonical, title, description, JSON-LD. No exceptions —
   `tests/build-smoke.test.mjs` enforces it.
 - Answers must survive being quoted with no page around them. That is how a

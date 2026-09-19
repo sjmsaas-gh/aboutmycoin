@@ -13,6 +13,13 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { SITE, DISCOVERABLE, NOINDEX_DIRECTIVE } from '../src/lib/site.ts';
 import { ONE_TIME_AVAILABLE, ONE_TIME, PRO_AVAILABLE } from '../src/lib/pricing.ts';
+import {
+  COINS,
+  coinPath,
+  typePath,
+  allFaqQuestions,
+  normaliseQuestion,
+} from '../src/data/coins.ts';
 
 const DIST = 'dist';
 const read = (p) => readFileSync(join(DIST, p), 'utf8');
@@ -146,6 +153,84 @@ test('every sitemap lastmod is the date the page itself declares', () => {
     const declared = /"dateModified":"([^"]+)"/.exec(html)?.[1];
     assert.ok(declared, `${loc} has a sitemap lastmod but the page declares no dateModified`);
     assert.equal(lastmod.slice(0, 10), declared, `${loc}: the sitemap says ${lastmod.slice(0, 10)}, the page says ${declared}`);
+  }
+});
+
+test('every coin page was built, and its archive links to it', () => {
+  // The orphan check. A generated page that nothing links to is a page Google
+  // finds in the sitemap, crawls once and then discounts -- and the whole
+  // argument for a taxonomy is that every page sits in a cluster. The archive
+  // one level up is the link that has to exist.
+  for (const coin of COINS) {
+    const page = `${coinPath(coin).slice(1)}/index.html`;
+    assert.ok(existsSync(join(DIST, page)), `${coinPath(coin)} was not built`);
+    const archive = read(`${typePath(coin.group, coin.type).slice(1)}/index.html`);
+    assert.ok(
+      archive.includes(`href="${coinPath(coin)}"`),
+      `${typePath(coin.group, coin.type)} does not link to ${coinPath(coin)}`,
+    );
+  }
+});
+
+test('every coin page carries Article, FAQPage, HowTo and Product schema', () => {
+  // Four types, each doing a different job -- see the header of the coin
+  // route. Losing one is invisible on the page and costs a rich result.
+  for (const coin of COINS) {
+    const html = read(`${coinPath(coin).slice(1)}/index.html`);
+    for (const type of ['"Article"', '"FAQPage"', '"HowTo"', '"Product"']) {
+      assert.ok(html.includes(`"@type":${type}`), `${coinPath(coin)} is missing ${type} schema`);
+    }
+    // The honesty constraint, checked in the output rather than trusted: a
+    // Product with an offer is a thing for sale at a price, and this site does
+    // not know what any individual coin will fetch.
+    assert.ok(!html.includes('"offers"'), `${coinPath(coin)} claims an offer for a coin`);
+  }
+});
+
+test('each FAQ question is marked up on exactly one page', () => {
+  // Google wants a question to carry FAQPage markup once. coins.ts enforces
+  // uniqueness across the registry; this checks the built HTML, which is where
+  // a question could still be duplicated by a hand-written page.
+  const owners = new Map();
+  for (const { question, path } of allFaqQuestions()) {
+    owners.set(normaliseQuestion(question), path);
+  }
+  const seen = new Map();
+  for (const page of htmlFiles()) {
+    const html = read(page);
+    for (const [, raw] of html.matchAll(/"@type":"Question","name":"((?:[^"\\]|\\.)*)"/g)) {
+      const q = normaliseQuestion(JSON.parse(`"${raw}"`));
+      if (!owners.has(q)) continue;
+      const already = seen.get(q);
+      assert.ok(!already, `the question "${raw}" is marked up on both ${already} and ${page}`);
+      seen.set(q, page);
+    }
+  }
+  assert.equal(
+    seen.size,
+    owners.size,
+    `${owners.size - seen.size} catalogue FAQ question(s) were registered but never rendered`,
+  );
+});
+
+test('the visible breadcrumb trail matches the BreadcrumbList schema', () => {
+  // These used to be one array feeding only the schema, with nothing on the
+  // page. Both now render from `crumbs`; this is what stops a future edit
+  // dropping one of the two and leaving markup with no visible counterpart.
+  for (const page of htmlFiles()) {
+    const html = read(page);
+    const crumbs = /"@type":"BreadcrumbList","itemListElement":\[(.*?)\]/.exec(html)?.[1];
+    if (!crumbs) continue;
+    assert.ok(
+      html.includes('aria-label="Breadcrumb"'),
+      `${page} has BreadcrumbList schema but renders no visible trail`,
+    );
+    const names = [...crumbs.matchAll(/"name":"((?:[^"\\]|\\.)*)"/g)].map(([, n]) =>
+      JSON.parse(`"${n}"`),
+    );
+    for (const name of names) {
+      assert.ok(html.includes(name), `${page} breadcrumb "${name}" is in schema but not on the page`);
+    }
   }
 });
 

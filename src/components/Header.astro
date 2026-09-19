@@ -3,13 +3,18 @@ import { SITE } from '../lib/site';
 import Logo from './Logo.astro';
 
 /**
- * RENAME: this is the site's navigation. Keep it short -- four links is the
- * point at which a header stops being scannable, and every link here competes
- * with the one call to action on the right.
+ * The site's navigation. Four links, which is the point at which a header
+ * stops being scannable, and every link here competes with the one call to
+ * action on the right.
+ *
+ * /coin-value leads because it is the site. /pricing came out of this list to
+ * keep the count at four when it went in -- it is still reachable from the CTA
+ * button and from the footer, and SPEC.md has not yet decided that anything is
+ * sold, so it is the weakest of the five in any case.
  */
 const links = [
+  { href: '/coin-value', label: 'Coin values' },
   { href: '/answers', label: 'Answers' },
-  { href: '/pricing', label: 'Pricing' },
   { href: '/faq', label: 'FAQ' },
   { href: '/about', label: 'About' },
 ];

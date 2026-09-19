@@ -1,0 +1,118 @@
+---
+/**
+ * A cross-cutting view: /coin-value/tagged/<tag>.
+ *
+ * This is the half of the structure that the metal-and-denomination tree
+ * cannot express. A coin has exactly one address in the tree, chosen from
+ * facts that will never be revised, and any number of tags, which are free to
+ * change. The two jobs tags do here:
+ *
+ *   - Reassemble a series the metal split. Washington quarters are silver
+ *     through 1964 and clad from 1965, so they sit in two branches;
+ *     /coin-value/tagged/washington-quarter is where they are one series again.
+ *   - Give world coins a country view without a parallel country tree. A
+ *     Canadian silver dollar files itself under silver and dollars like any
+ *     other; `canada` is what makes the Canadian page exist.
+ *
+ * `tagged` is a reserved segment. A group or type slug colliding with it would
+ * silently shadow these pages, so validateTaxonomy() throws on it.
+ *
+ * Only tags with coins get a page. A registered tag with nothing on it is the
+ * doorway page this whole registry is arranged to make impossible.
+ */
+import Base from '../../../layouts/Base.astro';
+import CoinTile from '../../../components/CoinTile.astro';
+import { itemListSchema, webPageSchema, faqSchema } from '../../../lib/schema';
+import {
+  populatedTags,
+  coinsWithTag,
+  groupsForTag,
+  coinPath,
+  groupPath,
+  tagPath,
+  latestUpdated,
+  groupBySlug,
+  type Tag,
+} from '../../../data/coins';
+
+export function getStaticPaths() {
+  return populatedTags().map((tag) => ({ params: { tag: tag.slug }, props: { tag } }));
+}
+
+export interface Props { tag: Tag }
+const { tag } = Astro.props;
+
+const path = tagPath(tag.slug);
+const coins = coinsWithTag(tag.slug);
+const groups = groupsForTag(tag.slug);
+const updated = latestUpdated(coins, tag.updated);
+
+const KIND_LABEL: Record<Tag['kind'], string> = {
+  series: 'Series',
+  country: 'Country',
+  format: 'Format',
+  theme: 'Topic',
+  composition: 'Composition',
+};
+---
+<Base
+  title={tag.seoTitle}
+  description={tag.description}
+  path={path}
+  crumbs={[
+    { label: 'Coin values', href: '/coin-value' },
+    { label: tag.name, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: tag.h1,
+      description: tag.description,
+      path,
+      dateModified: updated,
+    }),
+    itemListSchema({
+      name: tag.h1,
+      description: tag.description,
+      items: coins.map((c) => ({ name: c.name, path: coinPath(c) })),
+    }),
+    faqSchema([{ q: tag.faqQuestion, a: tag.bluf }]),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <p class="tile-meta" style="margin: 0 0 0.4rem">{KIND_LABEL[tag.kind]}</p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{tag.h1}</h1>
+      <div class="verdict" style={groups.length === 1 ? `--metal: var(--metal-${groups[0].slug})` : undefined}>
+        <span class="verdict-label">{tag.faqQuestion}</span>
+        <p>{tag.bluf}</p>
+      </div>
+      {tag.intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
+
+      {groups.length > 1 && (
+        <p>
+          <strong>These coins are not all made of the same thing</strong>, which
+          is why they live in different parts of the catalogue: {' '}
+          {groups.map((g, i) => (
+            <>
+              {i > 0 && (i === groups.length - 1 ? ' and ' : ', ')}
+              <a href={groupPath(g.slug)}>{g.name.toLowerCase()}</a>
+            </>
+          ))}. The metal is the difference that matters most to the value, so
+          it is the difference the URL records.
+        </p>
+      )}
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{coins.length} {coins.length === 1 ? 'coin' : 'coins'} tagged {tag.name.toLowerCase()}</h2>
+    </div>
+    <div class="tile-grid">
+      {coins.map((c) => (
+        <CoinTile coin={c} showGroup groupName={groupBySlug(c.group)?.name} />
+      ))}
+    </div>
+  </section>
+</Base>

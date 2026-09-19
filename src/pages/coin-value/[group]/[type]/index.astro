@@ -1,0 +1,106 @@
+---
+/**
+ * A denomination archive within one composition: /coin-value/<group>/<type>.
+ *
+ * Generated only for (group, type) pairs that have at least one coin, which is
+ * the anti-thin-content guard for the deepest archive level: the combinatorial
+ * product of nine groups and eight denominations is seventy-two URLs, and only
+ * the eight that hold something get built.
+ *
+ * The copy here is composed from the group and the denomination rather than
+ * hand-written per pair, and that is deliberate for a listing page whose job
+ * is navigation and an ItemList. The moment a pair earns a real explanation --
+ * "silver quarters" almost certainly will -- it gets a hand-written entry
+ * rather than more generation.
+ */
+import Base from '../../../../layouts/Base.astro';
+import CoinTile from '../../../../components/CoinTile.astro';
+import { itemListSchema, webPageSchema, faqSchema } from '../../../../lib/schema';
+import {
+  populatedPairs,
+  coinsInGroupType,
+  typePath,
+  groupPath,
+  coinPath,
+  latestUpdated,
+  pairQuestion,
+  type Group,
+  type CoinType,
+} from '../../../../data/coins';
+
+export function getStaticPaths() {
+  return populatedPairs().map(({ group, type }) => ({
+    params: { group: group.slug, type: type.slug },
+    props: { group, type },
+  }));
+}
+
+export interface Props { group: Group; type: CoinType }
+const { group, type } = Astro.props;
+
+const path = typePath(group.slug, type.slug);
+const coins = coinsInGroupType(group.slug, type.slug);
+const updated = latestUpdated(coins, type.updated > group.updated ? type.updated : group.updated);
+
+const plural = type.namePlural.toLowerCase();
+const h1 = `${group.name} ${type.namePlural} and What They Are Worth`;
+const question = pairQuestion(group, type);
+const answer = `${group.bluf} ${type.bluf}`;
+const description = `${group.name} ${plural}: composition, metal content and value. ${type.bluf}`;
+---
+<Base
+  title={`${group.name} ${type.namePlural}: Value Guide`}
+  description={description}
+  path={path}
+  crumbs={[
+    { label: 'Coin values', href: '/coin-value' },
+    { label: group.name, href: groupPath(group.slug) },
+    { label: type.namePlural, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: h1,
+      description,
+      path,
+      dateModified: updated,
+    }),
+    itemListSchema({
+      name: h1,
+      description,
+      items: coins.map((c) => ({ name: c.name, path: coinPath(c) })),
+    }),
+    faqSchema([{ q: question, a: answer }]),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{h1}</h1>
+      <div class="verdict" style={`--metal: var(--metal-${group.slug})`}>
+        <span class="verdict-label">{question}</span>
+        <p>{answer}</p>
+      </div>
+      {type.faceNote && (
+        <p style="margin-top: 1.3rem"><strong>Face value.</strong> {type.faceNote}</p>
+      )}
+      <p>
+        Every entry below is a {plural.replace(/s$/, '')} struck in {group.name.toLowerCase()}.
+        {group.meltDriven
+          ? ' Each one states its actual metal weight in troy ounces, which is all you need to work out the metal value: multiply it by the current spot price.'
+          : ' Metal content is not the variable in this group, so each entry leads with the date, the mint mark and what to check before assuming the coin is worth more than face value.'}
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="tile-grid">
+      {coins.map((c) => <CoinTile coin={c} />)}
+    </div>
+    <div class="prose-page" style="margin-top: 2rem">
+      <p class="text-sm" style="color: var(--text-muted)">
+        Looking for a different metal? See <a href={groupPath(group.slug)}>all {group.name.toLowerCase()} coins</a>
+        or <a href="/coin-value">the whole catalogue by composition</a>.
+      </p>
+    </div>
+  </section>
+</Base>
