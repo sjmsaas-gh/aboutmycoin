@@ -59,10 +59,10 @@ const features = [
   },
 ];
 /**
- * PRE-LAUNCH: while HOME_PLACEHOLDER is true this page renders the holding
- * page instead of anything below. Nothing below has been changed or deleted --
- * flipping the flag in lib/site.ts brings the real home page straight back.
- * See the HOLDING PAGE block there.
+ * PRE-LAUNCH: in a build, this page renders the holding page instead of
+ * anything below; in `npm run dev` it renders the real thing, so the home page
+ * can be worked on while the public sees a blank white document. Nothing below
+ * has been changed or deleted. See the HOLDING PAGE block in lib/site.ts.
  */
 ---
 {HOME_PLACEHOLDER ? <Placeholder /> : (

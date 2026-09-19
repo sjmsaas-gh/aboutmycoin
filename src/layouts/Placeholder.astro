@@ -2,7 +2,8 @@
 /**
  * The holding page: a white document with nothing on it.
  *
- * Used only while HOME_PLACEHOLDER is true in lib/site.ts, which is where the
+ * Used only while HOME_PLACEHOLDER is true in lib/site.ts -- which is to say,
+ * in every build but not in `npm run dev`. That file is where the
  * reasoning and the reversal steps live. Deliberately NOT built on Base.astro:
  * the point is that a visitor to the domain gets no header, no footer, no
  * navigation into a half-finished site, no stylesheet and no analytics. Reusing

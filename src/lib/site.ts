@@ -144,12 +144,23 @@ export const NOINDEX_DIRECTIVE =
    visitor sees a white page; a crawler that ignores the noindex header sees a
    site that says it is not published yet, which is true.
 
+   It is OFF in `astro dev` and ON in every build, rather than a hand-flipped
+   constant, because the two audiences want opposite things at the same time:
+   the home page has to be worked on daily while the public must not see it.
+   A constant would have to be flipped back before each deploy, and the day
+   somebody forgets is the day the unfinished site is the front page.
+
+   So: `npm run dev` shows the real home page. `npm run build`, `npm run
+   preview` and every deploy show the holding page. To see the holding page in
+   dev, or the real page in a build, replace the expression below with a
+   literal -- and put it back.
+
    TO GO LIVE:
-     - Set HOME_PLACEHOLDER to false here. That is the whole reversal: the real
-       home page is still in src/pages/index.astro, untouched.
+     - Replace the expression below with `false`. That is the whole reversal:
+       the real home page is still in src/pages/index.astro, untouched.
      - Rebuild and check `dist/index.html` is the real page again.
    =========================================================================== */
-export const HOME_PLACEHOLDER = true;
+export const HOME_PLACEHOLDER = !import.meta.env?.DEV;
 
 /**
  * Title and description for the holding page.
