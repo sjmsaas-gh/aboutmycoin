@@ -15,8 +15,9 @@
  * RENAME: every string on this page is placeholder. The structure is not.
  */
 import Base from '../layouts/Base.astro';
+import Placeholder from '../layouts/Placeholder.astro';
 import Faq from '../components/Faq.astro';
-import { SITE } from '../lib/site';
+import { SITE, HOME_PLACEHOLDER } from '../lib/site';
 import { faqSchema, webApplicationSchema, type Faq as FaqItem } from '../lib/schema';
 import { GATE_EXPLAINER, ONE_TIME_OFFER, PRO_MONTHLY } from '../lib/pricing';
 import { ANSWERS } from '../data/answers';
@@ -57,67 +58,75 @@ const features = [
     body: 'The one nobody else does, or the one you do differently. If there is nothing to put here, the product is not ready to market.',
   },
 ];
+/**
+ * PRE-LAUNCH: while HOME_PLACEHOLDER is true this page renders the holding
+ * page instead of anything below. Nothing below has been changed or deleted --
+ * flipping the flag in lib/site.ts brings the real home page straight back.
+ * See the HOLDING PAGE block there.
+ */
 ---
-<Base
-  title={`${SITE.name} — ${SITE.tagline}`}
-  description={SITE.description}
-  path="/"
-  schemas={[
-    faqSchema(faqs),
-    /* RENAME: if this site is not software, replace this with Product or
-       Service schema. Do not stretch WebApplication over something else. */
-    webApplicationSchema({
-      applicationCategory: 'BusinessApplication',
-      keywords: ['placeholder keyword', 'another placeholder keyword'],
-      featureList: features.map((f) => f.title),
-    }),
-  ]}
->
-  <section class="container-page pt-16 pb-12 sm:pt-24">
-    <div class="max-w-3xl">
-      <h1 class="text-4xl sm:text-6xl">
-        Say what this is, in one line, using the words people search for
-      </h1>
-      <!-- BLUF. Someone who reads only this paragraph should know whether the
-           product is for them and roughly what it costs. -->
-      <p class="mt-6 text-lg sm:text-xl" style="color: var(--text-muted)">
-        {SITE.description}
-      </p>
-      <div class="mt-9 flex flex-wrap gap-3">
-        <a href="/pricing" class="btn btn-primary">Get started</a>
-        <a href="/answers" class="btn btn-secondary">Read the answers</a>
-      </div>
-      <p class="mt-4 text-sm" style="color: var(--text-muted)">
-        Free to start. {ONE_TIME_OFFER.priceLabel} once, or ${PRO_MONTHLY}/month.
-      </p>
-    </div>
-  </section>
-
-  <section class="container-page py-12">
-    <div class="grid gap-6 md:grid-cols-3">
-      {features.map((f) => (
-        <div class="card p-6">
-          <h2 class="text-xl" style="margin: 0 0 0.5rem">{f.title}</h2>
-          <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{f.body}</p>
+{HOME_PLACEHOLDER ? <Placeholder /> : (
+  <Base
+    title={`${SITE.name} — ${SITE.tagline}`}
+    description={SITE.description}
+    path="/"
+    schemas={[
+      faqSchema(faqs),
+      /* RENAME: if this site is not software, replace this with Product or
+         Service schema. Do not stretch WebApplication over something else. */
+      webApplicationSchema({
+        applicationCategory: 'BusinessApplication',
+        keywords: ['placeholder keyword', 'another placeholder keyword'],
+        featureList: features.map((f) => f.title),
+      }),
+    ]}
+  >
+    <section class="container-page pt-16 pb-12 sm:pt-24">
+      <div class="max-w-3xl">
+        <h1 class="text-4xl sm:text-6xl">
+          Say what this is, in one line, using the words people search for
+        </h1>
+        <!-- BLUF. Someone who reads only this paragraph should know whether the
+             product is for them and roughly what it costs. -->
+        <p class="mt-6 text-lg sm:text-xl" style="color: var(--text-muted)">
+          {SITE.description}
+        </p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a href="/pricing" class="btn btn-primary">Get started</a>
+          <a href="/answers" class="btn btn-secondary">Read the answers</a>
         </div>
-      ))}
-    </div>
-  </section>
+        <p class="mt-4 text-sm" style="color: var(--text-muted)">
+          Free to start. {ONE_TIME_OFFER.priceLabel} once, or ${PRO_MONTHLY}/month.
+        </p>
+      </div>
+    </section>
 
-  <section class="container-page py-12">
-    <div class="prose-page">
-      <h2 style="margin-top: 0">Straight answers</h2>
-      <p>
-        Each of these is a full page answering one question. They exist because
-        somebody types that question, not because a keyword tool suggested it.
-      </p>
-      <ul>
-        {ANSWERS.map((a) => (
-          <li><a href={`/answers/${a.slug}`}>{a.question}</a></li>
+    <section class="container-page py-12">
+      <div class="grid gap-6 md:grid-cols-3">
+        {features.map((f) => (
+          <div class="card p-6">
+            <h2 class="text-xl" style="margin: 0 0 0.5rem">{f.title}</h2>
+            <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{f.body}</p>
+          </div>
         ))}
-      </ul>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <Faq faqs={faqs} />
-</Base>
+    <section class="container-page py-12">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">Straight answers</h2>
+        <p>
+          Each of these is a full page answering one question. They exist because
+          somebody types that question, not because a keyword tool suggested it.
+        </p>
+        <ul>
+          {ANSWERS.map((a) => (
+            <li><a href={`/answers/${a.slug}`}>{a.question}</a></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <Faq faqs={faqs} />
+  </Base>
+)}

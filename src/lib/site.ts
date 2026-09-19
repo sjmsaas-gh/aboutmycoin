@@ -125,3 +125,41 @@ export const DISCOVERABLE = false;
  */
 export const NOINDEX_DIRECTIVE =
   'noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate';
+
+/* ===========================================================================
+   HOLDING PAGE  --  REMOVE WHEN THE SITE IS FINISHED
+   ===========================================================================
+
+   While HOME_PLACEHOLDER is true, `/` serves an empty white document: no
+   header, no footer, no copy, no stylesheet, no analytics. The rest of the
+   site is built and deployed exactly as before, so every page can still be
+   reviewed by typing its URL -- this flag hides the front door, it is not a
+   second lockdown. DISCOVERABLE is what keeps the site out of search, and the
+   two are independent on purpose: the domain can go live behind a blank page
+   for weeks before there is anything worth indexing.
+
+   The document is not literally empty. It carries a title, a description, a
+   canonical and one JSON-LD block, because tests/build-smoke.test.mjs requires
+   all four on every page and the exemption would outlive the placeholder. A
+   visitor sees a white page; a crawler that ignores the noindex header sees a
+   site that says it is not published yet, which is true.
+
+   TO GO LIVE:
+     - Set HOME_PLACEHOLDER to false here. That is the whole reversal: the real
+       home page is still in src/pages/index.astro, untouched.
+     - Rebuild and check `dist/index.html` is the real page again.
+   =========================================================================== */
+export const HOME_PLACEHOLDER = true;
+
+/**
+ * Title and description for the holding page.
+ *
+ * Deliberately says nothing about what is being built. A description is
+ * required on every page, so this is the shortest true sentence that fills it
+ * -- not a teaser, and not a feature list for a product that does not exist
+ * yet.
+ */
+export const PLACEHOLDER_COPY = {
+  title: SITE.name,
+  description: `${SITE.domain} is not published yet.`,
+} as const;
