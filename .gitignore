@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output
+dist/
+.output/
+.vercel/
+.netlify/
+.wrangler/
+
+# Astro
+.astro/
+
+# Environment / credentials — never commit.
+.env
+.env.*
+!.env.*.example
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Caches
+.cache/
+__pycache__/
+.parcel-cache/
+.eslintcache
+.turbo/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Font sources are downloaded once per site and never served directly.
+# Committing them is fine and intended -- the subset output in public/fonts is
+# what ships. Nothing to ignore here; this note exists so nobody adds a rule.
+
+# Staged R2 payload: files too large for git, uploaded by `npm run r2:sync`.
+# See r2/README.md. Never in git.
+r2-assets/

@@ -1,0 +1,62 @@
+---
+import { SITE } from '../lib/site';
+import Logo from './Logo.astro';
+const year = new Date().getFullYear();
+
+/**
+ * RENAME: the columns. `/llms.txt` in the last column is deliberate -- linking
+ * it from the footer is one of the few ways a crawler discovers the file, and
+ * it costs a line.
+ */
+const cols = [
+  {
+    title: 'Product',
+    links: [
+      { href: '/pricing', label: 'Pricing' },
+      { href: '/answers', label: 'Answers' },
+      { href: '/faq', label: 'FAQ' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/about', label: 'About' },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    title: 'Legal and machines',
+    links: [
+      { href: '/privacy', label: 'Privacy' },
+      { href: '/llms.txt', label: 'llms.txt' },
+      { href: '/sitemap-index.xml', label: 'Sitemap' },
+    ],
+  },
+];
+---
+<footer class="border-t mt-24" style="border-color: var(--border); background: var(--bg-sunken)">
+  <div class="container-page py-14">
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <div class="flex items-center gap-2 font-semibold mb-3" style="font-family: var(--font-display)">
+          <Logo size={24} />
+          {SITE.name}
+        </div>
+        <p class="text-sm" style="color: var(--text-muted)">{SITE.tagline}.</p>
+      </div>
+      {cols.map((c) => (
+        <div>
+          <h2 class="text-sm font-semibold mb-3" style="font-family: var(--font-sans); letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted)">{c.title}</h2>
+          <ul class="space-y-2 text-sm">
+            {c.links.map((l) => (
+              <li><a href={l.href} class="hover:underline underline-offset-2">{l.label}</a></li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+    <p class="mt-12 pt-6 border-t text-sm" style="border-color: var(--border); color: var(--text-muted)">
+      &copy; {year} {SITE.name}.
+    </p>
+  </div>
+</footer>

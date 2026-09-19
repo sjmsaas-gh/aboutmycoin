@@ -1,0 +1,612 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   THIS FILE IS THE DESIGN FORK POINT.
+
+   Every site in this family looks different on purpose. What is below is a
+   deliberately quiet, neutral theme -- correct, accessible and dull -- so that
+   replacing it is the obvious first move rather than a fight with an opinion
+   somebody else had.
+
+   What to replace:  the @theme colour ramps, the accent, the fonts.
+   What to keep:     the semantic token layer, the dark-mode block, the base
+                     resets, and the .btn / .card / .field component classes.
+                     Pages and components reference the semantic names only, so
+                     swapping a palette is one edit here and nothing elsewhere.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Fonts.
+
+   The starter ships NO font files, so the stacks below are system fonts and the
+   site renders correctly with zero requests. That is a fine place to launch
+   from -- system fonts are the fastest text on the web and cost nothing.
+
+   To use real webfonts:
+     1. Download the woff2 into assets/fonts-src/ (see the README there).
+     2. `npm run fonts` to subset them into public/fonts/.
+     3. Uncomment the @font-face blocks below and put the family names first in
+        --font-sans / --font-display.
+     4. Add the file paths to SITE.preloadFonts in src/lib/site.ts.
+
+   No Google Fonts, no third-party origin of any kind -- both for privacy and
+   because a cross-origin font is a render-blocking round trip that a site with
+   a 1.5s LCP budget cannot afford.
+   --------------------------------------------------------------------------- */
+
+/*
+@font-face {
+  font-family: 'YourBody';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/body-subset.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'YourDisplay';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('/fonts/display-subset.woff2') format('woff2');
+}
+*/
+
+/*
+  Metric-adjusted fallbacks. Without these the swap from the system font to the
+  webfont reflows the text and spends most of the CLS budget in one go. The
+  numbers are per-font: measure them, do not copy these.
+
+@font-face {
+  font-family: 'YourBody Fallback';
+  src: local('Arial');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+*/
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* Neutral ramp. Replace with a ramp that has a temperature of its own. */
+  --color-neutral-50: #fbfbfa;
+  --color-neutral-100: #f4f4f2;
+  --color-neutral-200: #e6e6e3;
+  --color-neutral-300: #d2d2cd;
+  --color-neutral-400: #a3a39c;
+  /* Carries body copy as --text-muted, so it has to clear 4.5:1 against both
+     --bg and --bg-sunken. Currently 5.1:1 and 4.8:1. Re-check with a contrast
+     tool after changing the ramp; this is the one value people break. */
+  --color-neutral-500: #70706a;
+  --color-neutral-600: #57574f;
+  --color-neutral-700: #3d3d37;
+  --color-neutral-800: #292926;
+  --color-neutral-900: #1a1a18;
+  --color-neutral-950: #111110;
+
+  /* Accent. One accent colour, used for the CTA, links and focus rings. */
+  --color-accent-50: #eef2ff;
+  --color-accent-100: #e0e7ff;
+  --color-accent-200: #c7d2fe;
+  --color-accent-300: #a5b4fc;
+  --color-accent-400: #818cf8;
+  --color-accent-500: #6366f1;
+  --color-accent-600: #4f46e5;
+  --color-accent-700: #4338ca;
+  --color-accent-800: #3730a3;
+  --color-accent-900: #312e81;
+
+  /* Status colours. Chosen to stay distinguishable for the most common
+     colour-vision deficiencies, and never used as the only signal -- anything
+     that carries a verdict also carries a label. */
+  --color-status-good: #177445;
+  --color-status-ok: #8f5807;
+  --color-status-bad: #b3261e;
+  --color-status-good-dark: #4ade80;
+  --color-status-ok-dark: #fbbf24;
+  --color-status-bad-dark: #f87171;
+}
+
+/* Semantic surface tokens, flipped by prefers-color-scheme.
+   Components use ONLY these names. That is what makes a re-skin one edit. */
+:root {
+  color-scheme: light dark;
+  --bg: var(--color-neutral-50);
+  --bg-raised: #ffffff;
+  --bg-sunken: var(--color-neutral-100);
+  --border: var(--color-neutral-200);
+  --border-strong: var(--color-neutral-300);
+  --text: var(--color-neutral-900);
+  --text-muted: var(--color-neutral-500);
+  --accent: var(--color-accent-600);
+  --accent-hover: var(--color-accent-700);
+  --accent-contrast: #ffffff;
+  --accent-soft: var(--color-accent-50);
+  --good: var(--color-status-good);
+  --ok: var(--color-status-ok);
+  --bad: var(--color-status-bad);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--color-neutral-950);
+    --bg-raised: var(--color-neutral-900);
+    --bg-sunken: #0b0b0a;
+    --border: var(--color-neutral-800);
+    --border-strong: var(--color-neutral-700);
+    --text: var(--color-neutral-100);
+    --text-muted: var(--color-neutral-400);
+    --accent: var(--color-accent-400);
+    --accent-hover: var(--color-accent-300);
+    --accent-contrast: var(--color-neutral-950);
+    --accent-soft: #1e1b3a;
+    --good: var(--color-status-good-dark);
+    --ok: var(--color-status-ok-dark);
+    --bad: var(--color-status-bad-dark);
+  }
+}
+
+@layer base {
+  * { border-color: var(--border); }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Explicit dimensions on media should be set per component; this is the
+     backstop that keeps CLS at zero if one slips through. */
+  img, video, canvas { max-width: 100%; height: auto; }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .container-page { padding-inline: 2rem; }
+  }
+
+  .prose-page { max-width: 44rem; }
+  .prose-page h2 {
+    font-size: 1.75rem;
+    margin-top: 2.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-page h3 {
+    font-size: 1.3rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose-page p { margin-bottom: 1.1rem; }
+  .prose-page ul, .prose-page ol {
+    margin-bottom: 1.1rem;
+    padding-left: 1.4rem;
+  }
+  .prose-page ul { list-style: disc; }
+  .prose-page ol { list-style: decimal; }
+  .prose-page li { margin-bottom: 0.4rem; }
+  /* `:not(.btn)`, or this out-specifies .btn-primary and every button-styled
+     link inside a prose column renders accent text on an accent fill --
+     unreadable, and found only on a live checkout page. */
+  .prose-page a:not(.btn) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-page a:not(.btn):hover { color: var(--accent-hover); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.2;
+    transition: background-color 120ms ease, border-color 120ms ease;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  .btn-primary:hover { background-color: var(--accent-hover); }
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover { background-color: var(--bg-sunken); }
+  /* A disabled button has to look disabled. Without this, an inert buy control
+     keeps full contrast and a pointer cursor, which reads as broken rather than
+     as not-yet-available. Hovers are suppressed too, since a colour change on
+     something that cannot be clicked is the same lie. */
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary:disabled:hover { background-color: var(--accent); }
+  .btn-secondary:disabled:hover { background-color: transparent; }
+
+  .card {
+    background-color: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+  }
+
+  /* Form controls. Kept here rather than in the contact page so a second form
+     cannot invent its own look. Colours come from the semantic tokens, so dark
+     mode needs no separate rule. */
+  .label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+  }
+  .field {
+    display: block;
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border-strong);
+    background-color: var(--bg-raised);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .field:hover { border-color: var(--text-muted); }
+  /* A select needs its own arrow once the native appearance is dropped, and it
+     must be drawn in currentColor -- a hard-coded chevron is invisible in one
+     of the two themes. */
+  select.field {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: right 1.1rem center, right 0.85rem center;
+    background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+    background-repeat: no-repeat;
+    padding-right: 2.25rem;
+  }
+  textarea.field {
+    min-height: 9rem;
+    resize: vertical;
+  }
+  /* Set by the page's script on the input that failed, never by the browser's
+     own :invalid -- :invalid matches an empty required field before it has been
+     touched, which paints the whole form red on arrival. */
+  .field[aria-invalid='true'] { border-color: var(--bad); }
+  .field-error {
+    font-size: 0.875rem;
+    margin-top: 0.3rem;
+    color: var(--bad);
+  }
+  /* The honeypot. Off-screen rather than display:none, because some bots skip
+     what is display:none and fill everything else.
+     Not reachable by anyone real: the wrapper carries aria-hidden and the input
+     carries tabindex="-1", so it is out of the tab order AND out of the screen
+     reader's tree. That pairing is deliberate -- an input a screen reader could
+     land on is an input a screen reader user might fill, and the cost of a
+     filled honeypot is a discarded message. */
+  .honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Escape hatch for interactive islands embedded mid-article. */
+  .prose-page .not-prose a { color: inherit; text-decoration: none; }
+  .prose-page .not-prose p,
+  .prose-page .not-prose ul,
+  .prose-page .not-prose ol { margin-bottom: 0; padding-left: 0; list-style: none; }
+
+  /* Wide reference tables must scroll inside themselves, never the page.
+     max-width + min-width:0 are the load-bearing part: without them a grid or
+     flex parent sizes itself to the table's content and the whole page scrolls
+     sideways instead of the table. */
+  .table-scroll {
+    overflow-x: auto;
+    max-width: 100%;
+    min-width: 0;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* The card's rounded corners would otherwise sit on top of scrolled content. */
+  .card.table-scroll { overflow-y: hidden; }
+}
+
+/* ---------------------------------------------------------------------------
+   The coin catalogue.
+
+   Design brief: modern and a bit fun, but the information has to win. So the
+   playful part is confined to one device -- a small gradient disc that reads
+   as a coin edge-on -- and everything else is typography, whitespace and a
+   single accent per metal. No illustrations, no photography, no shadows doing
+   the work that a border can do. The result stays light: the entire catalogue
+   ships zero JavaScript and zero images.
+
+   The metal colours are decoration only. Every place one appears, the metal is
+   also named in text, because a swatch that is the only signal is invisible to
+   a screen reader and ambiguous to about one reader in twelve.
+   --------------------------------------------------------------------------- */
+:root {
+  --metal-silver: #8e99a6;
+  --metal-gold: #b8860b;
+  --metal-copper: #a85a2b;
+  --metal-nickel: #7d858e;
+  --metal-clad: #8a7256;
+  --metal-steel: #6b7784;
+  --metal-platinum: #5f6d7c;
+  --metal-bi-metallic: #8a7a4a;
+  --metal-other: var(--text-muted);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --metal-silver: #b6c0cc;
+    --metal-gold: #e0b443;
+    --metal-copper: #d98a56;
+    --metal-nickel: #a8b0b9;
+    --metal-clad: #bfa480;
+    --metal-steel: #97a5b4;
+    --metal-platinum: #93a3b4;
+    --metal-bi-metallic: #c4b077;
+    --metal-other: var(--text-muted);
+  }
+}
+
+@layer components {
+  /* The one playful device: a disc with a rim highlight, sized in em so it
+     scales with whatever text it sits beside. */
+  .metal-dot {
+    display: inline-block;
+    flex: none;
+    width: 0.85em;
+    height: 0.85em;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.55), transparent 55%),
+      var(--metal, var(--text-muted));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+    vertical-align: -0.05em;
+  }
+
+  /* Visible breadcrumbs. The site emitted BreadcrumbList schema and rendered
+     nothing, which is the mismatch the house rules warn about -- and in a tree
+     four levels deep it is also the main way a person goes back up. */
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .crumbs a { color: inherit; text-decoration: none; }
+  .crumbs a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .crumbs li { display: flex; align-items: center; gap: 0.4rem; }
+  .crumbs li + li::before {
+    content: '';
+    width: 0.3rem;
+    height: 0.3rem;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.6;
+  }
+  .crumbs [aria-current='page'] { color: var(--text); font-weight: 600; }
+
+  /* The BLUF box. Every catalogue page opens with one, and it is the element
+     the whole design is arranged around -- large type, generous padding, a
+     coloured edge that names the metal. */
+  .verdict {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--metal, var(--accent));
+    background-color: var(--bg-raised);
+    border-radius: 0.875rem;
+    padding: 1.15rem 1.35rem;
+  }
+  .verdict p { margin: 0; font-size: 1.12rem; line-height: 1.6; }
+  .verdict .verdict-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.45rem;
+  }
+
+  /* Card grid for groups, denominations, tags and coins. */
+  .tile-grid {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  }
+  .tile {
+    display: block;
+    background-color: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    padding: 1.1rem 1.2rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .tile:hover {
+    border-color: var(--metal, var(--border-strong));
+    transform: translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile { transition: border-color 0.15s ease; }
+    .tile:hover { transform: none; }
+  }
+  .tile h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 650;
+    margin: 0 0 0.35rem;
+    line-height: 1.3;
+  }
+  .tile p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    /* Clamped in CSS, not in the template: a reader sees three lines, a
+       crawler and an answer engine get the whole self-contained sentence. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+  .tile .tile-meta {
+    margin-top: 0.7rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+  }
+
+  /* Specification table. A definition grid rather than a <table>, because it
+     is one coin's attributes rather than rows of comparable things -- and it
+     reflows to one column on a phone without a horizontal scroll. */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.55rem 1.4rem;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  .spec-grid dt { color: var(--text-muted); }
+  .spec-grid dd { margin: 0; font-weight: 550; }
+  @media (max-width: 30rem) {
+    .spec-grid { grid-template-columns: 1fr; gap: 0.15rem; }
+    .spec-grid dd { margin-bottom: 0.6rem; }
+  }
+
+  /* The melt-value arithmetic, shown as arithmetic. Tabular figures so the
+     numbers line up, and a background so it reads as a worked calculation
+     rather than as a sentence. */
+  .mathline {
+    font-variant-numeric: tabular-nums;
+    background-color: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.98rem;
+    line-height: 1.7;
+  }
+  .mathline strong { font-variant-numeric: tabular-nums; }
+
+  /* Identification checklist. Numbered discs, because the order matters and
+     because the counter is the cheapest possible nod to a coin. */
+  .checklist { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+  .checklist li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 1.7rem 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+    line-height: 1.6;
+  }
+  .checklist li::before {
+    content: counter(step);
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background-color: var(--bg-sunken);
+    border: 1px solid var(--border-strong);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+
+  /* Tag pills. */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background-color: var(--bg-raised);
+    font-size: 0.82rem;
+    text-decoration: none;
+    color: var(--text-muted);
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* The scarcity badge. Always accompanied by its own words -- the colour is
+     reinforcement, never the message. */
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    border: 1px solid currentColor;
+  }
+  .badge-common { color: var(--text-muted); }
+  .badge-scarce { color: var(--ok); }
+  .badge-key { color: var(--bad); }
+}

@@ -1,0 +1,165 @@
+---
+/**
+ * Where Stripe returns the buyer after checkout.
+ *
+ * Two states, both reached by query string:
+ *
+ *   ?session_id=cs_…  payment finished. For a subscription this page asks our
+ *                     own endpoint to mint the license key and shows it
+ *                     immediately, so delivery never depends on an email
+ *                     arriving.
+ *   ?cancelled=1      they backed out. Nothing was charged, and the page says
+ *                     so plainly rather than implying a failure.
+ *
+ * This page is usually the **checkout popup** (BuyButton opens Stripe with
+ * `window.open`), so its buttons close the window rather than linking
+ * anywhere. Sending the buyer to "/" inside a popup starts them over in the
+ * wrong window, away from the one they were working in.
+ *
+ * It never promises an email that is not sent. The webhook emails
+ * subscription keys only, and Stripe sends no receipts in test mode (and in
+ * live mode only if receipts are switched on in the dashboard). A one-time
+ * purchase gets no message from us, so this page does not mention one.
+ *
+ * `noindex`, and excluded from the sitemap in astro.config.mjs. A URL that is
+ * both noindex and in the sitemap is a contradiction crawlers report as an
+ * error.
+ *
+ * The session id is opaque and known only to the buyer, which is the same
+ * assumption Stripe's own success-page pattern makes.
+ */
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Checkout"
+  description="Your purchase is complete."
+  path="/checkout-complete"
+  noindex
+>
+  <section class="container-page pt-16 pb-24">
+    <div class="prose-page">
+      <!-- Every state is rendered and hidden rather than built by script, so
+           there is no flash of the wrong message while JavaScript starts. -->
+      <div id="state-loading">
+        <h1 class="text-3xl sm:text-4xl">Checking your payment…</h1>
+        <p style="color: var(--text-muted)">One moment.</p>
+      </div>
+
+      <div id="state-cancelled" hidden>
+        <h1 class="text-3xl sm:text-4xl">Nothing was charged</h1>
+        <p>
+          You closed the checkout before paying, which is fine — no payment was
+          taken and nothing has changed.
+        </p>
+        <p><button type="button" class="btn btn-primary" data-close>Close this window</button></p>
+        <p data-close-failed hidden style="color: var(--text-muted)">
+          Your browser would not let this page close itself. Close it yourself,
+          or go <a href="/pricing">back to pricing</a>.
+        </p>
+      </div>
+
+      <div id="state-key" hidden>
+        <h1 class="text-3xl sm:text-4xl">You’re in. Here is your license key.</h1>
+        <p>
+          Keep this somewhere safe. There is no account and no password — this
+          key is the whole thing. A copy is on its way to your email as a
+          backup.
+        </p>
+        <p class="not-prose">
+          <code
+            id="license-key"
+            class="card"
+            style="display:inline-block;white-space:nowrap;overflow-x:auto;max-width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:0.75rem 1rem"
+          ></code>
+        </p>
+        <p><button type="button" class="btn btn-primary" data-close>Close this window</button></p>
+        <p data-close-failed hidden style="color: var(--text-muted)">
+          Your browser would not let this page close itself. Copy the key, then
+          close it yourself or <a href="/">go to the home page</a>.
+        </p>
+      </div>
+
+      <div id="state-paid" hidden>
+        <h1 class="text-3xl sm:text-4xl">Payment received. Thank you.</h1>
+        <p>Your purchase is complete. Go back to the window you came from.</p>
+        <p><button type="button" class="btn btn-primary" data-close>Close this window</button></p>
+        <p data-close-failed hidden style="color: var(--text-muted)">
+          Your browser would not let this page close itself. Close it yourself,
+          or <a href="/">go to the home page</a>.
+        </p>
+      </div>
+
+      <div id="state-problem" hidden>
+        <h1 class="text-3xl sm:text-4xl">We could not confirm that payment</h1>
+        <p id="problem-detail">
+          If money left your account, it is safe and the purchase is real — this
+          page just could not read it back.
+        </p>
+        <p>
+          <a href="/contact" class="btn btn-primary">Get in touch</a>
+          <span style="color: var(--text-muted)"> and it will be sorted out by hand.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  /*
+   * Reads the session back through our own endpoint.
+   *
+   * Deliberately one request, not a poll: by the time Stripe redirects here the
+   * session is already settled, and a polling loop on a page the buyer is
+   * staring at is how a checkout endpoint gets hammered by its own success page.
+   */
+  const params = new URLSearchParams(location.search);
+  const show = (id: string) => {
+    for (const el of document.querySelectorAll('[id^="state-"]')) {
+      (el as HTMLElement).hidden = el.id !== id;
+    }
+  };
+
+  const sessionId = params.get('session_id');
+
+  /*
+   * "Close this window". Whether a script may close it varies: a COOP header
+   * severs the popup from its opener once it has been to Stripe, and a tab
+   * reached by the redirect fallback was never script-opened at all. So try,
+   * and if the page is still here a moment later, say what to do instead of
+   * leaving a button that silently did nothing.
+   */
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-close]')) {
+    btn.addEventListener('click', () => {
+      window.close();
+      setTimeout(() => {
+        for (const el of document.querySelectorAll<HTMLElement>('[data-close-failed]')) el.hidden = false;
+      }, 400);
+    });
+  }
+
+  if (params.get('cancelled')) {
+    show('state-cancelled');
+  } else if (!sessionId) {
+    // Somebody typed the URL, or a redirect lost its query string.
+    show('state-problem');
+  } else {
+    // `issue=key` answers for a subscription and says `not_a_subscription` for
+    // a one-time purchase, so one request covers both products.
+    fetch(`/api/checkout?session_id=${encodeURIComponent(sessionId)}&issue=key`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.issued && typeof d.key === 'string') {
+          const out = document.getElementById('license-key');
+          if (out) out.textContent = d.key;
+          show('state-key');
+          return;
+        }
+        if (d?.reason === 'not_a_subscription') {
+          show('state-paid');
+          return;
+        }
+        show('state-problem');
+      })
+      .catch(() => show('state-problem'));
+  }
+</script>

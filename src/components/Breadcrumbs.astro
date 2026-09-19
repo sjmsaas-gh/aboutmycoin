@@ -1,0 +1,41 @@
+---
+/**
+ * The visible half of the breadcrumb trail.
+ *
+ * Base.astro already emitted BreadcrumbList JSON-LD from `crumbs` and rendered
+ * nothing, which is precisely the schema-without-matching-HTML mismatch the
+ * house rules exist to prevent -- Google treats breadcrumb markup with no
+ * visible counterpart as a reason to distrust the rest. Both now come from the
+ * same `crumbs` array, in the same component tree, so they cannot drift.
+ *
+ * It also stopped being optional the moment the catalogue went four levels
+ * deep. A visitor who lands on a coin page from search has no other way back
+ * up to "all silver quarters", which is the page most likely to hold the coin
+ * they actually have.
+ */
+import type { Crumb } from '../lib/schema';
+
+interface Props {
+  /** Excluding Home, which is prepended here exactly as the schema does. */
+  crumbs: Crumb[];
+}
+const { crumbs } = Astro.props;
+const all: Crumb[] = [{ label: 'Home', href: '/' }, ...crumbs];
+---
+{all.length > 1 && (
+  <nav aria-label="Breadcrumb">
+    <ol class="crumbs">
+      {all.map((c, i) => (
+        <li>
+          {i === all.length - 1 ? (
+            /* The current page is not a link, and says so to assistive tech.
+               A link to the page you are on is a dead control. */
+            <span aria-current="page">{c.label}</span>
+          ) : (
+            <a href={c.href}>{c.label}</a>
+          )}
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}

@@ -1,0 +1,65 @@
+---
+/**
+ * Generic 404.
+ *
+ * Static hosts (Vercel, Netlify, Cloudflare Pages) all serve `dist/404.html`
+ * for an unmatched path automatically, so no host config is needed -- but the
+ * status code only comes out as 404 because the host sets it. Do not link to
+ * this page from anywhere.
+ *
+ * It offers the routes people are most likely to have been looking for, rather
+ * than sending them back to the home page to start again.
+ */
+import Base from '../layouts/Base.astro';
+import { ANSWERS } from '../data/answers';
+
+const answers = ANSWERS.slice(0, 4);
+---
+<Base
+  title="Page not found"
+  description="That page does not exist. Here is where to go instead."
+  path="/404"
+  noindex
+>
+  <section class="container-page pt-16 pb-10 sm:pt-24">
+    <div class="max-w-2xl">
+      <p class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--accent)">
+        Error 404
+      </p>
+      <h1 class="text-4xl sm:text-5xl">This page does not exist</h1>
+      <p class="mt-5 text-lg" style="color: var(--text-muted)">
+        The link may be out of date, or there may be a typo in the address.
+        Nothing is broken on your end.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="/" class="btn btn-primary">Back to the home page</a>
+        <a href="/answers" class="btn btn-secondary">Browse the answers</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="card p-6 max-w-2xl">
+      <h2 class="text-xl mb-1.5">Looking for one of these?</h2>
+      <ul class="space-y-2 text-sm mt-4">
+        {answers.map((a) => (
+          <li>
+            <a href={`/answers/${a.slug}`} class="underline underline-offset-2" style="color: var(--accent)">
+              {a.question}
+            </a>
+          </li>
+        ))}
+        <li>
+          <a href="/faq" class="underline underline-offset-2" style="color: var(--accent)">
+            FAQ and troubleshooting
+          </a>
+        </li>
+      </ul>
+      <p class="text-sm mt-6" style="color: var(--text-muted)">
+        If you followed a link from somewhere and it should work,{' '}
+        <a href="/contact" class="underline underline-offset-2" style="color: var(--accent)">tell us</a>{' '}
+        and we will fix it.
+      </p>
+    </div>
+  </section>
+</Base>

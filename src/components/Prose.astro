@@ -1,0 +1,6 @@
+---
+/** Wrapper that applies the reading-width prose styles. */
+interface Props { class?: string }
+const { class: cls = '' } = Astro.props;
+---
+<div class:list={['prose-page', cls]}><slot /></div>

@@ -1,0 +1,13 @@
+---
+/**
+ * Emits a JSON-LD block. Kept as its own component so every page uses the same
+ * escaping path -- `<` inside a JSON string would otherwise be able to close
+ * the script tag early.
+ */
+export interface Props {
+  schema: Record<string, unknown> | Record<string, unknown>[];
+}
+const { schema } = Astro.props;
+const json = JSON.stringify(schema).replace(/</g, '\\u003c');
+---
+<script type="application/ld+json" is:inline set:html={json} />

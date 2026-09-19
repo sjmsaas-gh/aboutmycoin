@@ -1,0 +1,14 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://example.com",
+      "https://www.example.com",
+      "http://localhost:4321",
+      "http://localhost:3000"
+    ],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["range", "content-type"],
+    "ExposeHeaders": ["content-length", "content-range", "etag", "accept-ranges"],
+    "MaxAgeSeconds": 3600
+  }
+]

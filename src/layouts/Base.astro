@@ -1,0 +1,87 @@
+---
+import '../styles/global.css';
+import Seo, { type Props as SeoProps } from '../components/Seo.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import JsonLd from '../components/JsonLd.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import LazyThirdParty from '../components/LazyThirdParty.astro';
+import GoogleAnalytics from '../components/GoogleAnalytics.astro';
+import { SITE } from '../lib/site';
+import { organizationSchema, websiteSchema, breadcrumbSchema, type Crumb } from '../lib/schema';
+
+interface Props extends SeoProps {
+  /** Extra JSON-LD blocks for this page, beyond Organization + WebSite + breadcrumbs. */
+  schemas?: Record<string, unknown>[];
+  /** Breadcrumb trail, excluding Home which is prepended automatically. */
+  crumbs?: Crumb[];
+  bodyClass?: string;
+}
+
+const { schemas = [], crumbs = [], bodyClass = '', ...seo } = Astro.props;
+const graph = [
+  organizationSchema(),
+  websiteSchema(),
+  ...(crumbs.length ? [breadcrumbSchema(crumbs)] : []),
+  ...schemas,
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content={SITE.themeColor.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={SITE.themeColor.dark} media="(prefers-color-scheme: dark)" />
+
+    {/*
+      Self-hosted, same-origin fonts. The H1 is the LCP element on most pages,
+      so a display face is on the critical path just as much as the body face --
+      preload both, or neither.
+
+      Driven by SITE.preloadFonts, which is empty until `npm run fonts` has
+      actually produced the files: a preload for a file that does not exist is a
+      404 on every page of the site.
+    */}
+    {SITE.preloadFonts.map((f) => (
+      <link rel="preload" href={f} as="font" type="font/woff2" crossorigin />
+    ))}
+
+    {/* Only when large assets genuinely come from elsewhere. A preconnect to
+        nothing costs a DNS lookup and buys nothing. */}
+    {SITE.assetOrigin && (
+      <>
+        <link rel="preconnect" href={SITE.assetOrigin} crossorigin />
+        <link rel="dns-prefetch" href={SITE.assetOrigin} />
+      </>
+    )}
+
+    {/* Deferred until the first interaction. LazyThirdParty must come first:
+        it defines the queue every vendor below registers into. */}
+    <LazyThirdParty />
+    {SITE.ga4 && import.meta.env.PROD && <GoogleAnalytics id={SITE.ga4} />}
+
+    <Seo {...seo} />
+    <JsonLd schema={graph} />
+    <slot name="head" />
+  </head>
+  <body class={bodyClass}>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:px-4 focus:py-2 focus:rounded-lg" style="background: var(--accent); color: var(--accent-contrast)">Skip to content</a>
+    <Header />
+    <main id="main">
+      {/* Rendered from the same `crumbs` array breadcrumbSchema() is built
+          from, so the visible trail and the structured data cannot disagree. */}
+      {crumbs.length > 0 && (
+        <div class="container-page pt-6">
+          <Breadcrumbs crumbs={crumbs} />
+        </div>
+      )}
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

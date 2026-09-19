@@ -1,0 +1,31 @@
+---
+/**
+ * One coin in a listing, on every page that lists coins.
+ *
+ * A component rather than a repeated block because it appears on four
+ * different route templates, and the day the tile gains a field it has to gain
+ * it in all four. The summary shown is the coin's own `bluf`, truncated by CSS
+ * rather than in JavaScript, so the text a crawler reads is the complete
+ * sentence even where a reader sees three lines of it.
+ */
+import { coinPath, yearLabel, type Coin } from '../data/coins';
+
+interface Props {
+  coin: Coin;
+  /** Hidden when the surrounding page is already a single-group listing. */
+  showGroup?: boolean;
+  groupName?: string;
+}
+const { coin, showGroup = false, groupName } = Astro.props;
+
+const meta = [
+  yearLabel(coin),
+  coin.country,
+  showGroup && groupName ? groupName : null,
+].filter(Boolean).join(' · ');
+---
+<a href={coinPath(coin)} class="tile" style={`--metal: var(--metal-${coin.group})`}>
+  <h3><span class="metal-dot" aria-hidden="true"></span>{coin.name}</h3>
+  <p>{coin.bluf}</p>
+  <p class="tile-meta">{meta}</p>
+</a>

@@ -1,0 +1,160 @@
+---
+/**
+ * The catalogue root: /coin-value.
+ *
+ * Its job is to make one decision easy -- what is your coin made of -- because
+ * that is the question whose answer changes the value most, and it is one a
+ * person can answer by looking at the coin rather than by knowing anything.
+ *
+ * Only populated groups are listed, and the listing, the ItemList schema and
+ * the sitemap all read the same filter. An empty archive would be thin content
+ * with a breadcrumb on it.
+ */
+import Base from '../../layouts/Base.astro';
+import CoinTile from '../../components/CoinTile.astro';
+import { SITE } from '../../lib/site';
+import { itemListSchema, webPageSchema, faqSchema, datasetSchema } from '../../lib/schema';
+import {
+  COINS,
+  populatedGroups,
+  populatedTypes,
+  populatedTags,
+  coinsInGroup,
+  groupPath,
+  tagPath,
+  latestUpdated,
+} from '../../data/coins';
+import { COIN_VALUE_UPDATED } from '../../lib/page-dates';
+
+const groups = populatedGroups();
+const tags = populatedTags();
+const path = '/coin-value';
+
+const H1 = 'Coin Values by Metal and Denomination';
+const BLUF =
+  'Start with what the coin is made of. Silver and gold coins are worth their metal at minimum, which is a number you can calculate exactly; copper, nickel, clad and steel coins are worth face value unless a specific date, mint mark or error says otherwise.';
+const DESCRIPTION =
+  'Coin values organised by metal and denomination. Find what your coin is made of, what that metal is worth today, and whether the date and mint mark add anything on top.';
+
+const updated = latestUpdated(COINS, COIN_VALUE_UPDATED);
+const question = 'How do I find out what my coin is worth?';
+---
+<Base
+  title="Coin Values by Metal and Denomination"
+  description={DESCRIPTION}
+  path={path}
+  crumbs={[{ label: 'Coin values', href: path }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: H1,
+      description: DESCRIPTION,
+      path,
+      dateModified: updated,
+    }),
+    itemListSchema({
+      name: 'Coin values by metal',
+      description: DESCRIPTION,
+      items: groups.map((g) => ({ name: g.h1, path: groupPath(g.slug) })),
+    }),
+    faqSchema([{ q: question, a: BLUF }]),
+    // The catalogue as a whole is a reference dataset, and measurementTechnique
+    // is where the thing that makes these numbers different from everyone
+    // else's gets stated in machine-readable form. Every column listed here is
+    // a column the pages below genuinely render.
+    datasetSchema({
+      name: `${SITE.name} coin catalogue`,
+      description:
+        'Specifications and value guidance for coins, organised by composition and denomination. Each entry states the alloy, the weight, the precious-metal content in troy ounces and the scarcity of the issue.',
+      path,
+      variableMeasured: [
+        'Composition',
+        'Weight (grams)',
+        'Diameter (millimetres)',
+        'Silver content (troy ounces)',
+        'Gold content (troy ounces)',
+        'Face value',
+        'Mintage',
+        'Scarcity',
+      ],
+      measurementTechnique:
+        'Metal content is taken from published mint specifications and expressed as actual precious-metal weight in troy ounces, so that melt value is the stated figure multiplied by the current spot price. Values are given as ranges tied to a named grade, never as a single figure, because condition dominates coin value and cannot be assessed remotely.',
+      dateModified: updated,
+      keywords: ['coin values', 'coin melt value', 'silver coin values', 'coin identification'],
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{H1}</h1>
+      <div class="verdict" style="--metal: var(--metal-silver)">
+        <span class="verdict-label">{question}</span>
+        <p>{BLUF}</p>
+      </div>
+      <p style="margin-top: 1.3rem">
+        Most coins are worth exactly what is stamped on them. That is the honest
+        starting point, and it is the answer for the great majority of coins
+        people find in a jar, a drawer or an inherited tin. The coins that are
+        worth more fall into three groups: they contain silver or gold, they
+        carry a date and mint mark that happens to be scarce, or they were
+        struck wrong. This catalogue is organised so you can rule the first one
+        in or out in about ten seconds.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">Browse by what the coin is made of</h2>
+      <p>
+        Composition first, because it is the only property that puts a hard
+        floor under the price. A silver coin cannot be worth less than its
+        silver; a clad coin has no floor above its face value.
+      </p>
+    </div>
+    <div class="tile-grid">
+      {groups.map((g) => {
+        const n = coinsInGroup(g.slug).length;
+        const types = populatedTypes(g.slug);
+        return (
+          <a href={groupPath(g.slug)} class="tile" style={`--metal: var(--metal-${g.slug})`}>
+            <h3><span class="metal-dot" aria-hidden="true"></span>{g.name}</h3>
+            <p>{g.bluf}</p>
+            <p class="tile-meta">
+              {n} {n === 1 ? 'coin' : 'coins'} &middot; {types.map((t) => t.namePlural.toLowerCase()).join(', ')}
+            </p>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">Browse by series, country and topic</h2>
+      <p>
+        A coin lives at one address in the tree above, filed by its metal and
+        its denomination. These are the cross-cutting views: a series whose
+        metal changed partway through, a country, or a category such as key
+        dates or junk silver.
+      </p>
+    </div>
+    <div class="pill-row">
+      {tags.map((t) => <a href={tagPath(t.slug)} class="pill">{t.name}</a>)}
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">Every coin in the catalogue</h2>
+      <p>
+        The catalogue is small and growing. Each entry states what the coin is
+        made of, what the metal is worth, and what to check before assuming it
+        is worth more than that.
+      </p>
+    </div>
+    <div class="tile-grid">
+      {COINS.map((c) => <CoinTile coin={c} />)}
+    </div>
+  </section>
+</Base>

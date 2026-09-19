@@ -1,0 +1,57 @@
+---
+/**
+ * Pricing.
+ *
+ * Every number and every word of tier copy comes from src/lib/pricing.ts. If
+ * you find yourself typing a price into this file, stop: the whole point of
+ * that module is that the page, the schema, llms.txt and the FAQ cannot end up
+ * quoting three different figures.
+ */
+import Base from '../layouts/Base.astro';
+import PricingTiers from '../components/PricingTiers.astro';
+import Faq from '../components/Faq.astro';
+import { SITE } from '../lib/site';
+import { faqSchema, type Faq as FaqItem } from '../lib/schema';
+import { GATE_EXPLAINER, ONE_TIME_OFFER, PRO_MONTHLY, PRO_YEARLY } from '../lib/pricing';
+
+const faqs: FaqItem[] = [
+  {
+    q: 'What exactly does paying remove?',
+    a: GATE_EXPLAINER,
+  },
+  {
+    q: 'Is there an account to create?',
+    a: 'No. A subscription issues a license key, which is the whole thing — there is no password and no account to close. Cancelling in Stripe stops the key working; anything you already made is unaffected.',
+  },
+  {
+    q: 'Can I pay once instead of subscribing?',
+    a: ONE_TIME_OFFER.tagline + ' ' + ONE_TIME_OFFER.limit,
+  },
+  {
+    q: 'What happens if I cancel?',
+    a: 'The license key stops validating at the end of the period you have paid for, and the free tier keeps working exactly as it did before.',
+  },
+];
+---
+<Base
+  title="Pricing"
+  description={`What ${SITE.name} costs: a free tier, a ${ONE_TIME_OFFER.priceLabel} one-time option, and $${PRO_MONTHLY}/month or $${PRO_YEARLY}/year for the subscription.`}
+  path="/pricing"
+  crumbs={[{ label: 'Pricing', href: '/pricing' }]}
+  schemas={[faqSchema(faqs)]}
+>
+  <section class="container-page pt-12 pb-6">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Pricing</h1>
+      <!-- BLUF: the gate, stated once, before the grid. Someone who reads only
+           this paragraph knows what they get for nothing and what they pay for. -->
+      <p>{GATE_EXPLAINER}</p>
+    </div>
+  </section>
+
+  <section class="container-page pb-8">
+    <PricingTiers />
+  </section>
+
+  <Faq faqs={faqs} heading="Before you buy" />
+</Base>

@@ -1,0 +1,106 @@
+---
+/**
+ * The pricing grid. Reads entirely from src/lib/pricing.ts -- no prices, tier
+ * names or feature copy are typed here, so the page cannot contradict llms.txt
+ * or the JSON-LD offers.
+ */
+import {
+  TIERS,
+  ONE_TIME_OFFER,
+  ONE_TIME_AVAILABLE,
+  PRO_AVAILABLE,
+  PRO_YEARLY,
+} from '../lib/pricing';
+import BuyButton from '../islands/BuyButton.tsx';
+---
+<div class="grid gap-6 md:grid-cols-2">
+  {TIERS.map((t) => (
+    <div
+      class="card p-7 flex flex-col"
+      style={t.featured ? 'border-color: var(--accent); border-width: 2px' : ''}
+    >
+      <div class="flex items-baseline gap-2">
+        <h2 class="text-2xl" style="margin: 0">{t.name}</h2>
+        {t.featured && (
+          <span
+            class="text-xs font-semibold uppercase tracking-wide rounded-full px-2 py-0.5"
+            style="background: var(--accent-soft); color: var(--accent)"
+          >Most popular</span>
+        )}
+      </div>
+
+      <p class="mt-3">
+        <span class="text-4xl font-semibold" style="font-family: var(--font-display)">{t.priceLabel}</span>
+        {t.period && <span style="color: var(--text-muted)"> /{t.period}</span>}
+      </p>
+
+      <p class="mt-3 text-[0.97rem]" style="color: var(--text-muted)">{t.tagline}</p>
+
+      <ul class="mt-6 space-y-2 text-[0.97rem] flex-1">
+        {t.features.map((f) => (
+          <li class="flex gap-2.5">
+            <span aria-hidden="true" style="color: var(--accent)">✓</span>
+            <span>{f}</span>
+          </li>
+        ))}
+        {t.caveats.map((c) => (
+          <li class="flex gap-2.5" style="color: var(--text-muted)">
+            <span aria-hidden="true" style="color: var(--ok)">!</span>
+            <span>{c}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div class="mt-7">
+        {t.id === 'pro' ? (
+          <BuyButton client:visible kind="pro" label={t.cta.label} available={PRO_AVAILABLE} />
+        ) : (
+          <a href={t.cta.href} class="btn btn-secondary">{t.cta.label}</a>
+        )}
+        {t.id === 'pro' && !PRO_AVAILABLE && (
+          <p class="text-sm mt-2" style="color: var(--text-muted)">
+            Not on sale yet. Nothing to cancel and nothing to sign up for.
+          </p>
+        )}
+        {t.id === 'pro' && PRO_AVAILABLE && (
+          <p class="text-sm mt-2" style="color: var(--text-muted)">
+            ${PRO_YEARLY}/year if you would rather pay once.
+          </p>
+        )}
+      </div>
+    </div>
+  ))}
+</div>
+
+<!-- The one-time offer is a strip under the grid, not a third column: it is a
+     second way to pay for the same thing, not a third tier, and a three-column
+     grid says the opposite. -->
+<div class="card p-7 mt-6">
+  <div class="flex flex-wrap items-start gap-6 justify-between">
+    <div class="max-w-xl">
+      <h2 class="text-xl" style="margin: 0 0 0.35rem">
+        {ONE_TIME_OFFER.name} — {ONE_TIME_OFFER.priceLabel} once
+      </h2>
+      <p class="text-[0.97rem]" style="color: var(--text-muted)">{ONE_TIME_OFFER.tagline}</p>
+      <ul class="mt-4 space-y-1.5 text-[0.97rem]">
+        {ONE_TIME_OFFER.includes.map((f) => (
+          <li class="flex gap-2.5">
+            <span aria-hidden="true" style="color: var(--accent)">✓</span>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <!-- The limit is stated here, at the point of sale, rather than in a
+           footnote. Someone who buys the wrong thing costs more than the sale. -->
+      <p class="mt-4 text-sm" style="color: var(--text-muted)">{ONE_TIME_OFFER.limit}</p>
+    </div>
+    <div class="shrink-0">
+      <BuyButton
+        client:visible
+        kind="once"
+        label={`Buy for ${ONE_TIME_OFFER.priceLabel}`}
+        available={ONE_TIME_AVAILABLE}
+      />
+    </div>
+  </div>
+</div>

@@ -1,0 +1,55 @@
+---
+/**
+ * The answers hub.
+ *
+ * A hub page exists to make a cluster legible to a crawler and to a human, in
+ * that order of difficulty. The ItemList schema states the parent -> child
+ * relationship that anchor tags only imply.
+ */
+import Base from '../../layouts/Base.astro';
+import { SITE } from '../../lib/site';
+import { itemListSchema, webPageSchema } from '../../lib/schema';
+import { ANSWERS } from '../../data/answers';
+
+const description = `Direct answers to the questions people ask about ${SITE.name}, one page each.`;
+const items = ANSWERS.map((a) => ({ name: a.question, path: `/answers/${a.slug}` }));
+---
+<Base
+  title="Answers"
+  description={description}
+  path="/answers"
+  crumbs={[{ label: 'Answers', href: '/answers' }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: 'Answers',
+      description,
+      path: '/answers',
+    }),
+    itemListSchema({ name: 'Answers', description, items }),
+  ]}
+>
+  <section class="container-page pt-12 pb-8">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Answers</h1>
+      <p>
+        One page per question, each answering it in the first sentence. If the
+        question you have is not here, <a href="/contact">ask it</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <!-- Narrower than the container: two cards across 72rem gives each one a
+         36rem measure, which is wider than the running text on every other
+         page. -->
+    <div class="grid gap-5 md:grid-cols-2 max-w-5xl mx-auto">
+      {ANSWERS.map((a) => (
+        <a href={`/answers/${a.slug}`} class="card p-6 block hover:border-[var(--border-strong)]">
+          <h2 class="text-xl" style="margin: 0 0 0.4rem">{a.question}</h2>
+          <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{a.answer}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

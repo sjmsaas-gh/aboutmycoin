@@ -1,0 +1,116 @@
+---
+/**
+ * Privacy.
+ *
+ * This page describes what the STARTER actually does, which is deliberately
+ * very little. Every claim below is true of the code as shipped -- that is the
+ * standard to hold it to as the site grows.
+ *
+ * RENAME: read this page top to bottom the day the product does something new.
+ * A privacy page that was true at launch and is quietly false six months later
+ * is worse than not having written one, and it is the single easiest promise on
+ * a website to break by accident.
+ */
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+import { webPageSchema } from '../lib/schema';
+import { PRIVACY_UPDATED } from '../lib/page-dates';
+import { THIRD_PARTIES } from '../lib/third-parties';
+
+const UPDATED = PRIVACY_UPDATED;
+/* Widened to `string` because SITE is `as const`; see third-parties.ts. */
+const ga4: string = SITE.ga4;
+const description = `What ${SITE.name} collects, what it does not, and which third parties are involved.`;
+---
+<Base
+  title="Privacy"
+  description={description}
+  path="/privacy"
+  crumbs={[{ label: 'Privacy', href: '/privacy' }]}
+  schemas={[
+    webPageSchema({
+      type: 'WebPage',
+      name: `${SITE.name} privacy`,
+      description,
+      path: '/privacy',
+      dateModified: UPDATED,
+    }),
+  ]}
+>
+  <section class="container-page pt-12 pb-20">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Privacy</h1>
+      <p class="text-sm" style="color: var(--text-muted)">Last updated {UPDATED}</p>
+
+      <p>
+        There are no accounts on this site, no password to lose, and no database
+        of users. What follows is the complete list of what happens to data, in
+        the order you are likely to encounter it.
+      </p>
+
+      <h2>Visiting the site</h2>
+      <p>
+        Pages are static files. The host records ordinary web server logs — IP
+        address, user agent, which page — which is unavoidable and is how every
+        website on the internet works.
+      </p>
+      {ga4 ? (
+        <p>
+          Analytics are Google Analytics 4, and the tag is <strong>not loaded
+          until you interact with the page</strong>: move the pointer, scroll,
+          tap or press a key. A visitor who arrives and leaves without touching
+          anything is never counted, and never has a request made to Google on
+          their behalf. That is a deliberate trade — the numbers are slightly
+          lower than the real ones, and nobody is tracked for arriving.
+        </p>
+      ) : (
+        <p>There are no analytics on this site.</p>
+      )}
+
+      <h2>The contact form</h2>
+      <p>
+        What you type is emailed to us and nowhere else. It is not stored in a
+        database, because there is no database. Your address is used to reply to
+        you and is not added to any list.
+      </p>
+      <p>
+        The form is protected by a signed token rather than a CAPTCHA, so
+        nothing about you is sent to a third party to prove you are human.
+      </p>
+
+      <h2>Paying</h2>
+      <p>
+        Payment is handled entirely by Stripe. Card details are entered on
+        Stripe’s own page and never touch this site — we never see a card
+        number, and there is nothing here for a card number to be stored in.
+      </p>
+      <p>
+        A license key is derived by signing your Stripe customer id. It is not
+        stored on our side at all: the same customer always produces the same
+        key, which is why a lost key can be re-issued without us keeping a
+        record of it. Checking a key asks Stripe whether the subscription is
+        still live.
+      </p>
+      <p>
+        If you subscribe, Stripe tells us your email address so the key can be
+        sent to you. It is used for that and nothing else.
+      </p>
+
+      <h2>Third parties, in full</h2>
+      <ul>
+        {THIRD_PARTIES.map((t) => (
+          <li><strong>{t.name}</strong> — {t.role}</li>
+        ))}
+      </ul>
+      <p>There are no others. No advertising pixels, no session recording, no chat widget.</p>
+
+      <h2>Your data</h2>
+      <p>
+        Since there is no account, there is very little to ask for — but if you
+        want to know what Stripe holds against your purchase, or want the
+        contact-form email deleted from the inbox,
+        <a href="/contact">ask</a> and it will be done.
+      </p>
+    </div>
+  </section>
+</Base>

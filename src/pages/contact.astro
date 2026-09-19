@@ -1,0 +1,530 @@
+---
+/**
+ * The contact form.
+ *
+ * The form is JavaScript-submitted rather than a plain `method="post"`, for two
+ * reasons that both matter: the site is a static build with no server to POST a
+ * form to, and the anti-spam token has to be fetched at interaction time
+ * instead of being baked into the HTML (a static page is byte-identical for
+ * everyone, so anything embedded in it is a value a scraper reads once and
+ * reuses forever).
+ *
+ * The recipient address is nowhere on this page, in any form. It is read from
+ * the environment inside `src/server/contact.ts` and never returned to the
+ * browser -- see the note there.
+ */
+import Base from '../layouts/Base.astro';
+import { MESSAGE_TYPES, LIMITS, HONEYPOT_FIELD } from '../lib/contact';
+import { webPageSchema } from '../lib/schema';
+import { SITE } from '../lib/site';
+
+const description = `Send feedback, a testimonial, a product suggestion or a bug report to the ${SITE.name} team. We read everything.`;
+---
+<Base
+  title="Contact"
+  description={description}
+  path="/contact"
+  crumbs={[{ label: 'Contact', href: '/contact' }]}
+  schemas={[
+    webPageSchema({
+      type: 'ContactPage',
+      name: `Contact ${SITE.name}`,
+      description,
+      path: '/contact',
+    }),
+  ]}
+>
+  <section class="container-page pt-12 pb-8">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Contact</h1>
+      <p>
+        Feedback, a bug, an idea for the next feature, a kind word we can quote
+        — it all arrives in the same inbox, and it is read by the person who
+        builds the thing.
+      </p>
+      <p>
+        If something is misbehaving, it is worth a look at the{' '}
+        <a href="/faq">FAQ and troubleshooting page</a> first — the common
+        failures are covered there, usually with the fix.
+      </p>
+
+      <!-- Says what a paid plan does and does not buy, before someone pays for
+           it expecting a support desk. Framed as what we do rather than what we
+           refuse, because the honest version is genuinely not unkind: small
+           tool, one maintainer, bug reports get read first. -->
+      <div class="card not-prose p-5 mt-6" style="background: var(--bg-sunken)">
+        <h2 class="text-lg" style="margin: 0 0 0.4rem">About technical support</h2>
+        <!-- RENAME: keep the shape of this, change the specifics. Saying what
+             a paid plan does NOT buy, before someone pays for it, is cheaper
+             than the disappointed email afterwards. Frame it as what you do
+             rather than what you refuse -- the honest version is not unkind. -->
+        <p class="text-[0.95rem]" style="margin: 0; color: var(--text-muted)">
+          {SITE.name} is a tool, not a service with a support desk — a purchase
+          pays for the software, not for hands-on help, so please don’t buy one
+          expecting a support contract. That said, every message here is read,
+          and we answer as many as time allows. Reports of something genuinely
+          broken go to the front of the queue: tell us which browser you were
+          using and what you saw, and there is a good chance it gets fixed for
+          everyone.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <!-- novalidate: the script does the checking, so the messages are ours
+           and all of them appear at once, rather than the browser's one-bubble-
+           at-a-time behaviour which differs in every engine. The inputs keep
+           their `required` and `type` attributes for assistive tech. -->
+      <form id="contact-form" class="not-prose card p-6 grid gap-5" novalidate>
+        <div>
+          <label class="label" for="name">Your name</label>
+          <input
+            class="field"
+            id="name"
+            name="name"
+            type="text"
+            required
+            maxlength={LIMITS.NAME_MAX}
+            autocomplete="name"
+            aria-describedby="name-error"
+          />
+          <p class="field-error" id="name-error" hidden></p>
+        </div>
+
+        <div>
+          <label class="label" for="email">Your email</label>
+          <input
+            class="field"
+            id="email"
+            name="email"
+            type="email"
+            required
+            maxlength={LIMITS.EMAIL_MAX}
+            autocomplete="email"
+            inputmode="email"
+            aria-describedby="email-hint email-error"
+          />
+          <p class="text-sm mt-1" id="email-hint" style="color: var(--text-muted)">
+            Used to reply to you, and for nothing else. It is not stored or
+            added to any list.
+          </p>
+          <p class="field-error" id="email-error" hidden></p>
+        </div>
+
+        <div>
+          <label class="label" for="messageType">What is this about?</label>
+          <!-- No blank placeholder option that means "nothing chosen": a select
+               that starts on a real value cannot be submitted unanswered, and
+               the required-field error for a dropdown is the one nobody ever
+               understands. `Feedback` is first because it is the common case. -->
+          <select class="field" id="messageType" name="messageType" required aria-describedby="messageType-error">
+            {MESSAGE_TYPES.map((t) => <option value={t.id}>{t.label}</option>)}
+          </select>
+          <p class="field-error" id="messageType-error" hidden></p>
+        </div>
+
+        <div>
+          <label class="label" for="message">Your message</label>
+          <textarea
+            class="field"
+            id="message"
+            name="message"
+            required
+            minlength={LIMITS.MESSAGE_MIN}
+            maxlength={LIMITS.MESSAGE_MAX}
+            aria-describedby="message-error"
+          ></textarea>
+          <!-- Appears only near the cap, and aria-hidden because a counter that
+               re-announces itself on every keystroke is unusable with a screen
+               reader. Reaching the limit is announced once, through
+               #message-error, which the textarea already describes itself by. -->
+          <p class="text-sm mt-1 text-right" id="message-count" hidden aria-hidden="true"
+             style="color: var(--text-muted)"></p>
+          <p class="field-error" id="message-error" hidden></p>
+        </div>
+
+        <!-- The honeypot. Visually off-screen, reachable by a screen reader,
+             skipped by the tab order, and named so no browser autofills it --
+             an autofilled honeypot silently bins real mail. See
+             HONEYPOT_FIELD in src/lib/contact.ts. -->
+        <div class="honeypot" aria-hidden="true">
+          <label for={HONEYPOT_FIELD}>Leave this field empty</label>
+          <input id={HONEYPOT_FIELD} name={HONEYPOT_FIELD} type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <button id="submit" class="btn btn-primary" type="submit">Send message</button>
+          <!-- One live region for the whole form. role="status" rather than
+               role="alert" so it does not interrupt what is being read; the
+               text is swapped between "Sending…", a failure, and nothing. -->
+          <p id="form-status" class="text-sm" role="status" aria-live="polite" style="color: var(--bad)"></p>
+        </div>
+
+        <p class="text-sm" style="color: var(--text-muted)">
+          This form is protected against automated abuse — no puzzles, no
+          reCAPTCHA, and nothing about you is sent anywhere but to us.
+        </p>
+      </form>
+
+      <!-- The success state replaces the form rather than sitting above it: a
+           form still on screen after a successful send is an invitation to
+           press the button twice. tabindex="-1" so focus can be moved here,
+           which is what tells a screen reader the page changed. -->
+      <div id="sent" class="not-prose card p-6" hidden tabindex="-1">
+        <h2 class="text-2xl" style="margin: 0 0 0.5rem">Thanks — your message is on its way.</h2>
+        <p style="margin: 0">
+          We read everything that arrives. We can’t promise a reply to every
+          message, but we will genuinely try, and anything that turns out to be
+          a bug gets looked at first.
+        </p>
+        <p class="mt-4" style="margin-bottom: 0">
+          <a href="/" class="btn btn-secondary">Back to the home page</a>
+        </p>
+      </div>
+
+      <noscript>
+        <p class="mt-6 text-sm" style="color: var(--text-muted)">
+          This form needs JavaScript, because the spam protection is a token
+          fetched when you start typing rather than a puzzle you have to solve.
+          Turn it on for this site and the form will work.
+        </p>
+      </noscript>
+    </div>
+  </section>
+</Base>
+
+<script>
+  /*
+   * Client half of the contact form.
+   *
+   * Two jobs: fetch the anti-spam token at the right moment, and make the
+   * server's verdicts readable. Everything it validates is validated again on
+   * the server -- this half exists to save a round trip and to put the error
+   * next to the field, never as the check that matters.
+   */
+  import {
+    LIMITS,
+    EMAIL_RE,
+    HONEYPOT_FIELD,
+    MIN_FILL_SECONDS,
+    TOKEN_REFRESH_SECONDS,
+    tokenIssuedAt,
+  } from '../lib/contact';
+
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const sent = document.getElementById('sent');
+  const status = document.getElementById('form-status');
+  const button = document.getElementById('submit') as HTMLButtonElement | null;
+  if (form && sent && status && button) {
+    /*
+     * The token is fetched on first interaction, not on page load.
+     *
+     * On load it would be requested by every crawler and every visitor who
+     * never intends to write anything, and — more importantly — its age is the
+     * fill-time measurement. Starting the clock when someone starts typing is
+     * what makes "faster than a human could type this" mean anything; starting
+     * it on load would only measure how long the tab had been open.
+     */
+    let token: string | null = null;
+    let pending: Promise<void> | null = null;
+
+    function fetchToken(): Promise<void> {
+      if (token) return Promise.resolve();
+      if (pending) return pending;
+      pending = fetch('/api/contact')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (typeof d?.token === 'string') token = d.token;
+        })
+        .catch(() => {
+          /* Offline, or the endpoint is down. Left null; the submit handler
+             retries once and reports it if that fails too. */
+        })
+        .finally(() => {
+          pending = null;
+        });
+      return pending;
+    }
+
+    form.addEventListener('focusin', () => void fetchToken(), { once: true });
+
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    /** Age in seconds of the token we are holding, or null if we have none. */
+    function tokenAge(): number | null {
+      const issued = tokenIssuedAt(token);
+      return issued === null ? null : Math.floor(Date.now() / 1000) - issued;
+    }
+
+    /**
+     * Replaces a token that is old enough to be near expiry.
+     *
+     * The token carries its issue time in the clear, so the page can act before
+     * the server has to refuse anything. This is what keeps "this page has been
+     * open a while, reload it" away from someone who started a message, was
+     * interrupted for two hours and came back to finish it — the one path where
+     * following our own advice cost them their text.
+     */
+    async function ensureFreshToken(): Promise<void> {
+      const age = tokenAge();
+      if (age !== null && age > TOKEN_REFRESH_SECONDS) token = null;
+      await fetchToken();
+    }
+
+    /**
+     * Waits out the server's minimum fill time, if the token is younger.
+     *
+     * A fresh token is by definition too young to submit, so replacing one
+     * means waiting a moment before it can be used. Two or three seconds of
+     * "Sending…" is invisible; a rejection the person has to read and act on is
+     * not, which is the entire trade being made here.
+     */
+    async function waitForFillFloor(): Promise<void> {
+      const age = tokenAge();
+      // No token age to read means the server will refuse it anyway; a flat
+      // second covers a clock skewed enough that our arithmetic disagrees
+      // with the server's.
+      const remaining = age === null ? 1 : MIN_FILL_SECONDS - age + 0.2;
+      if (remaining > 0) await sleep(remaining * 1000);
+    }
+
+    const field = (name: string) =>
+      form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+    function showError(name: string, text: string | null) {
+      const input = field(name);
+      const out = document.getElementById(`${name}-error`);
+      if (!input || !out) return;
+      if (text) {
+        out.textContent = text;
+        out.removeAttribute('hidden');
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        out.textContent = '';
+        out.setAttribute('hidden', '');
+        input.removeAttribute('aria-invalid');
+      }
+    }
+
+    /**
+     * Field-level copy, keyed by the reason the server (or we) refused it.
+     *
+     * Keyed by reason and not by field because `too_short` and
+     * `too_many_links` both land on `message` and want opposite advice: one
+     * string covering both once told someone who had written three thousand
+     * characters to "write at least 20".
+     */
+    const COPY: Record<string, Record<string, string>> = {
+      name: {
+        required: 'Please tell us your name.',
+        too_long: `That is longer than ${LIMITS.NAME_MAX} characters — a first name is plenty.`,
+      },
+      email: {
+        required: 'Please add an email address so we can reply.',
+        bad_email: 'That does not look like an email address we could reply to.',
+      },
+      messageType: {
+        unknown_type: 'Please choose what this message is about.',
+      },
+      message: {
+        required: 'Please write your message here.',
+        too_short: `A little more detail, please — at least ${LIMITS.MESSAGE_MIN} characters.`,
+        too_long: `That is over the ${LIMITS.MESSAGE_MAX.toLocaleString()}-character limit. Trim it a little and it will go through.`,
+        too_many_links: `More than ${LIMITS.LINKS_MAX} links reads as spam to any filter. Keep the important ones and describe the rest.`,
+      },
+    };
+
+    const copyFor = (field: string, reason: string) =>
+      COPY[field]?.[reason] ?? 'Please check this.';
+
+    const FIELDS = ['name', 'email', 'messageType', 'message'];
+
+    /**
+     * Mirrors the server's checks closely enough to catch the ordinary slips.
+     * Same field -> reason shape as the endpoint, so one copy table serves both.
+     */
+    function localErrors(values: Record<string, string>): Record<string, string> {
+      const bad: Record<string, string> = {};
+      if (!values.name) bad.name = 'required';
+      if (!values.email) bad.email = 'required';
+      else if (!EMAIL_RE.test(values.email)) bad.email = 'bad_email';
+      if (!values.messageType) bad.messageType = 'unknown_type';
+      if (!values.message) bad.message = 'required';
+      else if (values.message.length < LIMITS.MESSAGE_MIN) bad.message = 'too_short';
+      return bad;
+    }
+
+    // Clearing on input rather than on blur: an error that stays put while the
+    // person is visibly fixing it reads as though the fix did not work.
+    for (const name of FIELDS) {
+      field(name)?.addEventListener('input', () => showError(name, null));
+    }
+
+    /*
+     * The character counter.
+     *
+     * It exists because `maxlength` truncates a longer PASTE silently: without
+     * it, someone pasting six thousand characters sends four thousand and is
+     * told nothing about the two thousand that vanished. Hidden until the cap
+     * is close, so it is information rather than pressure.
+     */
+    const messageBox = field('message') as HTMLTextAreaElement;
+    const counter = document.getElementById('message-count');
+    function updateCounter() {
+      if (!counter || !messageBox) return;
+      const left = LIMITS.MESSAGE_MAX - messageBox.value.length;
+      if (left > LIMITS.COUNTER_SHOWS_AT) {
+        counter.setAttribute('hidden', '');
+        return;
+      }
+      counter.textContent =
+        left > 0 ? `${left.toLocaleString()} characters left` : 'Character limit reached';
+      counter.style.color = left > 0 ? 'var(--text-muted)' : 'var(--bad)';
+      counter.removeAttribute('hidden');
+      // At the cap, say so in the field's own error slot too. That is the one
+      // place a screen reader will read (the counter is aria-hidden), and it is
+      // also the moment a pasted message may have just lost its tail.
+      if (left <= 0) {
+        showError(
+          'message',
+          `That is the ${LIMITS.MESSAGE_MAX.toLocaleString()}-character limit. If you pasted a longer message, the end of it was cut off — check it is all here.`,
+        );
+      }
+    }
+    messageBox?.addEventListener('input', updateCounter);
+    // Runs once on load: a restored form (back button, session restore) can
+    // arrive with text already in it.
+    updateCounter();
+
+    /**
+     * One POST. Returns the parsed body, or null if the request itself failed.
+     *
+     * An arrow assigned to a const, not a `function` declaration: declarations
+     * are hoisted, and TypeScript discards the non-null narrowing on `form`
+     * inside anything hoisted above where that narrowing was established.
+     */
+    const postOnce = async (values: Record<string, string>): Promise<any> => {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...values,
+          token,
+          [HONEYPOT_FIELD]:
+            (form.elements.namedItem(HONEYPOT_FIELD) as HTMLInputElement | null)?.value ?? '',
+        }),
+      });
+      return res.json().catch(() => null);
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      status.textContent = '';
+      for (const name of FIELDS) showError(name, null);
+
+      const values: Record<string, string> = {};
+      for (const name of FIELDS) values[name] = (field(name)?.value ?? '').trim();
+
+      const bad = localErrors(values);
+      if (Object.keys(bad).length) {
+        for (const [name, reason] of Object.entries(bad)) showError(name, copyFor(name, reason));
+        field(Object.keys(bad)[0]!)?.focus();
+        return;
+      }
+
+      button.disabled = true;
+      status.style.color = 'var(--text-muted)';
+      status.textContent = 'Sending…';
+
+      // Covers three cases at once: the token fetch failed earlier, a password
+      // manager filled the form without ever focusing it, and the token we are
+      // holding has aged towards expiry while the message was being written.
+      await ensureFreshToken();
+      if (!token) {
+        // Distinct from the server's bad_token: the endpoint was unreachable,
+        // so "reload the page" is the wrong advice and "try again" is right.
+        status.style.color = 'var(--bad)';
+        status.textContent =
+          'Could not reach the server to send this. Check your connection and try again — your message is still here.';
+        button.disabled = false;
+        return;
+      }
+      // A token minted seconds ago cannot be submitted yet by design. Waiting
+      // here is invisible; being told about it is not.
+      await waitForFillFloor();
+
+      try {
+        /*
+         * Up to two attempts.
+         *
+         * `too_fast` and an expired token are both things the page can fix by
+         * itself — wait a moment, or fetch a new token — and neither is
+         * anything the person at the keyboard can act on more sensibly than we
+         * can. So they are retried once, silently, under the same "Sending…".
+         * The copy for them below is the fallback for when the retry fails too,
+         * which mostly means a clock so far out that our arithmetic and the
+         * server's disagree.
+         *
+         * Bounded at two on purpose: a loop that keeps retrying a refusal is
+         * how a contact form turns into a request flood.
+         */
+        let data = await postOnce(values);
+
+        if (data?.error === 'too_fast') {
+          await waitForFillFloor();
+          data = await postOnce(values);
+        } else if (data?.error === 'expired' || data?.error === 'bad_token') {
+          token = null;
+          await fetchToken();
+          if (token) {
+            await waitForFillFloor();
+            data = await postOnce(values);
+          }
+        }
+
+        if (data?.sent) {
+          form.setAttribute('hidden', '');
+          sent.removeAttribute('hidden');
+          sent.focus();
+          return;
+        }
+
+        if (data?.error === 'invalid' && Array.isArray(data.fields)) {
+          // `reasons` is what makes the wording specific; `fields` alone is the
+          // fallback if an older endpoint is answering.
+          const reasons: Record<string, string> = data.reasons ?? {};
+          for (const name of data.fields as string[]) {
+            showError(name, copyFor(name, reasons[name] ?? ''));
+          }
+          field(data.fields[0])?.focus();
+          status.textContent = '';
+          return;
+        }
+
+        /*
+         * Everything else. The wording is the point of keeping the server's
+         * verdicts separate: each of these has a different thing for the person
+         * to do about it, and one generic "error occurred" would hide it.
+         */
+        status.style.color = 'var(--bad)';
+        status.textContent =
+          data?.error === 'too_fast'
+            ? 'That was quick — press Send once more and it will go through.'
+            : data?.error === 'expired' || data?.error === 'bad_token'
+              ? 'This page has been open a while. Reload it and send again — copy your message first so you do not lose it.'
+              : data?.error === 'not_configured'
+                ? 'The form is not accepting messages right now. Please try again later.'
+                : 'That did not send. Please try again in a moment — nothing was lost, your message is still here.';
+      } catch {
+        // Never a success message on a failed fetch: the sender would walk away
+        // believing a message arrived that never did.
+        status.style.color = 'var(--bad)';
+        status.textContent = 'That did not send — you may be offline. Your message is still here; try again in a moment.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+</script>

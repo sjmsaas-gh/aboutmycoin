@@ -1,0 +1,58 @@
+---
+import { SITE } from '../lib/site';
+import Logo from './Logo.astro';
+
+/**
+ * RENAME: this is the site's navigation. Keep it short -- four links is the
+ * point at which a header stops being scannable, and every link here competes
+ * with the one call to action on the right.
+ */
+const links = [
+  { href: '/answers', label: 'Answers' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/about', label: 'About' },
+];
+/** The single call to action. One, not two. */
+const cta = { href: '/pricing', label: 'Get started' };
+
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(href + '/');
+---
+<header class="border-b" style="border-color: var(--border)">
+  <div class="container-page flex items-center gap-4 h-16">
+    <a href="/" class="flex items-center gap-2 font-semibold shrink-0" style="font-family: var(--font-display); font-size: 1.15rem;">
+      <Logo size={28} />
+      {SITE.name}
+    </a>
+
+    <nav aria-label="Main" class="hidden md:flex items-center gap-6 ml-4 text-[0.95rem]">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          aria-current={isActive(l.href) ? 'page' : undefined}
+          class="hover:opacity-70 transition-opacity"
+          style={isActive(l.href) ? 'color: var(--accent); font-weight: 600' : 'color: var(--text-muted)'}
+        >{l.label}</a>
+      ))}
+    </nav>
+
+    <div class="ml-auto flex items-center gap-3">
+      <a href={cta.href} class="btn btn-primary text-[0.95rem] py-2 px-4">{cta.label}</a>
+
+      <!-- CSS-only mobile menu: no JavaScript ships on content pages. -->
+      <details class="md:hidden relative">
+        <summary class="list-none cursor-pointer p-2 -mr-2" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
+          </svg>
+        </summary>
+        <nav aria-label="Mobile" class="card absolute right-0 top-full mt-2 w-56 p-2 z-50 shadow-lg">
+          {links.map((l) => (
+            <a href={l.href} class="block px-3 py-2 rounded-lg hover:bg-[var(--bg-sunken)]">{l.label}</a>
+          ))}
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

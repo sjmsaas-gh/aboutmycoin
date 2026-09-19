@@ -1,0 +1,114 @@
+---
+/**
+ * FAQ and troubleshooting.
+ *
+ * Grouped by the stage of the job someone is at when they get stuck, not by
+ * topic. That ordering is the useful part: a person who is stuck knows where
+ * they are, not what category their problem belongs to.
+ *
+ * Every answer here is plain text and self-contained, because it is fed
+ * verbatim into FAQPage schema and will be quoted with no page around it.
+ */
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+import { faqSchema, webPageSchema, type Faq as FaqItem } from '../lib/schema';
+import { GATE_EXPLAINER } from '../lib/pricing';
+import { FAQ_UPDATED } from '../lib/page-dates';
+
+const UPDATED = FAQ_UPDATED;
+
+/**
+ * RENAME: replace the groups and the questions. Two rules survive the rewrite:
+ *
+ *   - Only questions somebody has actually asked. An invented FAQ reads as
+ *     invented, and it dilutes the answers that were earned.
+ *   - Answer the question in the first sentence, then explain. Half these
+ *     answers will be read as a single quoted paragraph in a search result.
+ */
+const groups: { heading: string; faqs: FaqItem[] }[] = [
+  {
+    heading: 'Getting started',
+    faqs: [
+      {
+        q: 'Do I need to create an account?',
+        a: 'No. Nothing on this site requires an account. A purchase issues a license key, and the key is the whole thing.',
+      },
+      {
+        q: 'What does it cost?',
+        a: GATE_EXPLAINER,
+      },
+    ],
+  },
+  {
+    heading: 'Paying',
+    faqs: [
+      {
+        q: 'Which payment methods work?',
+        a: 'Anything Stripe accepts in your country, including the wallet payments your browser offers. Card details are entered on Stripe’s own page and never touch this site.',
+      },
+      {
+        q: 'I paid and did not get my license key.',
+        a: 'The key is shown on screen the moment checkout finishes, and emailed as a backup. If both went missing, get in touch with the email address you paid with and the key can be re-issued — it is derived rather than stored, so nothing is ever lost.',
+      },
+      {
+        q: 'My license key stopped working.',
+        a: 'A key stops validating for exactly two reasons: the subscription is no longer live, or the key was revoked because it had been shared publicly. Get in touch and it can be sorted out either way.',
+      },
+    ],
+  },
+  {
+    heading: 'When something is broken',
+    faqs: [
+      {
+        q: 'Something is not working. What is useful to send?',
+        a: 'Which browser and which device, what you did, and what happened instead. A screenshot beats a description. Reports of something genuinely broken go to the front of the queue.',
+      },
+    ],
+  },
+];
+
+const all = groups.flatMap((g) => g.faqs);
+const description = `Answers and troubleshooting for ${SITE.name}, grouped by where you are when you get stuck.`;
+---
+<Base
+  title="FAQ and troubleshooting"
+  description={description}
+  path="/faq"
+  crumbs={[{ label: 'FAQ', href: '/faq' }]}
+  schemas={[
+    faqSchema(all),
+    webPageSchema({
+      type: 'WebPage',
+      name: `${SITE.name} FAQ`,
+      description,
+      path: '/faq',
+      dateModified: UPDATED,
+    }),
+  ]}
+>
+  <section class="container-page pt-12 pb-8">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">FAQ and troubleshooting</h1>
+      <p>
+        Grouped by where you are when you get stuck. If your question is not
+        here, <a href="/contact">ask it</a> — that is how the list grows.
+      </p>
+    </div>
+  </section>
+
+  {groups.map((g) => (
+    <section class="container-page pb-10">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">{g.heading}</h2>
+        <dl class="space-y-7">
+          {g.faqs.map((f) => (
+            <div>
+              <dt class="font-semibold text-lg mb-1.5">{f.q}</dt>
+              <dd style="color: var(--text-muted)">{f.a}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  ))}
+</Base>

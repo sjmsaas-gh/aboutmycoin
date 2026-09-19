@@ -1,0 +1,130 @@
+---
+/**
+ * Runtime for third-party scripts that must not touch the critical path.
+ *
+ * Nothing vendor-specific lives here. This only defines the queue and the
+ * trigger; each vendor registers itself with a `lazy3p(fn)` call from its own
+ * component (see GoogleAnalytics.astro). Render this ONCE, in <head>, before
+ * any vendor component -- registrations made before it are lost.
+ *
+ * The trigger is the first real sign of a human: pointer movement, touch,
+ * click, key, scroll, or focus. That covers effectively everyone who does
+ * anything at all on the page, while keeping bots and instant bounces out of
+ * the network path entirely. There is deliberately no unload-time flush: a
+ * script that starts loading as the tab closes never finishes. Pages where a
+ * user may genuinely sit still should set `fallbackMs` instead.
+ *
+ * Two of those events lie, and both had to be gated:
+ *
+ *   `pointerover` / `pointermove` / `mousemove` fire on load, with no input at
+ *   all, for the element that happens to be under the cursor -- which is nearly
+ *   always the case, because the user just clicked a link to get here. Measured
+ *   at 67ms after load in a browser that had received no input whatsoever.
+ *   `pointerover` is dropped entirely (it reports where the cursor *is*, never
+ *   that it moved) and the move events only count once the pointer has actually
+ *   travelled MOVE_PX from where it was first seen.
+ *
+ *   `scroll` fires on load whenever the browser restores a scroll position.
+ *   It only counts once scrollY differs from the value at registration.
+ *
+ * Without those two gates this component loads every vendor immediately on
+ * every page view, which is the exact opposite of its purpose, and quietly
+ * makes the claim on /privacy false.
+ */
+interface Props {
+  /**
+   * Load anyway after this many idle ms, for pages where a user may read for
+   * a while without generating any input. 0 disables the timer.
+   */
+  fallbackMs?: number;
+}
+const { fallbackMs = 0 } = Astro.props;
+---
+<script is:inline define:vars={{ fallbackMs }}>
+  (function () {
+    // Interaction events, all passive: registering them must never cost a
+    // scroll frame. `pointerdown` covers mouse, pen and touch on every browser
+    // we support; `touchstart` stays as belt-and-braces for older iOS Safari.
+    //
+    // Events that mean a human definitely did something. These fire immediately.
+    var DIRECT = ['pointerdown', 'touchstart', 'click', 'keydown', 'wheel', 'focusin'];
+    // Events that also fire on their own at load time. Gated below.
+    var GATED = ['pointermove', 'mousemove', 'scroll'];
+    var EVENTS = DIRECT.concat(GATED);
+
+    /** How far the pointer must travel before we believe a human moved it. */
+    var MOVE_PX = 12;
+
+    var queue = [];
+    var fired = false;
+    var timer = 0;
+    var origin = null;
+    var scrollY0 = window.scrollY;
+
+    /**
+     * Gate for the events that lie. Returns without firing when the event is
+     * the browser telling us where the cursor already was, or restoring a
+     * scroll position, rather than a person doing something.
+     */
+    function maybeFire(e) {
+      if (e.type === 'scroll') {
+        if (window.scrollY === scrollY0) return;
+      } else if (e.type === 'pointermove' || e.type === 'mousemove') {
+        if (origin === null) { origin = { x: e.clientX, y: e.clientY }; return; }
+        if (Math.abs(e.clientX - origin.x) < MOVE_PX &&
+            Math.abs(e.clientY - origin.y) < MOVE_PX) return;
+      }
+      fire();
+    }
+
+    function fire() {
+      if (fired) return;
+      fired = true;
+      clearTimeout(timer);
+      // removeEventListener is a no-op when the handler was never registered
+      // for that event, so both are removed unconditionally rather than
+      // re-deriving which list each event came from.
+      for (var i = 0; i < EVENTS.length; i++) {
+        window.removeEventListener(EVENTS[i], fire, { capture: true });
+        window.removeEventListener(EVENTS[i], maybeFire, { capture: true });
+      }
+      // Run registrations off the interaction task so the click or scroll that
+      // triggered us still paints on time.
+      var run = function () {
+        for (var j = 0; j < queue.length; j++) {
+          try { queue[j](); } catch (e) { /* one bad vendor must not block the rest */ }
+        }
+        queue.length = 0;
+      };
+      if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 });
+      else setTimeout(run, 1);
+    }
+
+    for (var i = 0; i < DIRECT.length; i++) {
+      window.addEventListener(DIRECT[i], fire, { capture: true, passive: true });
+    }
+    for (var j = 0; j < GATED.length; j++) {
+      window.addEventListener(GATED[j], maybeFire, { capture: true, passive: true });
+    }
+    if (fallbackMs > 0) timer = setTimeout(fire, fallbackMs);
+
+    /**
+     * Register a loader. Called after the trigger, it runs immediately, so
+     * late registrations (e.g. from a hydrated island) still work.
+     */
+    window.lazy3p = function (fn) {
+      if (fired) { try { fn(); } catch (e) {} } else queue.push(fn);
+    };
+
+    /** Shared helper: append a <script src> once, resolving on load. */
+    window.lazy3p.script = function (src, attrs) {
+      if (document.querySelector('script[src="' + src + '"]')) return;
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      if (attrs) for (var k in attrs) s.setAttribute(k, attrs[k]);
+      document.head.appendChild(s);
+      return s;
+    };
+  })();
+</script>

@@ -1,0 +1,26 @@
+---
+import type { Faq } from '../lib/schema';
+/**
+ * Renders the visible FAQ. The *same* array is passed to faqSchema() by the
+ * page, so the markup and the structured data cannot drift apart.
+ */
+interface Props {
+  faqs: Faq[];
+  heading?: string;
+  id?: string;
+}
+const { faqs, heading = 'Questions people actually ask', id = 'faq' } = Astro.props;
+---
+<section id={id} class="container-page py-16">
+  <div class="prose-page">
+    <h2 class="text-3xl mb-8" style="margin-top:0">{heading}</h2>
+    <dl class="space-y-7">
+      {faqs.map((f) => (
+        <div>
+          <dt class="font-semibold text-lg mb-1.5">{f.q}</dt>
+          <dd style="color: var(--text-muted)">{f.a}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+</section>

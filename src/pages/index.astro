@@ -1,0 +1,123 @@
+---
+/**
+ * Home.
+ *
+ * The structure below is the BLUF template every site in this family uses, and
+ * it is worth keeping even as the copy changes completely:
+ *
+ *   1. An H1 that states what this is, not a slogan.
+ *   2. One paragraph directly under it that answers "what do I get and what
+ *      does it cost me" -- readable on its own, quotable on its own.
+ *   3. The call to action, above the fold, once.
+ *   4. Proof: what it actually does, in concrete terms.
+ *   5. The FAQ, rendered from the same array that builds the FAQPage schema.
+ *
+ * RENAME: every string on this page is placeholder. The structure is not.
+ */
+import Base from '../layouts/Base.astro';
+import Faq from '../components/Faq.astro';
+import { SITE } from '../lib/site';
+import { faqSchema, webApplicationSchema, type Faq as FaqItem } from '../lib/schema';
+import { GATE_EXPLAINER, ONE_TIME_OFFER, PRO_MONTHLY } from '../lib/pricing';
+import { ANSWERS } from '../data/answers';
+
+/**
+ * The FAQ array. Rendered visibly AND fed to faqSchema, so the two cannot
+ * disagree -- Google penalises structured data that does not match the page.
+ *
+ * Answers are plain text and self-contained on purpose: an answer engine will
+ * quote one of these with no page around it.
+ */
+const faqs: FaqItem[] = [
+  {
+    q: 'What is this?',
+    a: 'A placeholder home page in a site starter. Replace this array with the questions people genuinely ask before buying, answered in one short paragraph each.',
+  },
+  {
+    q: 'What does it cost?',
+    a: GATE_EXPLAINER,
+  },
+  {
+    q: 'Do I need an account?',
+    a: 'No. A purchase issues a license key, and the key is the whole thing — there is no password to lose and no account to close.',
+  },
+];
+
+const features = [
+  {
+    title: 'First real thing it does',
+    body: 'One or two sentences, concrete and checkable. Numbers where you have them. No adjective that a competitor could also claim.',
+  },
+  {
+    title: 'Second real thing',
+    body: 'Say what it replaces and how long that used to take. Specific beats impressive.',
+  },
+  {
+    title: 'Third real thing',
+    body: 'The one nobody else does, or the one you do differently. If there is nothing to put here, the product is not ready to market.',
+  },
+];
+---
+<Base
+  title={`${SITE.name} — ${SITE.tagline}`}
+  description={SITE.description}
+  path="/"
+  schemas={[
+    faqSchema(faqs),
+    /* RENAME: if this site is not software, replace this with Product or
+       Service schema. Do not stretch WebApplication over something else. */
+    webApplicationSchema({
+      applicationCategory: 'BusinessApplication',
+      keywords: ['placeholder keyword', 'another placeholder keyword'],
+      featureList: features.map((f) => f.title),
+    }),
+  ]}
+>
+  <section class="container-page pt-16 pb-12 sm:pt-24">
+    <div class="max-w-3xl">
+      <h1 class="text-4xl sm:text-6xl">
+        Say what this is, in one line, using the words people search for
+      </h1>
+      <!-- BLUF. Someone who reads only this paragraph should know whether the
+           product is for them and roughly what it costs. -->
+      <p class="mt-6 text-lg sm:text-xl" style="color: var(--text-muted)">
+        {SITE.description}
+      </p>
+      <div class="mt-9 flex flex-wrap gap-3">
+        <a href="/pricing" class="btn btn-primary">Get started</a>
+        <a href="/answers" class="btn btn-secondary">Read the answers</a>
+      </div>
+      <p class="mt-4 text-sm" style="color: var(--text-muted)">
+        Free to start. {ONE_TIME_OFFER.priceLabel} once, or ${PRO_MONTHLY}/month.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page py-12">
+    <div class="grid gap-6 md:grid-cols-3">
+      {features.map((f) => (
+        <div class="card p-6">
+          <h2 class="text-xl" style="margin: 0 0 0.5rem">{f.title}</h2>
+          <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{f.body}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page py-12">
+    <div class="prose-page">
+      <h2 style="margin-top: 0">Straight answers</h2>
+      <p>
+        Each of these is a full page answering one question. They exist because
+        somebody types that question, not because a keyword tool suggested it.
+      </p>
+      <ul>
+        {ANSWERS.map((a) => (
+          <li><a href={`/answers/${a.slug}`}>{a.question}</a></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <Faq faqs={faqs} />
+</Base>

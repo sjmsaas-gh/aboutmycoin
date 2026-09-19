@@ -1,0 +1,31 @@
+---
+/**
+ * GA4, split into the part that costs nothing and the part that costs a
+ * request.
+ *
+ * The `dataLayer` + `gtag()` stub is defined eagerly: it is a handful of bytes
+ * with no network cost, and having it always present means any code on the
+ * page can call `gtag('event', ...)` at any time without knowing or caring
+ * whether the tag has loaded yet -- calls queue in `dataLayer` and are
+ * replayed once gtag.js arrives.
+ *
+ * Only the gtag.js request and the `config` call are deferred to the first
+ * interaction, via LazyThirdParty. Requires <LazyThirdParty /> earlier in the
+ * same <head>.
+ */
+interface Props {
+  id: string;
+}
+const { id } = Astro.props;
+---
+<script is:inline define:vars={{ id }}>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('js', new Date());
+
+  window.lazy3p(function () {
+    window.lazy3p.script('https://www.googletagmanager.com/gtag/js?id=' + id);
+    gtag('config', id);
+  });
+</script>

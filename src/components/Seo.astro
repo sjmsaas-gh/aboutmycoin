@@ -1,0 +1,78 @@
+---
+import { SITE, DISCOVERABLE, NOINDEX_DIRECTIVE } from '../lib/site';
+
+export interface Props {
+  title: string;
+  description: string;
+  /** Path only, e.g. "/pricing". The canonical URL is built from it. */
+  path?: string;
+  /** Absolute or site-relative OG image. Defaults to the site card. */
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  modifiedTime?: string;
+  noindex?: boolean;
+}
+
+/** The site card: 1200x630, and the only share image any page uses today. */
+const DEFAULT_IMAGE = '/og/default.png';
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  image = DEFAULT_IMAGE,
+  // RENAME: say what the card shows. The site name alone repeats og:site_name,
+  // and this is what a screen reader announces for the card in a chat app.
+  imageAlt = `${SITE.name}: ${SITE.tagline}.`,
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  noindex = false,
+} = Astro.props;
+
+const normalized = path === '/' ? '/' : path.replace(/\/+$/, '');
+const canonical = new URL(normalized, SITE.url).href;
+const imageUrl = new URL(image, SITE.url).href;
+const fullTitle = title.includes(SITE.name) ? title : `${title} | ${SITE.name}`;
+
+// The site-wide pre-launch lockdown overrides the per-page setting, and does so
+// in one place so no page can opt itself back in by accident. See lib/site.ts.
+const robots = !DISCOVERABLE || noindex
+  ? NOINDEX_DIRECTIVE
+  : 'index, follow, max-image-preview:large, max-snippet:-1';
+---
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={robots} />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+{/* Dimensions let a platform lay out the preview before it has fetched the
+    image. Only stated for the card whose size is known; a page passing its
+    own image would need to pass its size too. */}
+{image === DEFAULT_IMAGE && (
+  <>
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+  </>
+)}
+<meta property="og:image:alt" content={imageAlt} />
+<meta property="og:locale" content={SITE.locale} />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+
+<meta name="twitter:card" content="summary_large_image" />
+{/* Only when the handle genuinely exists -- see SITE.twitter. */}
+{SITE.twitter && <meta name="twitter:site" content={SITE.twitter} />}
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:image:alt" content={imageAlt} />

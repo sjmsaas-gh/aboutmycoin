@@ -1,0 +1,60 @@
+# Cloudflare Pages and Netlify both read this file. Kept in step with
+# vercel.json and netlify.toml so the deploy target can change without a code
+# change -- if you edit one, edit all three.
+#
+# Caching model for a fully static build:
+#
+#   /_astro/*  and  /fonts/*   content-hashed or never-changing. One year,
+#                              immutable: the browser must not even revalidate.
+#   /og/*, icons, logo         stable paths with unstable content. Cached for a
+#                              day in the browser, a week at the edge, and
+#                              served stale while it refreshes in background.
+#   everything else (HTML)     cached hard at the CDN edge, revalidated by the
+#                              browser on every visit via ETag. A deploy purges
+#                              the edge, so a content fix is live immediately
+#                              while repeat visits still cost one 304.
+#
+# The X-Robots-Tag line below is the PRE-LAUNCH LOCKDOWN. Delete it on launch,
+# in all three host configs. See src/lib/site.ts.
+#
+# CSP: add a CDN origin to img-src / connect-src / font-src here (and in the
+# other two configs) the moment SITE.assetOrigin stops being empty. A blocked
+# asset under CSP fails silently in production and works fine in dev.
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate, s-maxage=86400, stale-while-revalidate=604800
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), browsing-topics=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; worker-src 'self' blob:; child-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/og/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/favicon.svg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/logo.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/robots.txt
+  Cache-Control: public, max-age=0, must-revalidate, s-maxage=3600
+
+/sitemap-index.xml
+  Cache-Control: public, max-age=0, must-revalidate, s-maxage=3600
+
+/sitemap-0.xml
+  Cache-Control: public, max-age=0, must-revalidate, s-maxage=3600
