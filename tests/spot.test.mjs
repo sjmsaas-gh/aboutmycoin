@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { createServer } from 'node:http';
 import {
   METALS,
   SPOT,
@@ -95,6 +96,76 @@ test('the built-in reading is what the build renders, unrounded', () => {
   // And display does round: cents under $100, whole dollars above.
   assert.match(formatUsd(SPOT.silver), /^\$\d+\.\d{2}$/);
   assert.ok(!formatUsd(SPOT.gold).includes('.'));
+});
+
+test('the Vercel adapter actually answers, on a real Node server', async () => {
+  // This one hung in production, which is the only reason it has a test.
+  //
+  // `src/server/` is written against Web Request/Response, which is the shape
+  // the edge runtime hands you. The Node runtime hands you `(req, res)`
+  // instead, so a default export taking a `Request` is given an
+  // IncomingMessage and the `Response` it returns is dropped on the floor --
+  // nothing ever writes to `res`, and the request HANGS until the platform
+  // times it out. No error, no log line, nothing to search for.
+  //
+  // Every other check in this file calls `handleSpot()` directly, which is
+  // exactly the layer that was never broken. So this one boots the real
+  // adapter behind a real node:http server and asks whether a response comes
+  // back at all.
+  const { default: handler } = await import('../api/spot.ts');
+
+  // The adapter reads process.env at request time. A developer with a real key
+  // exported would otherwise spend one of the month's feed calls on `npm test`.
+  const saved = { ...process.env };
+  delete process.env.METALS_DEV_API_KEY;
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  delete process.env.SPOT_CACHE_URL;
+  delete process.env.SPOT_DEPLOY_HOOK_URL;
+
+  const server = createServer((req, res) => {
+    handler(req, res).catch((err) => {
+      res.statusCode = 500;
+      res.end(String(err));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const base = `http://localhost:${server.address().port}/api/spot`;
+
+  // The bug under test leaves a request open forever, and `server.close()`
+  // waits for open connections -- so a failing run would hang the whole suite
+  // rather than fail it, which is how this check would quietly stop being run.
+  // Sockets are tracked and destroyed by hand because `closeAllConnections()`
+  // is not available on every Node this repo is run under.
+  const sockets = new Set();
+  server.on('connection', (socket) => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
+  });
+
+  try {
+    // A bound, because the failure being tested for is "never returns". Without
+    // it this test would hang rather than fail.
+    const answered = await Promise.race([
+      fetch(base),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('the adapter never sent a response')), 5_000),
+      ),
+    ]);
+
+    assert.equal(answered.status, 200);
+    assert.equal(answered.headers.get('cache-control'), SPOT_CACHE_CONTROL);
+    assert.deepEqual(parseSpot(await answered.json()), REFERENCE_SPOT);
+
+    // The method guard survives the translation, and HEAD sends no body.
+    const head = await fetch(base, { method: 'HEAD' });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), '');
+    assert.equal((await fetch(base, { method: 'POST' })).status, 405);
+  } finally {
+    for (const socket of sockets) socket.destroy();
+    server.close();
+    Object.assign(process.env, saved);
+  }
 });
 
 test('nothing reachable from api/ imports without an extension', () => {
