@@ -33,6 +33,16 @@ import {
   normaliseQuestion,
 } from '../src/data/coins.ts';
 import { allSiteFaqQuestions } from '../src/data/faq-registry.ts';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_H1,
+  CHEAT_SHEETS_ROOT,
+  cheatSheetDescription,
+  cheatSheetH1,
+  cheatSheetPath,
+  cheatSheetTeaser,
+  cheatSheetTitle,
+} from '../src/data/cheat-sheets.ts';
 import { allArchiveCopy } from '../src/lib/catalog-copy.ts';
 import {
   DESCRIPTION_MAX,
@@ -1082,6 +1092,115 @@ test('every built page uses British spellings in its visible text', () => {
     }
   }
   assert.deepEqual(problems, [], `\n  - ${problems.join('\n  - ')}\n`);
+});
+
+test('every cheat sheet was built, and the section links both ways', () => {
+  // The orphan check, and the dead-end check. The hub is the only page above
+  // a sheet, so a sheet it does not link to is a page nothing points at; and
+  // a sheet that does not link back is a page whose only way out is the
+  // breadcrumb.
+  const hub = read(`${CHEAT_SHEETS_ROOT.slice(1)}/index.html`);
+  assert.ok(hub.includes(`>${CHEAT_SHEETS_H1}<`), `${CHEAT_SHEETS_ROOT} does not print its own H1`);
+
+  for (const sheet of CHEAT_SHEETS) {
+    const path = cheatSheetPath(sheet);
+    const file = `${path.slice(1)}/index.html`;
+    assert.ok(existsSync(join(DIST, file)), `${path} was not built`);
+    assert.ok(hub.includes(`href="${path}"`), `${CHEAT_SHEETS_ROOT} does not link to ${path}`);
+
+    const html = read(file);
+    assert.ok(
+      html.includes(`href="${CHEAT_SHEETS_ROOT}"`),
+      `${path} does not link back to ${CHEAT_SHEETS_ROOT}`,
+    );
+    assert.ok(html.includes(`<title>${cheatSheetTitle(sheet)}`), `${path} did not ship its generated title`);
+    assert.ok(
+      html.includes(`content="${cheatSheetDescription(sheet)}"`),
+      `${path} did not ship its generated description`,
+    );
+    assert.ok(html.includes(`>${cheatSheetH1(sheet)}<`), `${path} did not ship its generated H1`);
+  }
+});
+
+test('a cheat sheet that is not written says so, and is kept out of the index', () => {
+  // The whole concession that lets ten empty URLs exist at all: a stub is
+  // noindex and out of the sitemap, and it admits on its face that it holds
+  // nothing. Take any one of those away and the section is ten thin pages.
+  // Setting `written: true` in the registry reverses all three at once.
+  //
+  // The noindex assertion below is the one that is not load-bearing YET: while
+  // DISCOVERABLE is false every page on the site is noindex anyway, so it
+  // passes on a page that never asked for it. Verified by mutation that the
+  // sitemap and the wording both fail when they should; the noindex half
+  // starts proving something the day the lockdown lifts, which is exactly when
+  // it matters.
+  const sitemap = existsSync(join(DIST, 'sitemap-0.xml')) ? read('sitemap-0.xml') : '';
+  for (const sheet of CHEAT_SHEETS) {
+    const path = cheatSheetPath(sheet);
+    const html = read(`${path.slice(1)}/index.html`);
+    if (!sheet.written) {
+      assert.ok(
+        html.includes('name="robots" content="noindex'),
+        `${path} is a stub but is not noindex`,
+      );
+      assert.ok(
+        !sitemap.includes(`<loc>${SITE.url}${path}</loc>`),
+        `${path} is a stub but is listed in the sitemap`,
+      );
+      assert.ok(
+        html.includes('is not written yet'),
+        `${path} is a stub and does not say so`,
+      );
+    } else {
+      assert.ok(
+        !html.includes('is not written yet'),
+        `${path} is written but still carries the stub wording`,
+      );
+      assert.ok(
+        sitemap === '' || sitemap.includes(`<loc>${SITE.url}${path}</loc>`),
+        `${path} is written but missing from the sitemap`,
+      );
+    }
+  }
+});
+
+test('a cheat sheet states no price and does not restate the series page', () => {
+  // Which dates are scarce has been settled for a century; what they fetch is
+  // true for a week. Same rule SeriesInfo is under.
+  //
+  // The second half is the one that keeps this section from becoming a second
+  // set of series pages: the run, the designer, the metal eras and where the
+  // mint mark sits belong to /coin-value/tagged/<series>, which exists. A
+  // sheet that grows those rows has become that page. See the header of
+  // src/data/cheat-sheets.ts.
+  const FORBIDDEN = [/\bDesigner\b/, /\bObverse\b/, /\bReverse\b/, /\bMetal eras\b/, /\bEdge\b/];
+  for (const sheet of CHEAT_SHEETS) {
+    const path = cheatSheetPath(sheet);
+    const html = read(`${path.slice(1)}/index.html`);
+    const body = html.slice(html.indexOf('<body'));
+    const text = body
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    assert.ok(!/[$\u00a3\u20ac]\s?\d/.test(text), `${path} states a price`);
+    for (const pattern of FORBIDDEN) {
+      assert.ok(!pattern.test(text), `${path} carries ${pattern}, which belongs on the series page`);
+    }
+  }
+});
+
+test('the cheat-sheet hub carries no FAQPage markup', () => {
+  // It answers nothing itself. It is a CollectionPage over an ItemList of the
+  // sheets, the same shape the question topics use, and a hub repeating its
+  // members' Q&A is the one-question-one-page rule's exact failure case.
+  const hub = read(`${CHEAT_SHEETS_ROOT.slice(1)}/index.html`);
+  assert.ok(!hub.includes('"@type":"FAQPage"'), `${CHEAT_SHEETS_ROOT} carries FAQPage markup`);
+  assert.ok(hub.includes('"@type":"ItemList"'), `${CHEAT_SHEETS_ROOT} carries no ItemList`);
+  for (const sheet of CHEAT_SHEETS) {
+    assert.ok(
+      hub.includes(cheatSheetTeaser(sheet)),
+      `${CHEAT_SHEETS_ROOT} does not ship the generated teaser for ${sheet.slug}`,
+    );
+  }
 });
 
 test('the dev workbench is not in the build', () => {

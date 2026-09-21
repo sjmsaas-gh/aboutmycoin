@@ -1,0 +1,130 @@
+---
+/**
+ * One cheat sheet: /cheat-sheets/<slug>.
+ *
+ * Every one of these is a stub today -- `written: false` in the registry --
+ * so what the page renders is a name, a run and an admission. It is noindex
+ * while it is a stub, because ten URLs with no answer behind them are ten
+ * thin pages, and the flag is what takes them out of the sitemap too (see
+ * astro.config.mjs). Fill the sheet, set `written: true`, and both follow.
+ *
+ * What must NOT happen here as these get written: this page growing the
+ * designer, the metal eras or where the mint mark sits. Those are the series
+ * tag page's sections, that page exists, and this one links to it. The
+ * division is argued in the header of src/data/cheat-sheets.ts and it is the
+ * only thing keeping the two off each other's search result.
+ */
+import Base from '../../layouts/Base.astro';
+import { webPageSchema } from '../../lib/schema';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_H1,
+  CHEAT_SHEETS_ROOT,
+  cheatSheetDescription,
+  cheatSheetH1,
+  cheatSheetPath,
+  cheatSheetRun,
+  cheatSheetTeaser,
+  cheatSheetTitle,
+  type CheatSheet,
+} from '../../data/cheat-sheets';
+import { populatedTags, tagPath } from '../../data/coins';
+
+export function getStaticPaths() {
+  return CHEAT_SHEETS.map((sheet) => ({ params: { slug: sheet.slug }, props: { sheet } }));
+}
+
+export interface Props { sheet: CheatSheet }
+const { sheet } = Astro.props;
+
+const path = cheatSheetPath(sheet);
+const h1 = cheatSheetH1(sheet);
+const description = cheatSheetDescription(sheet);
+
+/*
+ * The link across to the series page, but only when that page is really
+ * built. A tag archive exists only where a coin carries the tag, so three of
+ * these sheets name a registered series whose page does not exist yet --
+ * linking anyway would ship a 404 a static build cannot report.
+ */
+const seriesLive = sheet.seriesTag !== undefined && populatedTags().some((t) => t.slug === sheet.seriesTag);
+const seriesHref = seriesLive ? tagPath(sheet.seriesTag!) : undefined;
+
+/* Siblings, so no sheet is a page with no way out but the breadcrumb. */
+const others = CHEAT_SHEETS.filter((s) => s.slug !== sheet.slug);
+---
+<Base
+  title={cheatSheetTitle(sheet)}
+  description={description}
+  path={path}
+  noindex={!sheet.written}
+  crumbs={[
+    { label: 'Cheat sheets', href: CHEAT_SHEETS_ROOT },
+    { label: sheet.name, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'WebPage',
+      name: h1,
+      description,
+      path,
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <p class="text-sm" style="color: var(--text-muted); margin-bottom: 0.35rem">
+        <a href={CHEAT_SHEETS_ROOT}>{CHEAT_SHEETS_H1}</a>
+      </p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+
+      {sheet.written ? (
+        <p class="text-lg"><strong>{description}</strong></p>
+      ) : (
+        <>
+          <p class="text-lg">
+            <strong>
+              The {sheet.name} was struck {cheatSheetRun(sheet)}. This cheat sheet
+              of its key dates, mint marks and varieties is not written yet.
+            </strong>
+          </p>
+          <p>
+            When it is, it will list every {sheet.name} date and mint mark worth
+            setting aside, what to look for on each one, and nothing else. Until
+            then this page states only what it can stand behind, which is the
+            run above.
+          </p>
+          {seriesHref ? (
+            <p>
+              What there is on the series so far &mdash; the run, the mint marks
+              and where to find them, the key dates and the varieties &mdash; is
+              on the <a href={seriesHref}>{sheet.name} page</a> in the catalogue.
+            </p>
+          ) : (
+            <p>
+              In the meantime, the <a href="/coin-value">coin value catalogue</a>
+              covers the coins that have been researched, filed by what they are
+              made of, and the <a href="/melt-value">melt value</a> pages work out
+              what the metal in one is worth.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <h2>Other cheat sheets</h2>
+    </div>
+    <div class="tile-grid" style="margin-top: 1.25rem">
+      {others.map((s) => (
+        <a href={cheatSheetPath(s)} class="tile">
+          <h3>{cheatSheetH1(s)}</h3>
+          <p>{cheatSheetTeaser(s)}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

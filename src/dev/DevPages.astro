@@ -48,6 +48,7 @@ const total = sections.flatMap((s) => s.routes).filter((r) => !r.text).length;
               <span class="name">{r.label}</span>
               {r.kind === 'generated' && <span class="pill">generated</span>}
               {r.count !== undefined && <span class="pill">{r.count} in it</span>}
+              {r.note && <span class="pill">{r.note}</span>}
               <span class="pill status" data-status>not checked</span>
             </summary>
             <div class="detail">

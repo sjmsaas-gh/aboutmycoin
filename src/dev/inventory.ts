@@ -76,6 +76,12 @@ import {
   METAL_SLUGS,
 } from '../lib/melt';
 import { QUESTIONS, QUESTIONS_ROOT, questionPath } from '../data/questions';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_ROOT,
+  cheatSheetH1,
+  cheatSheetPath,
+} from '../data/cheat-sheets';
 import { coinMetal, METAL_LABEL } from '../lib/spot';
 import { groupH1, groupQuestion, tagH1, tagQuestion } from '../lib/catalog-copy';
 import { DISCOVERABLE, HOME_PLACEHOLDER } from '../lib/site';
@@ -99,6 +105,8 @@ export interface RouteEntry {
   count?: number;
   /** True for a route that answers with something other than HTML. */
   text?: boolean;
+  /** A short state worth seeing in the list, e.g. a page that is still a stub. */
+  note?: string;
 }
 
 export interface RouteSection {
@@ -225,6 +233,21 @@ export function routeSections(): RouteSection[] {
         ...QUESTIONS.map((q) =>
           entry(questionPath(q), q.question, 'src/pages/common-questions/[slug].astro', 'generated', {
             question: q.question,
+          }),
+        ),
+      ],
+    },
+    {
+      title: 'Cheat sheets',
+      blurb:
+        'One per series: which years and mint marks are the scarce ones. Every sheet is a stub today, which means noindex on the page and out of the sitemap \u2014 set `written: true` in src/data/cheat-sheets.ts and both reverse.',
+      routes: [
+        entry(CHEAT_SHEETS_ROOT, 'The cheat-sheet index', 'src/pages/cheat-sheets/index.astro', 'static', {
+          count: CHEAT_SHEETS.length,
+        }),
+        ...CHEAT_SHEETS.map((s) =>
+          entry(cheatSheetPath(s), cheatSheetH1(s), 'src/pages/cheat-sheets/[slug].astro', 'generated', {
+            note: s.written ? undefined : 'stub, noindex',
           }),
         ),
       ],
@@ -647,6 +670,7 @@ export function counts(): CountRow[] {
     { what: 'Melt archives live', n: meltGroups().length + meltPairs().length + meltTags().length },
     { what: 'Metals priced in a coin', n: METAL_SLUGS.filter((m) => COINS.some((c) => coinMetal(c)?.metal === m)).length },
     { what: 'Common questions', n: QUESTIONS.length },
+    { what: 'Cheat sheets written', n: CHEAT_SHEETS.filter((s) => s.written).length },
   ];
 }
 

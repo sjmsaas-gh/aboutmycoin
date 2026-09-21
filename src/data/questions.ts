@@ -110,6 +110,7 @@ import {
   meltPairs,
   meltTags,
 } from '../lib/melt';
+import { CHEAT_SHEETS, CHEAT_SHEETS_ROOT, cheatSheetPath } from './cheat-sheets';
 import { DESCRIPTION_MAX, DESCRIPTION_MIN, TITLE_MAX, fit, titleCase } from '../lib/meta';
 
 /** A block of body copy. One heading, one or more paragraphs. */
@@ -1215,6 +1216,8 @@ export const sitePaths = (): Set<string> =>
     QUESTIONS_ROOT,
     ...QUESTIONS.map(questionPath),
     ...QUESTION_CATEGORIES.map(categoryPath),
+    CHEAT_SHEETS_ROOT,
+    ...CHEAT_SHEETS.map(cheatSheetPath),
     COIN_VALUE_ROOT,
     `${COIN_VALUE_ROOT}/tagged`,
     ...populatedGroups().map((g) => groupPath(g.slug)),

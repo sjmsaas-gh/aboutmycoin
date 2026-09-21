@@ -645,14 +645,17 @@ test('a stale cache is refreshed, published and served', async () => {
   // a response.
   assert.deepEqual(Object.keys(body).sort(), ['asOf', 'live', 'prices', 'source']);
 
-  // The published document carries the bookkeeping, with the count advanced and
-  // fetchedAt set to now rather than to the feed's reading time.
-  assert.equal(written.length, 1);
-  assert.deepEqual(written[0].prices, FEED.metals);
-  assert.equal(written[0].calls, stale.calls + 1);
-  assert.equal(written[0].month, THIS_MONTH);
-  assert.notEqual(written[0].fetchedAt, written[0].asOf);
-  assert.ok(Math.abs(Date.parse(written[0].fetchedAt) - Date.now()) < 5_000);
+  // Two writes, because the call is claimed before it is spent: the first
+  // carries the old prices under a new fetchedAt, the second the new reading.
+  assert.equal(written.length, 2, 'the claim or the record is missing');
+  const published = written.at(-1);
+  assert.deepEqual(published.prices, FEED.metals);
+  assert.equal(published.calls, stale.calls + 1);
+  assert.equal(published.month, THIS_MONTH);
+  // fetchedAt is when WE called, asOf is when the prices were read. Scheduling
+  // off the wrong one is the weekend bug.
+  assert.notEqual(published.fetchedAt, published.asOf);
+  assert.ok(Math.abs(Date.parse(published.fetchedAt) - Date.now()) < 5_000);
 });
 
 test('a refresh pokes the deploy hook, so the built pages catch up', async () => {
@@ -689,7 +692,13 @@ test('a refresh pokes the deploy hook, so the built pages catch up', async () =>
   );
 
   assert.ok(calls.some((c) => c.includes('deploy')), 'the deploy hook was not poked');
-  assert.deepEqual(order, ['write', 'hook:POST'], 'the hook fired before the document was written');
+  // Claim, record, then poke: the hook must fire after the document holding the
+  // new prices is published, or the build it triggers reads the old one.
+  assert.deepEqual(
+    order,
+    ['write', 'write', 'hook:POST'],
+    'the hook fired before the new prices were published',
+  );
 });
 
 test('the deploy hook is never poked when nothing was refreshed', async () => {
@@ -761,8 +770,110 @@ test('a broken deploy hook never costs the reader their figures', async () => {
     );
     assert.equal(result.status, 200);
     assert.deepEqual((await result.json()).prices, FEED.metals, 'a dead hook cost the new prices');
-    assert.equal(written.length, 1, 'a dead hook stopped the document being published');
+    // The claim and the record. Both happen before the hook is touched.
+    assert.equal(written.length, 2, 'a dead hook stopped the document being published');
+    assert.deepEqual(written.at(-1).prices, FEED.metals);
   }
+});
+
+test('a store that rejects writes costs ZERO feed calls', async () => {
+  // This happened in production: the Blob store was created private, every
+  // `put` threw, and because BOTH guards live in the document that could not be
+  // written, `fetchedAt` never advanced and the call counter never persisted.
+  // Every single request spent a metals.dev call while the endpoint went on
+  // answering 200 with correct-looking figures. Nothing surfaced it.
+  //
+  // The fix is ordering: the bookkeeping is claimed BEFORE the feed is called,
+  // so a writer that always fails throws first and the feed is never reached.
+  const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
+  let feedCalls = 0;
+
+  for (let request = 0; request < 5; request += 1) {
+    const { result } = await withFetch(
+      (url) => {
+        if (url.includes('metals.dev')) {
+          feedCalls += 1;
+          return new Response(JSON.stringify({ status: 'success' }));
+        }
+        return new Response(JSON.stringify(stale));
+      },
+      () =>
+        ask({
+          SPOT_CACHE_URL: 'https://cache.example/spot.json',
+          METALS_DEV_API_KEY: 'k',
+          writeCache: async () => {
+            throw new Error('Vercel Blob: Cannot use public access on a private store');
+          },
+        }),
+    );
+    // And the reader never sees the breakage.
+    assert.equal(result.status, 200);
+    assert.deepEqual(await result.json(), CACHED);
+  }
+
+  assert.equal(feedCalls, 0, `a broken store spent ${feedCalls} feed call(s) over 5 requests`);
+});
+
+test('the claim is written before the feed is called', async () => {
+  const FEED = {
+    status: 'success',
+    currency: 'USD',
+    unit: 'toz',
+    metals: { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 },
+    timestamps: { metal: '2027-01-20T11:58:00.000Z' },
+  };
+  const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
+  const order = [];
+
+  await withFetch(
+    (url) => {
+      if (url.includes('metals.dev')) {
+        order.push('feed');
+        return new Response(JSON.stringify(FEED));
+      }
+      return new Response(JSON.stringify(stale));
+    },
+    () =>
+      ask({
+        SPOT_CACHE_URL: 'https://cache.example/spot.json',
+        METALS_DEV_API_KEY: 'k',
+        writeCache: async (body) => order.push(`write:${JSON.parse(body).calls}`),
+      }),
+  );
+
+  // Claim, then spend, then record. Both writes carry the same incremented
+  // count: the claim is what reserves it.
+  assert.deepEqual(order, [`write:${stale.calls + 1}`, 'feed', `write:${stale.calls + 1}`]);
+});
+
+test('a feed that fails after the claim waits a day, not a request', async () => {
+  // The other half of claiming first. The call is already counted and
+  // `fetchedAt` is already advanced, so a feed that is down costs one attempt
+  // a day rather than one per request -- and the claim carries the previous
+  // prices under the previous `asOf`, so nothing a reader sees is invented.
+  const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
+  const written = [];
+
+  const { result } = await withFetch(
+    (url) =>
+      url.includes('metals.dev')
+        ? new Response('down', { status: 503 })
+        : new Response(JSON.stringify(stale)),
+    () =>
+      ask({
+        SPOT_CACHE_URL: 'https://cache.example/spot.json',
+        METALS_DEV_API_KEY: 'k',
+        writeCache: async (body) => written.push(JSON.parse(body)),
+      }),
+  );
+
+  assert.equal(written.length, 1, 'the claim was not written');
+  assert.deepEqual(written[0].prices, CACHED.prices, 'the claim invented prices');
+  assert.equal(written[0].asOf, CACHED.asOf, 'the claim moved asOf without new prices');
+  assert.equal(written[0].calls, stale.calls + 1, 'the failed call was not counted');
+  assert.ok(Date.parse(written[0].fetchedAt) > Date.parse(stale.fetchedAt));
+  // The reader still gets the older figures at 200.
+  assert.deepEqual(await result.json(), CACHED);
 });
 
 test('a fresh cache is served without touching the feed', async () => {

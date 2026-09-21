@@ -19,6 +19,14 @@ import { devApiRoutes } from './src/dev/api-middleware.mjs';
  * here rather than in a module some builds might not reach.
  */
 import './src/data/faq-registry.ts';
+/*
+ * The cheat sheets, for the sitemap filter below: an unwritten sheet is
+ * `noindex` on the page, and a noindex URL in the sitemap is a contradiction
+ * crawlers report as an error. Built from the registry rather than from a
+ * hand-kept pattern so the two cannot drift -- setting `written: true` takes
+ * the page out of noindex and into the sitemap in one edit.
+ */
+import { CHEAT_SHEETS, cheatSheetPath } from './src/data/cheat-sheets.ts';
 import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +39,9 @@ import { fileURLToPath } from 'node:url';
  * tests/build-smoke.test.mjs, which fails the build if they diverge.
  */
 const SITE_URL = 'https://aboutmycoin.com';
+
+/** Paths of the cheat sheets that are still stubs, and therefore noindex. */
+const UNWRITTEN_CHEAT_SHEETS = CHEAT_SHEETS.filter((s) => !s.written).map(cheatSheetPath);
 
 /**
  * Priority is a hint about relative importance within this site only -- it says
@@ -66,7 +77,11 @@ function priorityFor(url) {
   // click away on the hub as well.
   if (/^\/common-questions\/topic\/[^/]+$/.test(p)) return 0.5;
   if (/^\/common-questions\/[^/]+$/.test(p)) return 0.7;
-  if (p === '/melt-value' || p === '/common-questions') return 0.6;
+  // The cheat sheets sit beside the common questions: a sheet targets a phrase
+  // of its own ("wheat penny key dates") and feeds the catalogue rather than
+  // competing with it. A stub is noindex and never reaches this function.
+  if (/^\/cheat-sheets\/[^/]+$/.test(p)) return 0.7;
+  if (p === '/melt-value' || p === '/common-questions' || p === '/cheat-sheets') return 0.6;
   return 0.4;
 }
 
@@ -156,7 +171,9 @@ export default defineConfig({
       // already excludes 404; naming it here covers a future error page too.
       //
       // RENAME: add any page you mark `noindex` in Seo props to this pattern.
-      filter: (page) => !/\/(404|500|checkout-complete)\/?$/.test(page),
+      filter: (page) =>
+        !/\/(404|500|checkout-complete)\/?$/.test(page) &&
+        !UNWRITTEN_CHEAT_SHEETS.some((p) => page.replace(/\/$/, '').endsWith(p)),
       // No `lastmod`, anywhere. What this site states about a coin -- its
       // weight, its metal, which dates are scarce -- was settled long before
       // the page was written, so there is no honest date to give, and the

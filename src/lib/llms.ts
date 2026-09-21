@@ -31,6 +31,23 @@ import {
   coinQuestion,
   yearLabel,
 } from '../data/coins';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_ROOT,
+  cheatSheetH1,
+  cheatSheetPath,
+  cheatSheetTeaser,
+} from '../data/cheat-sheets';
+
+/**
+ * Only the sheets with something on them.
+ *
+ * A stub is noindex on the page, out of the sitemap, and must not be listed
+ * here either: llms.txt is a static file a model reads instead of crawling,
+ * so a line pointing at an empty page is the same claim as an indexed thin
+ * page, made to the audience least able to check it.
+ */
+const WRITTEN_SHEETS = CHEAT_SHEETS.filter((s) => s.written);
 
 const u = (p: string) => `${SITE.url}${p}`;
 
@@ -159,6 +176,8 @@ ${meltGroups()
   .join('\n')}
 - [Common questions](${u('/common-questions')}): the questions that are not about one coin, in ${QUESTION_CATEGORIES.length} topics.
 ${QUESTION_CATEGORIES.map((c) => `  - [${c.h1}](${u(categoryPath(c))}): ${c.bluf}`).join('\n')}
+- [Cheat sheets](${u(CHEAT_SHEETS_ROOT)}): which years and mint marks in a series are the scarce ones, one series per page.${WRITTEN_SHEETS.length === 0 ? ' Every sheet in it is a stub today: the pages are marked noindex and each one says on its face that it is not written yet.' : ''}
+${WRITTEN_SHEETS.map((s) => `  - [${cheatSheetH1(s)}](${u(cheatSheetPath(s))}): ${cheatSheetTeaser(s)}`).join('\n')}
 - [Coin topics](${u('/coin-value/tagged')}): series, countries and categories of coin, as opposed to the question topics above.
 - [Melt topics](${u('/melt-value/tagged')}): the same series, countries and categories, added up as metal.
 - [Privacy](${u('/privacy')}): what happens to data.

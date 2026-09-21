@@ -58,12 +58,17 @@
  * instance is not a place to keep state: there are many of them, they are cold
  * most of the time, and none of them sees what the others did.
  *
- * Neither guard makes the refresh atomic. Two requests arriving in the same
- * moment after the interval can both see a stale document and both call the
- * feed; the writes are last-one-wins and the figures are near-identical, so the
- * cost is one wasted call, rarely. Only fix that if the usage count says it is
- * happening — the tool is `ifMatch` on the write, claiming the refresh before
- * spending it.
+ * Both guards live in a document the endpoint has to be able to WRITE, which is
+ * why `refresh()` writes its bookkeeping before it calls the feed rather than
+ * after. With the feed called first, a store that rejects every write spends a
+ * call on every request and neither guard can stop it — they are both in the
+ * document that is failing to save. Claiming first makes a broken writer cost
+ * nothing at all. The full reasoning is on `refresh()`.
+ *
+ * That still does not make the refresh atomic: two requests arriving in the
+ * same moment can both read a stale document and both go on to claim. The cost
+ * is one wasted call, rarely. Only fix it if the usage count says it is
+ * happening — the tool is `ifMatch` on the claiming write.
  *
  * ---------------------------------------------------------------------------
  * IT ALWAYS ANSWERS 200
@@ -291,10 +296,51 @@ async function refresh(
   const write = env.writeCache;
   if (!apiKey || !write) return undefined;
 
-  const { snapshot, usage } = await fetchMetalsDev(apiKey);
-
   const month = monthKey(now);
   const calls = (doc?.month === month ? doc.calls : 0) + 1;
+
+  // CLAIM THE CALL BEFORE SPENDING IT.
+  //
+  // The bookkeeping is written first, carrying the OLD prices and a new
+  // `fetchedAt`, and only then is the feed called. That ordering is the
+  // difference between a bounded system and an unbounded one, and it was
+  // learned the hard way: with the feed called first, a write that always
+  // fails — a misconfigured store, a revoked token — spends a call on EVERY
+  // request. Both guards are inert in that state, because both of them live in
+  // the document that cannot be written. There is nothing to notice it, either:
+  // the endpoint goes on answering 200 with correct figures while the month's
+  // allowance drains.
+  //
+  // Claiming first inverts every one of those failures into a safe one:
+  //
+  //   - a broken writer now costs ZERO feed calls. It throws here, before the
+  //     feed is touched, and the reader is served the figures already on hand.
+  //   - a feed that fails after the claim leaves `fetchedAt` advanced, so the
+  //     next attempt is a day away rather than on the next request. A day of
+  //     slightly older prices is the right price to pay for not hammering a
+  //     feed that is down.
+  //   - two requests racing are far less likely to both reach the feed, since
+  //     the first one writes before it calls.
+  //
+  // The claim is honest on its own: it carries the prices and the `asOf` that
+  // were already true, and `asOf` is what every page prints. A reader served
+  // from a claimed-but-not-yet-refreshed document sees the previous reading
+  // with the previous time beside it.
+  const base = doc ?? REFERENCE_SPOT;
+  await write(
+    JSON.stringify({
+      prices: base.prices,
+      asOf: base.asOf,
+      source: base.source,
+      live: base.live,
+      fetchedAt: now.toISOString(),
+      month,
+      calls,
+    } satisfies SpotCacheDocument),
+  );
+
+  const { snapshot, usage } = await fetchMetalsDev(apiKey);
+
   const next: SpotCacheDocument = {
     ...snapshot,
     fetchedAt: now.toISOString(),

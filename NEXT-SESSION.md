@@ -4,6 +4,46 @@ Last updated 2026-09-20.
 
 ## Done
 
+**The cheat sheets, as ten stubs (2026-09-20).** `/cheat-sheets` and
+`/cheat-sheets/<slug>`, ten series in alphabetical order, none of them
+written. `src/data/cheat-sheets.ts` is the registry and
+`validateCheatSheets()` runs at its module scope.
+
+- **It overlaps the series tag page, and the division is argued in the
+  registry header rather than left to be discovered.** The tag page owns the
+  series — run, designer, metal eras, where the mint mark sits; a sheet owns
+  the sort — which dates and mint marks to set aside and nothing else. A
+  build check fails if a sheet grows a Designer, Obverse, Reverse, Edge or
+  "Metal eras" row, because that is the point at which it has become the tag
+  page. `seriesTag` links the two where both exist; it is set for the three
+  registered series and only renders when that tag archive is really built,
+  which today is the Washington quarter alone.
+- **A stub is noindex, out of the sitemap and says so on its face.** Three
+  things, all driven by one field: `written: false`. The sitemap filter in
+  `astro.config.mjs` reads the registry rather than a hand-kept pattern, so
+  setting `written: true` reverses all three in one edit. This is the
+  concession that lets ten empty URLs exist at all; without it the section is
+  ten thin pages. `llms.txt` lists only written sheets for the same reason.
+- **The title, the description, the H1 and the teaser are formulas**, fitted
+  by `meta.ts` — ten of these becomes forty. The hub's own copy is
+  hand-written, the way the question topics are: one page, bounded editorial
+  act.
+- **The fields for the lists themselves do not exist yet, on purpose.** When
+  the first sheet is written, reuse `KeyDate`, `Variety` and `CoinError` from
+  `coin-schema.ts` rather than inventing a second vocabulary for the three
+  lists the series page already renders.
+- Wired through: `Footer` (the header was left alone — its own comment says
+  four labels is what a 1024px bar fits, and it already carries an unbuilt
+  `/coin-tools` link), `sitePaths()` in `questions.ts` so a question may link
+  to a sheet, `llms.ts`, `astro.config.mjs` (priority and the sitemap
+  filter), `src/dev/inventory.ts` (a fifth route section, plus a `note` field
+  on `RouteEntry` that `/dev/pages` renders as a pill), and four new build
+  checks.
+- **Not done, deliberately: the series tag page does not link across to its
+  sheet.** The link would point from an indexable page to a noindex stub.
+  Add it — outside the derived cheat-sheet block, which a build check
+  requires to link nothing out — on the day the first sheet is written.
+
 **Every page date was removed, and the copy stopped describing the site
 (2026-09-20).** Two changes, one decision behind both: this site answers
 questions about objects that do not change, so anything on it about *itself*

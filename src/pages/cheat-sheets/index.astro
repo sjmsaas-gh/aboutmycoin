@@ -1,0 +1,76 @@
+---
+/**
+ * The cheat-sheet hub: /cheat-sheets.
+ *
+ * A lookup table. The reader has already identified the coin in their hand
+ * and is looking that name up, which is why the list is alphabetical rather
+ * than ordered by how often each series is asked about -- see the registry.
+ *
+ * No FAQPage schema. This page answers nothing itself; it is a CollectionPage
+ * over an ItemList of the sheets, the same shape the questions hub uses.
+ * Every sheet below is a stub today, and each says so on its own page rather
+ * than here: a hub that apologises for its section is the count rule in a
+ * different font.
+ */
+import Base from '../../layouts/Base.astro';
+import { itemListSchema, webPageSchema } from '../../lib/schema';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_BLUF,
+  CHEAT_SHEETS_DESCRIPTION,
+  CHEAT_SHEETS_H1,
+  CHEAT_SHEETS_INTRO,
+  CHEAT_SHEETS_ROOT,
+  CHEAT_SHEETS_TITLE,
+  cheatSheetH1,
+  cheatSheetPath,
+  cheatSheetTeaser,
+} from '../../data/cheat-sheets';
+
+const path = CHEAT_SHEETS_ROOT;
+---
+<Base
+  title={CHEAT_SHEETS_TITLE}
+  description={CHEAT_SHEETS_DESCRIPTION}
+  path={path}
+  crumbs={[{ label: 'Cheat sheets', href: path }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: CHEAT_SHEETS_H1,
+      description: CHEAT_SHEETS_DESCRIPTION,
+      path,
+    }),
+    itemListSchema({
+      name: CHEAT_SHEETS_H1,
+      description: CHEAT_SHEETS_DESCRIPTION,
+      items: CHEAT_SHEETS.map((s) => ({ name: cheatSheetH1(s), path: cheatSheetPath(s) })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{CHEAT_SHEETS_H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg"><strong>{CHEAT_SHEETS_BLUF}</strong></p>
+      {CHEAT_SHEETS_INTRO.map((p) => <p>{p}</p>)}
+      <p>
+        For a figure on one particular coin rather than a sort of the whole
+        series, the <a href="/coin-value">coin value catalogue</a> has the
+        specifications and the metal content, and the
+        <a href="/melt-value">melt value</a> pages do the arithmetic.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="tile-grid">
+      {CHEAT_SHEETS.map((s) => (
+        <a href={cheatSheetPath(s)} class="tile">
+          <h2>{cheatSheetH1(s)}</h2>
+          <p>{cheatSheetTeaser(s)}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
