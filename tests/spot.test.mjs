@@ -16,7 +16,8 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import {
   METALS,
   SPOT,
@@ -94,6 +95,44 @@ test('the built-in reading is what the build renders, unrounded', () => {
   // And display does round: cents under $100, whole dollars above.
   assert.match(formatUsd(SPOT.silver), /^\$\d+\.\d{2}$/);
   assert.ok(!formatUsd(SPOT.gold).includes('.'));
+});
+
+test('nothing reachable from api/ imports without an extension', () => {
+  // This one shipped and 500ed in production, which is the only reason it has a
+  // test. `src/lib/` imports extensionlessly because Vite prefers it, and that
+  // was harmless for as long as every endpoint ran on the edge runtime: esbuild
+  // bundles an edge function and resolves the specifier on the way through.
+  //
+  // The Node runtime does not bundle. It ships the compiled files and resolves
+  // them with real Node ESM rules, which require the extension -- so the moment
+  // /api/spot moved to Node to get the Blob SDK, an extensionless import three
+  // modules deep became ERR_MODULE_NOT_FOUND at invocation. Nothing local
+  // catches it: the build passes, the typecheck passes, the tests pass, because
+  // Vite and the test hook both resolve it.
+  const seen = new Set();
+  const offenders = [];
+
+  const walk = (file) => {
+    if (seen.has(file) || !existsSync(file)) return;
+    seen.add(file);
+    const source = readFileSync(file, 'utf8');
+    for (const [, spec] of source.matchAll(/from\s+'(\.[^']*)'/g)) {
+      if (!/\.(js|ts|json)$/.test(spec)) {
+        offenders.push(`${file} imports '${spec}' without an extension`);
+        continue;
+      }
+      // '.js' on disk is '.ts'; follow it either way.
+      const resolved = join(dirname(file), spec.replace(/\.js$/, '.ts'));
+      walk(existsSync(resolved) ? resolved : join(dirname(file), spec));
+    }
+  };
+
+  for (const entry of readdirSync('api').filter((f) => f.endsWith('.ts'))) {
+    walk(join('api', entry));
+  }
+
+  assert.ok(seen.size > 3, 'the import walk found nothing -- the test is not testing');
+  assert.deepEqual(offenders, [], `these would fail on the Node runtime:\n${offenders.join('\n')}`);
 });
 
 test('the feed is reached one way only, and never through the cache URL', () => {

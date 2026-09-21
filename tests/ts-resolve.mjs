@@ -15,7 +15,9 @@
  * scripts in `scripts/` that import a module in `src/lib/` -- nothing that
  * ships is resolved through it.
  *
- * The second rule covers `src/lib/`, which imports *extensionlessly*. The two
+ * The second rule covers `src/lib/`, which imports *extensionlessly* -- except
+ * where a module is reachable from `api/`, which names its extension for the
+ * reason in the header of `src/lib/spot.ts`. The two
  * halves of the source legitimately differ: `src/server/` and `api/` are
  * typechecked by Vercel under `moduleResolution: node16`, which rejects an
  * extensionless relative import outright, while `src/lib/` is only ever

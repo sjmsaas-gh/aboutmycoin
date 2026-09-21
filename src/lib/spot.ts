@@ -67,7 +67,18 @@
 
  */
 
-import { SPOT_SNAPSHOT } from '../data/spot-snapshot';
+// `.js`, not extensionless, although the rest of `src/lib/` imports without an
+// extension and Vite prefers it that way. This module is reachable from
+// `api/spot.ts`, which runs on the Node runtime — and the Node runtime does not
+// bundle: it ships the compiled files and resolves them with real Node ESM
+// rules, which require the extension. The edge runtime hid this, because
+// esbuild bundles everything and resolves extensionless specifiers on the way.
+// `.js`-meaning-`.ts` is the standard TypeScript ESM convention; Vite, `astro
+// check` and `tests/ts-resolve.mjs` all understand it.
+//
+// The rule, and `tests/spot.test.mjs` enforces it: anything reachable from
+// `api/` names its extension, however deep in `src/lib/` it lives.
+import { SPOT_SNAPSHOT } from '../data/spot-snapshot.js';
 
 /**
  * Metals the catalogue can carry a weight for.
