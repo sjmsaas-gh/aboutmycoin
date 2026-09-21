@@ -7,22 +7,33 @@
  * product of nine groups and eight denominations is seventy-two URLs, and only
  * the eight that hold something get built.
  *
- * The copy here is composed from the group and the denomination rather than
- * hand-written per pair, and that is deliberate for a listing page whose job
- * is navigation and an ItemList. The moment a pair earns a real explanation --
- * "silver quarters" almost certainly will -- it gets a hand-written entry
- * rather than more generation.
+ * Every string on the page is generated in `src/lib/catalog-copy.ts` from the
+ * group, the denomination and the coins standing at the pair. There is
+ * deliberately no registry of hand-written pair copy and no field to add one
+ * to: this is the level with the most URLs behind it and the least to say that
+ * its group and its denomination have not said already, and the day "silver
+ * quarters" earns a real explanation, the explanation belongs on the coin pages
+ * underneath it.
  */
 import Base from '../../../../layouts/Base.astro';
 import CoinTile from '../../../../components/CoinTile.astro';
 import { itemListSchema, webPageSchema, faqSchema } from '../../../../lib/schema';
+import { meltPairs, meltTypePath, metalsIn } from '../../../../lib/melt';
+import { METAL_LABEL, formatUsd, spotPrice, spotCaveat } from '../../../../lib/spot';
+import {
+  pairAnswer,
+  pairDescription,
+  pairH1,
+  pairIntro,
+  pairSections,
+  pairSeoTitle,
+} from '../../../../lib/catalog-copy';
 import {
   populatedPairs,
   coinsInGroupType,
   typePath,
   groupPath,
   coinPath,
-  latestUpdated,
   pairQuestion,
   type Group,
   type CoinType,
@@ -40,16 +51,30 @@ const { group, type } = Astro.props;
 
 const path = typePath(group.slug, type.slug);
 const coins = coinsInGroupType(group.slug, type.slug);
-const updated = latestUpdated(coins, type.updated > group.updated ? type.updated : group.updated);
 
 const plural = type.namePlural.toLowerCase();
-const h1 = `${group.name} ${type.namePlural} and What They Are Worth`;
+const h1 = pairH1(group, type);
 const question = pairQuestion(group, type);
-const answer = `${group.bluf} ${type.bluf}`;
-const description = `${group.name} ${plural}: composition, metal content and value. ${type.bluf}`;
+const answer = pairAnswer(group, type);
+const description = pairDescription(group, type);
+const intro = pairIntro(group, type);
+const sections = pairSections(group, type);
+
+// The price every metal figure under this page is worked at, stated once and
+// big, the way the melt section states it. A reader who has landed on "silver
+// quarters" is holding metal, and the number that turns a weight into a value
+// is the first thing they need; the melt side has the arithmetic, this is the
+// input to it. Read off the coins rather than the group slug -- a 40% silver
+// clad half is clad by construction and silver by content.
+const metals = metalsIn(coins);
+
+// The melt twin, when it is built. See the note on the group archive.
+const meltTwin = meltPairs().some((p) => p.group.slug === group.slug && p.type.slug === type.slug)
+  ? meltTypePath(group.slug, type.slug)
+  : undefined;
 ---
 <Base
-  title={`${group.name} ${type.namePlural}: Value Guide`}
+  title={pairSeoTitle(group, type)}
   description={description}
   path={path}
   crumbs={[
@@ -63,7 +88,6 @@ const description = `${group.name} ${plural}: composition, metal content and val
       name: h1,
       description,
       path,
-      dateModified: updated,
     }),
     itemListSchema({
       name: h1,
@@ -75,24 +99,35 @@ const description = `${group.name} ${plural}: composition, metal content and val
 >
   <section class="container-page pt-8 pb-10">
     <div class="prose-page">
-      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{h1}</h1>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style={`--metal: var(--metal-${group.slug})`}></div>
       <div class="verdict" style={`--metal: var(--metal-${group.slug})`}>
         <span class="verdict-label">{question}</span>
         <p>{answer}</p>
       </div>
+      {metals.map((m) => (
+        <section class="figure-block not-prose" style={`--metal: var(--metal-${group.slug})`}>
+          <p class="figure-label">{METAL_LABEL[m]} price these coins are worked at</p>
+          <p class="figure-big" data-spot="price-unit" data-spot-metal={m}>{`${formatUsd(spotPrice(m))}/ozt`}</p>
+          <p class="figure-note" data-spot="caveat" data-spot-metal={m}>{spotCaveat(m)}</p>
+          {meltTwin && (
+            <p class="figure-link">
+              <a href={meltTwin}>{group.name} {type.name.toLowerCase()} melt value &rarr;</a>
+            </p>
+          )}
+        </section>
+      ))}
       {type.faceNote && (
         <p style="margin-top: 1.3rem"><strong>Face value.</strong> {type.faceNote}</p>
       )}
-      <p>
-        Every entry below is a {plural.replace(/s$/, '')} struck in {group.name.toLowerCase()}.
-        {group.meltDriven
-          ? ' Each one states its actual metal weight in troy ounces, which is all you need to work out the metal value: multiply it by the current spot price.'
-          : ' Metal content is not the variable in this group, so each entry leads with the date, the mint mark and what to check before assuming the coin is worth more than face value.'}
-      </p>
+      {intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
     </div>
   </section>
 
   <section class="container-page pb-20">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{sections.coins.heading}</h2>
+    </div>
     <div class="tile-grid">
       {coins.map((c) => <CoinTile coin={c} />)}
     </div>
@@ -100,6 +135,8 @@ const description = `${group.name} ${plural}: composition, metal content and val
       <p class="text-sm" style="color: var(--text-muted)">
         Looking for a different metal? See <a href={groupPath(group.slug)}>all {group.name.toLowerCase()} coins</a>
         or <a href="/coin-value">the whole catalogue by composition</a>.
+        {meltTwin && <> For the metal in these worked out and nothing else, see
+          {' '}<a href={meltTwin}>{group.name.toLowerCase()} {plural} melt values</a>.</>}
       </p>
     </div>
   </section>

@@ -41,7 +41,7 @@
 /og/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-/favicon.svg
+/favicon.ico
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 /logo.png
@@ -49,6 +49,26 @@
 
 /apple-touch-icon.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# The one endpoint whose answer is meant to be cached, and the one document
+# allowed to be younger than the HTML around it: an hour at the edge against a
+# day for everything else. That is what lets a spot price change without a
+# deploy -- see src/lib/spot.ts. Keep it equal to the Cache-Control
+# src/server/spot.ts sets, and to the rules in vercel.json and netlify.toml.
+#
+# It is also the one rule here with no `must-revalidate` on it, deliberately:
+# that directive forbids serving a stale response and `stale-while-revalidate`
+# exists to allow one, so a strict CDN resolves the contradiction by dropping
+# the SWR. Here the SWR is the point -- an older price, labelled with its date,
+# beats no price.
+/api/spot
+  Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400
+
+# Every other endpoint takes a key, a token or a message, and none of those may
+# sit in a shared cache. This block comes after /api/spot because the more
+# specific rule has to be matched first.
+/api/*
+  Cache-Control: no-store
 
 /robots.txt
   Cache-Control: public, max-age=0, must-revalidate, s-maxage=3600

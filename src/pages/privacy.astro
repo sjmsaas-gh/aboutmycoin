@@ -14,10 +14,8 @@
 import Base from '../layouts/Base.astro';
 import { SITE } from '../lib/site';
 import { webPageSchema } from '../lib/schema';
-import { PRIVACY_UPDATED } from '../lib/page-dates';
 import { THIRD_PARTIES } from '../lib/third-parties';
 
-const UPDATED = PRIVACY_UPDATED;
 /* Widened to `string` because SITE is `as const`; see third-parties.ts. */
 const ga4: string = SITE.ga4;
 const description = `What ${SITE.name} collects, what it does not, and which third parties are involved.`;
@@ -33,14 +31,12 @@ const description = `What ${SITE.name} collects, what it does not, and which thi
       name: `${SITE.name} privacy`,
       description,
       path: '/privacy',
-      dateModified: UPDATED,
     }),
   ]}
 >
   <section class="container-page pt-12 pb-20">
     <div class="prose-page">
       <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Privacy</h1>
-      <p class="text-sm" style="color: var(--text-muted)">Last updated {UPDATED}</p>
 
       <p>
         There are no accounts on this site, no password to lose, and no database
@@ -76,6 +72,20 @@ const description = `What ${SITE.name} collects, what it does not, and which thi
       <p>
         The form is protected by a signed token rather than a CAPTCHA, so
         nothing about you is sent to a third party to prove you are human.
+      </p>
+
+      <h2>The email list</h2>
+      <p>
+        If you put your first name and address into the sign-up box, both go to
+        Resend, which is the service that holds the list and sends the email.
+        They are used to send you email and for nothing else: not sold, not
+        shared, not used to look you up anywhere. There is no copy of the list
+        on this site, because there is no database here to keep one in.
+      </p>
+      <p>
+        Signing up does not create an account and does not change anything else
+        about how you use the site. Ask, on the
+        <a href="/contact">contact form</a>, and you will be taken off the list.
       </p>
 
       <h2>Paying</h2>

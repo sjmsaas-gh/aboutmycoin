@@ -24,6 +24,14 @@ npm test             # server logic: contact, licence, checkout, webhook
 npm run test:build   # builds, then checks the built HTML
 ```
 
+With the dev server running, **`/dev`** is the workbench: every URL the site
+builds, grouped and collapsible, with each page's title, description, H1 and
+JSON-LD read back off the live page; every coin with the URLs it created and
+the fields it is missing; and the procedure in
+**[ADDING-A-COIN.md](ADDING-A-COIN.md)** rendered beside the live taxonomy.
+None of it is built — `npm run build` emits nothing under `/dev`, and a build
+check fails if it ever does.
+
 Two generators are run by hand, not at build time, because their output is
 committed and the deploy must not depend on the build machine having sharp's
 system dependencies or fonttools installed:
@@ -31,6 +39,7 @@ system dependencies or fonttools installed:
 ```bash
 npm run assets       # favicon/logo/OG rasters from the SVG mark (needs sharp)
 npm run fonts        # re-subset the webfonts (needs `pip install fonttools brotli`)
+npm run spot         # refresh the built-in metal prices from metals.dev
 ```
 
 `npm run dev` serves the marketing pages with no configuration at all. The
@@ -47,7 +56,7 @@ contact form and checkout need environment variables, and say so honestly (503,
 | Pre-launch lockdown (4 mechanisms) | `src/lib/site.ts`, `Seo.astro`, `robots.txt.ts`, host configs |
 | Canonical URLs, OG, Twitter, robots meta | `src/components/Seo.astro` |
 | JSON-LD builders | `src/lib/schema.ts` |
-| Sitemap with per-URL lastmod + priority | `astro.config.mjs` |
+| Sitemap with per-URL priority, no dates | `astro.config.mjs` |
 | Trailing-slash canonicalisation | `astro.config.mjs` + host configs |
 | llms.txt / llms-full.txt | `src/lib/llms.ts`, `src/pages/llms*.ts` |
 | Security headers + CSP, three hosts | `vercel.json`, `netlify.toml`, `public/_headers` |
@@ -58,7 +67,6 @@ contact form and checkout need environment variables, and say so honestly (503,
 | Licence keys with no database | `src/server/license.ts` |
 | Licence email on subscribe | `src/server/stripe-webhook.ts` |
 | Programmatic SEO pattern, with optional HowTo steps | `src/data/answers.ts`, `src/pages/answers/` |
-| Honest sitemap `lastmod`, one date per page | `src/lib/page-dates.ts` |
 | Third-party list for /privacy, derived from config | `src/lib/third-parties.ts` |
 | Large-file upload to Cloudflare R2 | `r2/`, `scripts/r2*.mjs` |
 | Design tokens | `src/styles/global.css` |
@@ -146,8 +154,123 @@ that also appears in `pricing.ts`.
 ## Hosting
 
 Vercel by default. `api/*.ts` are picked up as edge functions even though the
-Astro build is `output: 'static'` — a static site with a couple of endpoints
-beside it, which is exactly the shape the no-backend constraint allows.
+Astro build is `output: 'static'` — a static site with a few endpoints beside
+it, which is exactly the shape the no-backend constraint allows.
+
+| Endpoint | Handler | Needs |
+| --- | --- | --- |
+| `/api/contact` | `src/server/contact.ts` | `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`, `CONTACT_SIGNING_SECRET` |
+| `/api/subscribe` | `src/server/subscribe.ts` | `RESEND_API_KEY`, `RESEND_SEGMENT_ID`, `RESEND_SIGNUP_EVENT`, `CONTACT_SIGNING_SECRET` |
+| `/api/checkout` | `src/server/checkout.ts` | Stripe keys — see `.env.example` |
+| `/api/stripe-webhook` | `src/server/stripe-webhook.ts` | Stripe keys — see `.env.example` |
+| `/api/spot` | `src/server/spot.ts` | `SPOT_CACHE_URL`, `METALS_DEV_API_KEY`, `BLOB_READ_WRITE_TOKEN` — all optional |
+
+Each one answers 503 and says so when its variables are missing, rather than
+accepting input and dropping it. The sign-up box shares the contact form's
+signing secret on purpose: a token from either proves the same fact.
+
+### `/api/spot` is the exception to all of that
+
+It is the only endpoint whose answer is meant to be **cached** — an hour at the
+edge, where the HTML beside it is cached for a day — the only one that takes no
+environment at all, and the only one that cannot fail for want of
+configuration. All three follow from what it is for.
+
+The site is static, so every figure on it is as old as the last deploy. That is
+fine for a coin's weight and wrong for the price of silver. So a price is
+rendered twice: the build bakes the committed snapshot into the HTML, dated and
+captioned, and `src/lib/spot-dom.ts` fetches this endpoint in the browser and
+rewrites every marked figure on the page. Both halves call the same functions in
+`src/lib/spot.ts`, so they cannot round differently or word a caveat two ways.
+
+**Where the prices come from.** The endpoint serves a cached snapshot — the JSON
+document at `SPOT_CACHE_URL`, a Vercel Blob object — and refreshes it from
+metals.dev when the last refresh was more than twenty hours ago. There is no
+cron: the reader who happens to arrive after the interval pays for the refresh,
+and everybody after them is served from the cache. Setup steps are in
+`.env.example`.
+
+**Why not just call the feed per request, with a long cache in front of it.**
+Because the CDN cache is per-region and is purged on every deploy, so a
+day-long `s-maxage` costs *(active regions) × (1 + deploys)* calls a day rather
+than one — and the feed's free tier is a hundred calls a **month**. Worse, a
+stateless function cannot count its own calls, so the overspend is invisible
+until the account is suspended. Two guards in `src/server/spot.ts` make it
+countable instead, and both keep their state in the cached document:
+
+| Guard | What it stops |
+| --- | --- |
+| `fetchedAt`, the time of the last **feed call** | Refreshing more often than the interval. It is deliberately a different field from `asOf`, the time the prices were *read*: `asOf` barely moves while the metals market is shut, so scheduling off it would refresh on every cache miss all weekend, each call returning the same Friday timestamp it had just rejected. |
+| A month-to-date call count | Everything else. It is a fuse rather than a knob: if it trips, the clock check has broken, and the log says so while the site goes on serving the last good figures. |
+
+Neither makes the refresh atomic — two requests in the same moment can both
+refresh, wasting one call, rarely. `ifMatch` on the write is the fix if the
+usage count ever shows it happening.
+
+`src/data/spot-snapshot.ts` is the **fallback**: the reading the static build
+bakes into every page, which is what a crawler indexes, what a reader with no
+JavaScript keeps, and what the endpoint serves when the cache is empty,
+unreachable, slow or malformed. `npm run spot` refreshes it by hand from the
+feed.
+
+**Keeping the built-in figure fresh.** It only changes when the site is rebuilt,
+so two things keep it current without anyone remembering to. `npm run build`
+runs `scripts/prebuild-spot.mjs` first, which takes the figure from the cached
+document — a public file, so no API key and no metered call — and falls back to
+the committed reading on any failure, including no network. And a successful
+daily refresh pokes `SPOT_DEPLOY_HOOK_URL`, which rebuilds the site with the
+price it just fetched. About one deploy a day, and it cannot loop: a build never
+calls the feed, and a deploy never calls `/api/spot`.
+
+That prebuild fetch is a deliberate exception to the rule that builds do not
+fetch. The three reasons behind that rule are in `src/data/coin-catalog.ts` and
+none of them survives contact with a price: reproducibility is not wanted (two
+builds a day apart *should* render different prices), the build stays
+credential-free and works offline, and a diff as review means nothing for one
+number that is stamped with its own timestamp wherever it appears.
+
+So `/api/spot` always has a correct answer and always answers 200. Cache down,
+feed down, nothing configured at all: it serves the best snapshot on hand. A 503
+would blank a figure in every browser on the site over a cache miss.
+
+Prices are stored and computed **unrounded**, and rounded once at the point of
+display in `formatUsd()` — so a figure a page prints is rounded from the number
+its arithmetic used.
+
+It is also the one endpoint on the **Node** runtime rather than edge, because
+`@vercel/blob` imports `undici` and cannot be bundled for the edge. Behind an
+hour-long edge cache this function runs about once an hour per region, so a cold
+start there is invisible.
+
+`astro dev` does not serve `api/*.ts`, so the fetch 404s under `npm run dev`
+and every page shows the built-in figures — which is the fallback working, not
+a bug. Run `vercel dev` to exercise the endpoint itself.
+
+Cache lifetimes, shortest to longest:
+
+| | Held for | Why |
+| --- | --- | --- |
+| `/api/spot` in the browser | 5 minutes | a browsing session costs one request, not one per page |
+| `/api/spot` at the edge | 1 hour | one invocation per hour per region, whatever the traffic |
+| …then stale while revalidating | 24 hours | an older price, labelled with its date, beats no price |
+| the HTML | 1 day (stale for a week) | it holds weights and words, which do not move |
+| `/_astro/*`, the rewriting module | a year, immutable | content-hashed |
+
+The gap between rows two and four is the whole feature: tighten the HTML or
+loosen the price and the second rendering has nothing left to do.
+
+That rule is one exported string — `SPOT_CACHE_CONTROL` in `src/lib/spot.ts` —
+repeated by the handler and by all three host configs, and
+`tests/spot.test.mjs` compares all four to it. It deliberately carries no
+`must-revalidate`, unlike every other rule here: that directive forbids
+serving a stale response and `stale-while-revalidate` exists to permit one, and
+a CDN resolving the contradiction drops the SWR.
+
+`tests/spot-dom.test.mjs` runs the browser half against real built pages and
+checks that the figure, its dateline, the ladder under it and the copy of the
+sentence in the page's JSON-LD all move together — including after a
+back/forward-cache restore, which is the one path that can otherwise show a
+figure older than the endpoint's own hour.
 
 ### Checking a deployment from the outside
 

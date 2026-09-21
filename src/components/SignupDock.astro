@@ -1,0 +1,501 @@
+---
+/**
+ * The sign-up dock: the same email box as the home page, offered once a
+ * session on every other page.
+ *
+ * One component, two shapes, because the two viewports want opposite things:
+ *
+ *   - Wide screens get a panel pinned to the right edge, vertically centred,
+ *     that floats down the page as you scroll, and it is open when the page
+ *     arrives. It is NOT modal: nothing is dimmed, the page stays scrollable
+ *     and focus is left where it was. A panel that occupies a column nobody
+ *     was reading costs nothing, so it neither blocks the column they were
+ *     reading nor has any reason to make them wait.
+ *   - Narrow screens have no spare column, so the same panel becomes a centred
+ *     popup with a backdrop that opens after a delay, and there it IS modal:
+ *     scroll locked, focus moved in and trapped, Escape closes. A popup over a
+ *     phone screen that leaves the page behind it tabbable is a screen reader
+ *     reading two documents. Collapsed, it is the same right-edge tab as the
+ *     desktop shape.
+ *
+ * Closing does not remove it. Both shapes collapse to a tab on the right edge
+ * that reopens the panel, which is the difference between dismissing an offer
+ * and losing it.
+ *
+ * The form itself is `SignupForm` -- the validation, the honeypot, the
+ * endpoint and every promise it makes are the home page's, because two
+ * sign-up boxes that drift apart is exactly the failure the one-source rule
+ * exists to stop. The one thing that differs is the pitch: the home page's
+ * box sits under a hero that has already explained the site, and this one
+ * arrives over a coin page uninvited, so it names what it is offering.
+ * Both pitches are in `src/lib/subscribe.ts`. This file owns the chrome and
+ * nothing else.
+ *
+ * It ships one small inline script and no third party. Nothing here runs
+ * before the page has rendered.
+ */
+import SignupForm from './SignupForm.astro';
+import { SUBSCRIBE_DOCK_COPY } from '../lib/subscribe';
+
+interface Props {
+  /**
+   * How long after load the popup opens itself on a phone, in seconds.
+   *
+   * Phones only. On a wide screen the panel is open when the page arrives --
+   * it sits in a column nobody was reading, so there is nothing to wait for.
+   * On a phone it covers what the visitor came for, so it waits.
+   */
+  delaySeconds?: number;
+  /** Fraction of the page scrolled that opens the popup early, on a phone. */
+  scrollFraction?: number;
+}
+const { delaySeconds = 15, scrollFraction = 0.35 } = Astro.props;
+---
+{/*
+  The root is a full-viewport layer with pointer events off, so the parts of it
+  that are empty -- which is most of it, most of the time -- never intercept a
+  click meant for the page. Each piece switches them back on for itself.
+
+  z-index 60 puts it over the sticky header (z-50). Below the header, the
+  panel would slide under the masthead on a short window.
+
+  The whole thing is display:none until the script marks it ready. A tab that
+  opens nothing is worse than no tab, and that is exactly what a visitor with
+  JavaScript off or a script that failed to parse would otherwise get.
+*/}
+<div class="dock" data-signup-dock>
+  {/*
+    The backdrop exists in both shapes but is only painted in modal mode. It is
+    a sibling of the panel rather than a parent, so the panel is not inside a
+    stacking context that the backdrop's opacity transition owns.
+  */}
+  <div class="dock-backdrop" data-dock-backdrop></div>
+
+  <div
+    class="dock-panel"
+    data-dock-panel
+    role="dialog"
+    aria-label={SUBSCRIBE_DOCK_COPY.heading}
+    aria-modal="false"
+    inert
+  >
+    <button class="dock-close" type="button" data-dock-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+      </svg>
+    </button>
+
+    {/*
+      surface={false}: the panel is already a card. Two borders and two
+      paddings around one form is the tell of a component dropped into a
+      container that was not expecting it.
+    */}
+    <SignupForm surface={false} pitch={SUBSCRIBE_DOCK_COPY} />
+  </div>
+
+  {/*
+    The tab. Vertical text rather than an icon alone, because an envelope in a
+    corner is read as "contact us" and this is not that. It is a real button
+    with real text, so it is findable by keyboard and readable aloud.
+  */}
+  <button class="dock-tab" type="button" data-dock-open aria-expanded="false">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <path d="M3 7l9 6 9-6" stroke-linecap="round" />
+    </svg>
+    <span>{SUBSCRIBE_DOCK_COPY.heading}</span>
+  </button>
+</div>
+
+<style>
+  /*
+   * Everything below is scoped to this component. The two `:global()` rules
+   * reach into SignupForm's markup, and both are noted where they appear.
+   */
+  .dock {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    /* Switched on by the script. See the note on the markup. */
+    display: none;
+  }
+  .dock[data-ready] { display: block; }
+
+  .dock-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 10, 15, 0.45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+
+  .dock-panel {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    width: min(23rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.5rem 1.5rem 1.4rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    box-shadow: var(--shadow);
+    /* Closed: parked just off the right edge. `visibility` rather than
+       `display` so the transition has something to animate and so the closed
+       panel is out of the accessibility tree. */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-50%) translateX(1.5rem);
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+  }
+
+  .dock[data-open] .dock-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+    pointer-events: auto;
+  }
+
+  .dock-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .dock-close:hover {
+    background: var(--bg-sunken);
+    color: var(--text);
+  }
+
+  /*
+   * The panel is 23rem wide, which is narrower than the `sm` breakpoint the
+   * form's two-column row is written against -- that row is keyed to the
+   * viewport, and here the viewport is not what is short of room. One column,
+   * always, inside the dock.
+   */
+  .dock-panel :global([data-signup-form] > div:first-of-type) {
+    grid-template-columns: 1fr;
+  }
+
+  /* The heading sits beside the close button, so it stops short of it. */
+  .dock-panel :global(h2) {
+    font-size: 1.35rem;
+    padding-right: 2rem;
+  }
+
+  /* Once the form is replaced, the success line is what sits beside the close
+     button, and it is a <p> rather than the heading -- so it needs the same
+     clearance or it runs under the X. */
+  .dock-panel :global([data-signup-done]) {
+    padding-right: 2rem;
+  }
+
+  .dock-tab {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) translateX(0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 0.4rem;
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 0.7rem 0 0 0.7rem;
+    background: var(--bg-raised);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s, background-color 0.15s ease;
+  }
+  .dock-tab span {
+    writing-mode: vertical-rl;
+    /* Reading bottom-to-top: the eye travels up the right edge of the page. */
+    transform: rotate(180deg);
+  }
+  .dock-tab:hover { background: var(--bg-sunken); }
+
+  /* Open panel, no tab: the tab is the collapsed state, not a second control. */
+  .dock[data-open] .dock-tab {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-50%) translateX(1.5rem);
+  }
+
+  /*
+   * Modal shape. The media query and the script's `matchMedia` have to agree,
+   * so the width below is the one in MOBILE_QUERY -- change one, change both.
+   */
+  @media (max-width: 47.99rem) {
+    .dock-panel {
+      right: auto;
+      left: 50%;
+      top: 50%;
+      width: min(26rem, calc(100vw - 1.5rem));
+      max-height: calc(100dvh - 3rem);
+      transform: translate(-50%, -50%) scale(0.97);
+    }
+    .dock[data-open] .dock-panel {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .dock[data-open] .dock-backdrop {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    /* The tab stays on the right edge at the same height as the desktop one:
+       the popup is the only part of this that moves to the middle. */
+    .dock-tab {
+      padding: 0.75rem 0.35rem;
+      font-size: 0.72rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-backdrop,
+    .dock-panel,
+    .dock-tab {
+      transition-duration: 0.01ms;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ delaySeconds, scrollFraction }}>
+  /*
+   * Inline and un-bundled on purpose: it is a few hundred bytes and has no
+   * imports, so a module request and a round trip would cost more than the
+   * code does.
+   */
+  (function () {
+    const dock = document.querySelector('[data-signup-dock]');
+    if (!dock) return;
+
+    const panel = dock.querySelector('[data-dock-panel]');
+    const backdrop = dock.querySelector('[data-dock-backdrop]');
+    const tab = dock.querySelector('[data-dock-open]');
+    const close = dock.querySelector('[data-dock-close]');
+    if (!panel || !backdrop || !tab || !close) return;
+
+    /*
+     * Three keys, three lifetimes, and the differences are the whole policy.
+     *
+     * `dismissed` is per session and is set only when the visitor closes the
+     * panel. It is what "no thanks" means: the panel stops opening itself for
+     * the rest of the visit, on every page, and the tab is how it comes back.
+     * `shown` is per session and is set whenever the popup opens itself on a
+     * phone -- there the panel covers the page, so it interrupts once a visit
+     * and then waits to be asked. The desktop panel does not consult it,
+     * because a panel in the empty right-hand column interrupts nothing and
+     * should be open on every page until it is turned down.
+     * `joined` is permanent: someone already on the list should never be asked
+     * again, on any visit, so that one is localStorage.
+     *
+     * The `:2` suffix is a version. Changing it retires whatever the previous
+     * version of this component left in a visitor's browser, which is the only
+     * way to clear storage on a machine we do not have -- bump it whenever the
+     * meaning of a key changes, rather than reusing a name for a new rule.
+     *
+     * Every access is wrapped, and the store is looked up inside the `try`
+     * rather than passed in: in a browser with site data blocked, merely
+     * reading `window.localStorage` throws, so resolving it at the call site
+     * would throw outside the guard and take the whole dock with it.
+     */
+    const DISMISSED = 'amc:signup-dock:dismissed:2';
+    const SHOWN = 'amc:signup-dock:shown:2';
+    const JOINED = 'amc:signup-dock:joined:2';
+    const read = (which, key) => {
+      try { return window[which + 'Storage'].getItem(key); } catch { return null; }
+    };
+    const write = (which, key) => {
+      try { window[which + 'Storage'].setItem(key, '1'); } catch { /* site data blocked; nothing to say about it */ }
+    };
+
+    if (read('local', JOINED)) {
+      dock.remove();
+      return;
+    }
+
+    // Everything the tab and the panel need is wired below this line, so this
+    // is the first moment either of them should be on screen.
+    dock.setAttribute('data-ready', '');
+
+    // Must match the max-width in the stylesheet above.
+    const MOBILE_QUERY = window.matchMedia('(max-width: 47.99rem)');
+    const isModal = () => MOBILE_QUERY.matches;
+
+    const FOCUSABLE =
+      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    let open = false;
+    let restoreFocus = null;
+    let scrollLocked = false;
+
+    function lockScroll(on) {
+      if (on === scrollLocked) return;
+      scrollLocked = on;
+      document.body.style.overflow = on ? 'hidden' : '';
+    }
+
+    function setOpen(next, opts) {
+      const viaUser = opts && opts.viaUser;
+      open = next;
+      panel.setAttribute('aria-modal', String(next && isModal()));
+      tab.setAttribute('aria-expanded', String(next));
+
+      if (next) {
+        dock.setAttribute('data-open', '');
+        panel.removeAttribute('inert');
+        lockScroll(isModal());
+        /*
+         * Focus moves only when the modal shape is up, or when the visitor
+         * asked for the panel. Stealing focus out of the page for a panel
+         * that opened itself in a spare column would yank a reader out of the
+         * sentence they were on.
+         */
+        if (isModal() || viaUser) {
+          restoreFocus = document.activeElement;
+          const first = panel.querySelector(FOCUSABLE);
+          (first || panel).focus({ preventScroll: true });
+        }
+      } else {
+        dock.removeAttribute('data-open');
+        panel.setAttribute('inert', '');
+        lockScroll(false);
+        if (restoreFocus && document.contains(restoreFocus)) {
+          restoreFocus.focus({ preventScroll: true });
+        } else if (viaUser) {
+          tab.focus({ preventScroll: true });
+        }
+        restoreFocus = null;
+      }
+    }
+
+    /**
+     * Opens it unprompted, if the visitor has not already turned it down.
+     *
+     * On a phone it also records that the popup has interrupted once, so the
+     * next page in the same visit leaves them alone.
+     */
+    function autoOpen() {
+      if (open || read('session', DISMISSED)) return;
+      if (isModal()) {
+        if (read('session', SHOWN)) return;
+        write('session', SHOWN);
+      }
+      setOpen(true);
+    }
+
+    tab.addEventListener('click', () => setOpen(true, { viaUser: true }));
+
+    /** Closing is the "no thanks", and it is what silences the rest of the visit. */
+    function dismiss() {
+      write('session', DISMISSED);
+      write('session', SHOWN);
+      setOpen(false, { viaUser: true });
+    }
+
+    close.addEventListener('click', dismiss);
+    backdrop.addEventListener('click', dismiss);
+
+    document.addEventListener('keydown', (event) => {
+      if (!open) return;
+      if (event.key === 'Escape') {
+        dismiss();
+        return;
+      }
+      /*
+       * Tab is trapped in the modal shape only. In the docked shape the panel
+       * is one more thing on the page, and tabbing out of it into the page is
+       * the correct behaviour rather than a bug.
+       */
+      if (event.key !== 'Tab' || !isModal()) return;
+      const items = Array.from(panel.querySelectorAll(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+
+    /*
+     * Rotating the phone, or dragging a desktop window narrow, changes which
+     * shape is on screen under an already-open panel. Re-applying the state
+     * keeps the scroll lock and aria-modal honest across that switch.
+     */
+    MOBILE_QUERY.addEventListener('change', () => {
+      if (open) setOpen(true);
+      else lockScroll(false);
+    });
+
+    /*
+     * The success announcement from SignupForm. Someone who has just joined
+     * the list gets a moment to read the confirmation, then the panel closes
+     * and never opens itself again on this browser.
+     */
+    dock.addEventListener('signup:success', () => {
+      write('local', JOINED);
+      setTimeout(() => {
+        setOpen(false);
+        dock.remove();
+      }, 2600);
+    });
+
+    /*
+     * When it opens itself, which is the one place the two shapes disagree.
+     *
+     * Wide: immediately. The panel is already in an empty column and waiting
+     * twelve seconds to fill it only means twelve seconds of a visitor
+     * wondering what the tab on the edge is for.
+     *
+     * Phone: after `delaySeconds`, or sooner if they scroll far enough to have
+     * clearly read the page rather than bounced off it -- whichever lands
+     * first. The scroll listener is passive and removes itself.
+     *
+     * Both paths go through `autoOpen`, so a visitor who has already closed it
+     * is left alone either way. `isModal()` is read at fire time rather than
+     * here, because a window dragged narrow between load and the timer should
+     * be treated as the shape it is by then.
+     */
+    if (!isModal()) {
+      // Two frames, so the browser paints the closed state once and the panel
+      // slides in rather than appearing mid-air. One frame is not enough: the
+      // style that has to be painted first was set in this same tick.
+      requestAnimationFrame(() => requestAnimationFrame(autoOpen));
+    }
+
+    const timer = setTimeout(autoOpen, delaySeconds * 1000);
+    const onScroll = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollable > 0 && window.scrollY / scrollable >= scrollFraction) {
+        clearTimeout(timer);
+        window.removeEventListener('scroll', onScroll);
+        autoOpen();
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
+</script>

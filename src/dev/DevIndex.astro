@@ -1,0 +1,161 @@
+---
+/**
+ * The workbench overview: how big the site is, what is switched off, and
+ * where each kind of fact lives. Development only.
+ *
+ * The file map is the part that earns its place. Everything else here is
+ * counted from the registries, but "which file do I open to change this" is
+ * knowledge that otherwise lives only in the header comments of eleven
+ * modules, and it is the question asked most often after a week away.
+ */
+import DevShell from './DevShell.astro';
+import { counts, flagRows, routeSections, parkedRoutes } from './inventory';
+
+const sections = routeSections();
+const flags = flagRows();
+const parked = parkedRoutes();
+
+const FILE_MAP = [
+  {
+    what: 'One coin',
+    file: 'src/data/coin-catalog.ts',
+    note: 'The committed snapshot. Appending a Coin here is the whole of adding a coin; everything else is generated from it.',
+  },
+  {
+    what: 'The shape a coin must have',
+    file: 'src/data/coin-schema.ts',
+    note: 'Types and reserved segments. Change this and every entry has to satisfy it.',
+  },
+  {
+    what: 'Groups, denominations, tags',
+    file: 'src/data/coin-taxonomy.ts',
+    note: 'Hand-written, permanently. A coin may only reference an entry that exists here — validateTaxonomy() throws otherwise.',
+  },
+  {
+    what: 'Paths, filters, validation',
+    file: 'src/data/coins.ts',
+    note: 'Import this, not the two files behind it. Every /coin-value URL is built from its helpers.',
+  },
+  {
+    what: 'Melt arithmetic and copy',
+    file: 'src/lib/melt.ts',
+    note: 'Every sentence on a melt page, the metal categories, and the reserved segments under /melt-value.',
+  },
+  {
+    what: 'Metal prices',
+    file: 'src/lib/spot.ts',
+    note: 'One number per metal, unrounded, read off the built-in snapshot. /api/spot serves a cache that overrides it.',
+  },
+  {
+    what: 'Common questions',
+    file: 'src/data/questions.ts',
+    note: 'Written one at a time. The ones still to write are in the file header, not in the array.',
+  },
+  {
+    what: 'Who owns which FAQ question',
+    file: 'src/data/faq-registry.ts',
+    note: 'Throws when two pages claim one question. Runs on every build, imported by astro.config.mjs.',
+  },
+  {
+    what: 'Titles, descriptions, JSON-LD',
+    file: 'src/lib/schema.ts + each route file',
+    note: 'Built from the same object the visible page renders. Never typed twice.',
+  },
+  {
+    what: 'Site-wide switches',
+    file: 'src/lib/site.ts',
+    note: 'DISCOVERABLE, HOME_PLACEHOLDER, the brand, the origins.',
+  },
+  {
+    what: 'What the build guarantees',
+    file: 'tests/build-smoke.test.mjs',
+    note: 'Reads dist/. If a rule matters, it is in here rather than in a comment.',
+  },
+];
+---
+<DevShell
+  title="Workbench"
+  lede="What exists right now, what is deliberately switched off, and which file to open. Visible in `astro dev` only — none of these URLs are built."
+>
+  <div class="grid">
+    {counts().map((c) => (
+      <div class="stat">
+        <b>{c.n}</b>
+        <span>{c.what}</span>
+      </div>
+    ))}
+  </div>
+
+  <h2>Sections</h2>
+  <p class="blurb">Each one has a hub, and everything under it is generated from a registry.</p>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Section</th><th>URLs</th><th>What it is</th></tr></thead>
+      <tbody>
+        {sections.map((s) => (
+          <tr>
+            <td><a href="/dev/pages">{s.title}</a></td>
+            <td>{s.routes.length}</td>
+            <td class="muted">{s.blurb}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Switches</h2>
+  <p class="blurb">
+    The flags that decide what a build contains. Each is a one-line change with
+    a section of consequences behind it.
+  </p>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Flag</th><th>Now</th><th>Where</th><th>Effect</th></tr></thead>
+      <tbody>
+        {flags.map((f) => (
+          <tr>
+            <td class="mono">{f.name}</td>
+            <td><span class={`pill ${f.value === 'true' ? 'new' : ''}`}>{f.value}</span></td>
+            <td class="mono">{f.where}</td>
+            <td class="muted">{f.effect}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Written but not served</h2>
+  <p class="blurb">{parked.length} pages exist in the repo and produce no URL. Details on <a href="/dev/pages">Every page</a>.</p>
+
+  <h2>Where each kind of fact lives</h2>
+  <p class="blurb">
+    One fact, one file. If something appears on two pages it is imported by
+    both, never retyped — so the file below is the only place to change it.
+  </p>
+  <div class="panel">
+    <table>
+      <thead><tr><th>To change</th><th>Open</th><th>Note</th></tr></thead>
+      <tbody>
+        {FILE_MAP.map((f) => (
+          <tr>
+            <td>{f.what}</td>
+            <td class="mono">{f.file}</td>
+            <td class="muted">{f.note}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Before you commit</h2>
+  <div class="panel">
+    <pre>npm run check        # 0 errors
+npm test             # server logic, arithmetic, registries
+npm run test:build   # builds, then reads dist/ and checks the HTML</pre>
+    <p class="blurb" style="margin-bottom: 0">
+      The third is the one that catches a page that renders but lies: a schema
+      with no visible copy behind it, a sitemap date the page disagrees with, a
+      melt figure with no spot price beside it.
+    </p>
+  </div>
+</DevShell>

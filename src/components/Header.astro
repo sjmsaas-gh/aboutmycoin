@@ -1,37 +1,90 @@
 ---
 import { SITE } from '../lib/site';
 import Logo from './Logo.astro';
+import { MELT_ROOT } from '../lib/melt';
+import { QUESTIONS_ROOT } from '../data/questions';
 
 /**
- * The site's navigation. Four links, which is the point at which a header
- * stops being scannable, and every link here competes with the one call to
- * action on the right.
+ * The site's navigation: a thin sticky bar, and nothing else.
  *
- * /coin-value leads because it is the site. /pricing came out of this list to
- * keep the count at four when it went in -- it is still reachable from the CTA
- * button and from the footer, and SPEC.md has not yet decided that anything is
- * sold, so it is the weakest of the five in any case.
+ * Thin because it is above every page on the site including the coin pages,
+ * where the thing a visitor came for is a photograph and a number and the
+ * header is pure overhead. Sticky because "find my coin" is the one action
+ * this site wants, and a visitor three screens into an archive should not have
+ * to scroll back up to take it.
+ *
+ * There is no /pricing link because there is no /pricing page: nothing is sold
+ * yet, so the route is disabled. See src/pages/_pricing.astro.
  */
-const links = [
-  { href: '/coin-value', label: 'Coin values' },
-  { href: '/answers', label: 'Answers' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/about', label: 'About' },
+
+/*
+ * The section links: the sections of the site, and nothing else.
+ *
+ * The first three are real routes in src/pages, so all three are built on
+ * every build whatever the catalogue holds and none can 404 -- unlike a
+ * generated archive, which gets no URL until a coin lands in it. That is why
+ * there is no conditional here and why a group or tag archive must not be
+ * added back without one.
+ *
+ * Each label matches the page's own H1 -- "Coin Values by Metal and
+ * Denomination", "Coin Melt Values", "Common Questions About Coins" -- so the
+ * bar and the page a click lands on say the same thing. Two labels for one
+ * destination reads as two destinations, which is the same reason the call to
+ * action below repeats the wording of the button in the hero.
+ *
+ * `/coin-tools` is the exception and is a deliberate one: the section is not
+ * built yet, so that link is a 404 on every page of the site until it is. It
+ * is here at the owner's instruction, and it is the one link in this file
+ * exempt from the paragraph above. Build the page or drop the link; do not
+ * leave it pointing at nothing for long.
+ */
+const links: { label: string; href: string }[] = [
+  { label: 'Coin Values', href: '/coin-value' },
+  { label: 'Melt Values', href: MELT_ROOT },
+  { label: 'Common Coin Questions', href: QUESTIONS_ROOT },
+  { label: 'Coin Tools', href: '/coin-tools' },
 ];
-/** The single call to action. One, not two. */
-const cta = { href: '/pricing', label: 'Get started' };
+
+/**
+ * The single call to action. One, not two.
+ *
+ * It points at the catalogue rather than at a price, because nothing is sold
+ * -- see SPEC.md. "Find my coin" is also the only action a first-time visitor
+ * actually wants, and it is the same words as the button in the hero on
+ * purpose: two labels for one destination reads as two destinations.
+ */
+const cta = { href: '/coin-value', label: 'Find my coin' };
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const isActive = (href: string) => path === href || path.startsWith(href + '/');
 ---
-<header class="border-b" style="border-color: var(--border)">
-  <div class="container-page flex items-center gap-4 h-16">
-    <a href="/" class="flex items-center gap-2 font-semibold shrink-0" style="font-family: var(--font-display); font-size: 1.15rem;">
-      <Logo size={28} />
+{/*
+  `sticky` rather than `fixed`: sticky keeps the bar in flow, so no page has to
+  reserve padding at the top for it. It does still sit over anything an
+  in-page link scrolls to, which `scroll-padding-top` in global.css handles --
+  off the same `--header-h` this bar is sized by.
+
+  The background is the opaque token, not a translucent blur. A blurred bar
+  costs a compositor layer on every scroll frame on exactly the low-end phones
+  this site is read on, to hide a white bar on a white page.
+*/}
+<header
+  class="sticky top-0 z-50 border-b"
+  style="border-color: var(--border); background: var(--bg)"
+>
+  <div class="container-page flex items-center gap-4" style="height: var(--header-h)">
+    <a
+      href="/"
+      class="flex items-center gap-2 font-semibold shrink-0"
+      style="font-family: var(--font-display); font-size: 1rem; letter-spacing: -0.015em"
+    >
+      <Logo size={24} />
       {SITE.name}
     </a>
 
-    <nav aria-label="Main" class="hidden md:flex items-center gap-6 ml-4 text-[0.95rem]">
+    {/* lg, not md: four labels plus the logo and the call to action do not fit
+        a 768px bar, and a nav that wraps moves the whole page down a line. */}
+    <nav aria-label="Main" class="hidden lg:flex items-center gap-5 ml-3 text-[0.875rem]">
       {links.map((l) => (
         <a
           href={l.href}
@@ -42,17 +95,17 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
       ))}
     </nav>
 
-    <div class="ml-auto flex items-center gap-3">
-      <a href={cta.href} class="btn btn-primary text-[0.95rem] py-2 px-4">{cta.label}</a>
+    <div class="ml-auto flex items-center gap-2">
+      <a href={cta.href} class="btn btn-primary text-[0.875rem] py-1.5 px-3.5">{cta.label}</a>
 
-      <!-- CSS-only mobile menu: no JavaScript ships on content pages. -->
-      <details class="md:hidden relative">
-        <summary class="list-none cursor-pointer p-2 -mr-2" aria-label="Menu">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      {/* CSS-only mobile menu: no JavaScript ships on content pages. */}
+      <details class="lg:hidden relative">
+        <summary class="list-none cursor-pointer p-1.5 -mr-1.5" aria-label="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
           </svg>
         </summary>
-        <nav aria-label="Mobile" class="card absolute right-0 top-full mt-2 w-56 p-2 z-50 shadow-lg">
+        <nav aria-label="Mobile" class="card absolute right-0 top-full mt-2 w-56 p-2 z-50" style="box-shadow: var(--shadow)">
           {links.map((l) => (
             <a href={l.href} class="block px-3 py-2 rounded-lg hover:bg-[var(--bg-sunken)]">{l.label}</a>
           ))}

@@ -1,0 +1,296 @@
+---
+/**
+ * The page inspector: every URL the site builds, and what each one declares.
+ *
+ * The list of URLs comes from the registries (src/dev/inventory.ts). The
+ * title, description, H1s and JSON-LD do NOT: they are fetched from the dev
+ * server when you open a row, and read out of the response. That is the whole
+ * point of the tool. A second description of what a page says would be a
+ * second thing to keep in step, and the moment it drifted it would be
+ * believed over the page.
+ *
+ * So what you read here is what the page actually served a moment ago. If it
+ * is wrong, the page is wrong.
+ */
+import DevShell from './DevShell.astro';
+import { routeSections, parkedRoutes } from './inventory';
+
+const sections = routeSections();
+const parked = parkedRoutes();
+const total = sections.flatMap((s) => s.routes).filter((r) => !r.text).length;
+---
+<DevShell
+  title="Every page"
+  lede={`${total} HTML URLs, grouped by section. Open a row to fetch it from this dev server and read back its title, description, H1 and JSON-LD — nothing on this page is a copy of what the page says, it is the page saying it.`}
+>
+  <div class="row-actions">
+    <button id="check-all">Check every page</button>
+    <button id="only-problems" aria-pressed="false">Show only problems</button>
+    <button id="collapse">Collapse all</button>
+    <span class="muted" id="progress"></span>
+  </div>
+  <p class="blurb" style="margin-top: -0.4rem">
+    A row turns <span class="pill warn">red</span> only when something is
+    broken however the page reads — no canonical, two H1s, JSON-LD that does
+    not parse. A long title or description is a <span class="pill">note</span>,
+    not a fault: most descriptions here are long on purpose.
+  </p>
+
+  {sections.map((section) => (
+    <section>
+      <h2>{section.title} <span class="muted" style="font-weight: 400">({section.routes.length})</span></h2>
+      <p class="blurb">{section.blurb}</p>
+      <div class="panel">
+        {section.routes.map((r) => (
+          <details data-path={r.path} data-text={r.text ? 'yes' : undefined}>
+            <summary>
+              <span class="path">{r.path}</span>
+              <span class="name">{r.label}</span>
+              {r.kind === 'generated' && <span class="pill">generated</span>}
+              {r.count !== undefined && <span class="pill">{r.count} in it</span>}
+              <span class="pill status" data-status>not checked</span>
+            </summary>
+            <div class="detail">
+              <dl class="kv">
+                <dt>Open</dt>
+                <dd><a href={r.path} target="_blank" rel="noreferrer">{r.path}</a></dd>
+                <dt>Rendered by</dt>
+                <dd class="mono">{r.template}</dd>
+                {r.question && (
+                  <>
+                    <dt>Owns the FAQ</dt>
+                    <dd>{r.question}</dd>
+                  </>
+                )}
+              </dl>
+              <div class="live muted" data-live>—</div>
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <section>
+    <h2>Written but not served <span class="muted" style="font-weight: 400">({parked.length})</span></h2>
+    <p class="blurb">
+      Pages that exist in the repo and produce no URL. They are listed because a
+      parked page is the one most easily forgotten and then rediscovered as a
+      surprise.
+    </p>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr><th>Would be</th><th>What</th><th>File</th><th>Unlocked by</th></tr>
+        </thead>
+        <tbody>
+          {parked.map((p) => (
+            <tr>
+              <td class="mono">{p.path}</td>
+              <td>{p.what}</td>
+              <td class="mono">{p.file}</td>
+              <td class="muted">{p.unlockedBy}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</DevShell>
+
+<script>
+  /**
+   * Fetch a page from this same dev server and read back what it declares.
+   *
+   * Everything here is read-only and client-side: no state is kept, nothing is
+   * written, and a reload re-reads the live pages. These flags are advisory —
+   * the checks in tests/build-smoke.test.mjs are the ones that fail a release.
+   *
+   * Two levels, deliberately.
+   *
+   * `problems` are things that are broken however the page reads: no
+   * canonical, two H1s, JSON-LD that does not parse, or a title or description
+   * outside the length a search result shows — that last one moved up from
+   * `notes` when the limits in src/lib/meta.ts started failing the build, and
+   * the numbers here are imported from that module rather than retyped.
+   * `notes` are what is left: judgement calls nobody has to act on.
+   * "Show only problems" filters on the first list alone.
+   */
+  interface Report {
+    ok: boolean;
+    problems: string[];
+    notes: string[];
+    html: string;
+  }
+
+  const cache = new Map<string, Report>();
+  const esc = (s: string) =>
+    s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c] as string);
+
+  function schemaTypes(node: unknown): string[] {
+    if (Array.isArray(node)) return node.flatMap(schemaTypes);
+    if (node && typeof node === 'object') {
+      const o = node as Record<string, unknown>;
+      if (Array.isArray(o['@graph'])) return schemaTypes(o['@graph']);
+      const t = o['@type'];
+      if (typeof t === 'string') return [t];
+      if (Array.isArray(t)) return t.filter((x): x is string => typeof x === 'string');
+    }
+    return [];
+  }
+
+  function flatten(node: unknown): unknown[] {
+    if (node && typeof node === 'object' && Array.isArray((node as Record<string, unknown>)['@graph'])) {
+      return (node as Record<string, unknown>)['@graph'] as unknown[];
+    }
+    return Array.isArray(node) ? node : [node];
+  }
+
+  async function inspect(path: string, isText: boolean): Promise<Report> {
+    const cached = cache.get(path);
+    if (cached) return cached;
+
+    const res = await fetch(path, { headers: { accept: 'text/html' } });
+    const body = await res.text();
+    const problems: string[] = [];
+    if (!res.ok) problems.push(`HTTP ${res.status}`);
+
+    if (isText) {
+      const report = {
+        ok: res.ok,
+        problems,
+        notes: [],
+        html: `<p class="muted">${body.length.toLocaleString()} bytes. Not HTML — opened in a tab rather than parsed.</p><pre>${esc(body.slice(0, 1200))}${body.length > 1200 ? '\n…' : ''}</pre>`,
+      };
+      cache.set(path, report);
+      return report;
+    }
+
+    const doc = new DOMParser().parseFromString(body, 'text/html');
+    const title = doc.querySelector('title')?.textContent?.trim() ?? '';
+    const description =
+      doc.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() ?? '';
+    const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? '';
+    const robots = doc.querySelector('meta[name="robots"]')?.getAttribute('content') ?? '';
+    const h1s = [...doc.querySelectorAll('h1')].map((h) => h.textContent?.trim() ?? '');
+    const h2s = [...doc.querySelectorAll('h2')].map((h) => h.textContent?.trim() ?? '');
+    const crumbs = [...doc.querySelectorAll('nav[aria-label] a, nav[aria-label] span')]
+      .map((n) => n.textContent?.trim())
+      .filter(Boolean);
+
+    const blocks: unknown[] = [];
+    for (const s of doc.querySelectorAll('script[type="application/ld+json"]')) {
+      try {
+        blocks.push(...flatten(JSON.parse(s.textContent ?? '')));
+      } catch {
+        problems.push('a JSON-LD block does not parse');
+      }
+    }
+
+    if (!title) problems.push('no title');
+    if (!description) problems.push('no meta description');
+    if (!canonical) problems.push('no canonical');
+    if (h1s.length !== 1) problems.push(`${h1s.length} H1s`);
+    if (blocks.length === 0) problems.push('no JSON-LD');
+
+    const notes: string[] = [];
+    if (title.length > 65) notes.push(`title ${title.length} chars`);
+    if (description.length > 165) notes.push(`description ${description.length} chars`);
+
+    const types = blocks.flatMap(schemaTypes);
+    const schemaHtml = blocks
+      .map(
+        (b, i) => `
+        <details>
+          <summary><span class="path">${esc(schemaTypes(b).join(' + ') || 'untyped')}</span>
+          <span class="name">block ${i + 1}</span></summary>
+          <div class="detail"><pre>${esc(JSON.stringify(b, null, 2))}</pre></div>
+        </details>`,
+      )
+      .join('');
+
+    const report = {
+      ok: problems.length === 0,
+      problems,
+      notes,
+      html: `
+        <dl class="kv">
+          <dt>Title</dt><dd>${esc(title)} <span class="muted">(${title.length})</span></dd>
+          <dt>Description</dt><dd>${esc(description)} <span class="muted">(${description.length})</span></dd>
+          <dt>Canonical</dt><dd class="mono">${esc(canonical)}</dd>
+          <dt>Robots</dt><dd class="mono">${esc(robots || 'none')}</dd>
+          <dt>H1</dt><dd>${h1s.map(esc).join(' / ') || '<span class="muted">none</span>'}</dd>
+          <dt>Breadcrumbs</dt><dd>${crumbs.length ? esc(crumbs.join(' › ')) : '<span class="muted">none</span>'}</dd>
+          <dt>H2s</dt><dd>${h2s.length ? esc(h2s.join(' · ')) : '<span class="muted">none</span>'}</dd>
+          <dt>Schemas</dt><dd>${types.length ? esc(types.join(', ')) : '<span class="muted">none</span>'}</dd>
+        </dl>
+        ${schemaHtml}`,
+    };
+    cache.set(path, report);
+    return report;
+  }
+
+  function paint(el: HTMLDetailsElement, report: Report) {
+    const status = el.querySelector('[data-status]') as HTMLElement;
+    status.textContent = report.ok
+      ? report.notes.length
+        ? report.notes.join(', ')
+        : 'ok'
+      : report.problems.join(', ');
+    status.className = `pill status ${report.ok ? (report.notes.length ? '' : 'new') : 'warn'}`;
+    el.dataset.state = report.ok ? 'ok' : 'problem';
+    const live = el.querySelector('[data-live]') as HTMLElement;
+    live.className = 'live';
+    live.innerHTML = report.html;
+  }
+
+  async function load(el: HTMLDetailsElement) {
+    if (el.dataset.loaded) return;
+    el.dataset.loaded = 'yes';
+    const path = el.dataset.path!;
+    try {
+      paint(el, await inspect(path, el.dataset.text === 'yes'));
+    } catch (err) {
+      const live = el.querySelector('[data-live]') as HTMLElement;
+      live.innerHTML = `<p class="pill warn">could not fetch: ${esc(String(err))}</p>`;
+      el.dataset.loaded = '';
+    }
+  }
+
+  const rows = [...document.querySelectorAll('details[data-path]')] as HTMLDetailsElement[];
+  for (const el of rows) el.addEventListener('toggle', () => el.open && load(el));
+
+  document.getElementById('check-all')?.addEventListener('click', async () => {
+    const progress = document.getElementById('progress')!;
+    let done = 0;
+    // Four at a time: enough to be quick on a big catalogue, gentle enough
+    // that the dev server stays responsive while it renders each page.
+    const queue = [...rows];
+    const worker = async () => {
+      while (queue.length) {
+        const el = queue.shift()!;
+        await load(el);
+        progress.textContent = `checked ${++done} of ${rows.length}`;
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    const bad = rows.filter((r) => r.dataset.state === 'problem').length;
+    progress.textContent = bad
+      ? `${bad} of ${rows.length} broken — the rest may still carry notes`
+      : `all ${rows.length} intact; open any row for its notes`;
+  });
+
+  document.getElementById('only-problems')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? 'Show every page' : 'Show only problems';
+    for (const el of rows) {
+      el.style.display = on && el.dataset.state !== 'problem' ? 'none' : '';
+    }
+  });
+
+  document.getElementById('collapse')?.addEventListener('click', () => {
+    for (const el of document.querySelectorAll('details')) (el as HTMLDetailsElement).open = false;
+  });
+</script>

@@ -9,21 +9,36 @@
  * splits by denomination, because "I have a silver coin" and "I have a silver
  * quarter" are different amounts of knowledge and the second one deserves a
  * shorter path to the number.
+ *
+ * Every string on the page comes from `src/lib/catalog-copy.ts`, which
+ * generates it from the group and the coins in it and hands back whatever the
+ * registry writes by hand instead. Nothing here decides any wording of its own:
+ * this template is a layout, and the copy it lays out is checked at build time.
  */
 import Base from '../../../layouts/Base.astro';
 import CoinTile from '../../../components/CoinTile.astro';
 import { itemListSchema, webPageSchema, faqSchema } from '../../../lib/schema';
+import { meltGroups, meltGroupPath } from '../../../lib/melt';
+import {
+  groupAnswer,
+  groupDescription,
+  groupH1,
+  groupIntro,
+  groupNotes,
+  groupQuestion,
+  groupSections,
+  groupSeoTitle,
+  pairStat,
+  pairTeaser,
+  tagsInGroup,
+} from '../../../lib/catalog-copy';
 import {
   populatedGroups,
   populatedTypes,
   coinsInGroup,
-  coinsInGroupType,
   groupPath,
   typePath,
   tagPath,
-  latestUpdated,
-  pairQuestion,
-  TAGS,
   type Group,
 } from '../../../data/coins';
 
@@ -37,17 +52,33 @@ const { group } = Astro.props;
 const path = groupPath(group.slug);
 const coins = coinsInGroup(group.slug);
 const types = populatedTypes(group.slug);
-const updated = latestUpdated(coins, group.updated);
+
+const h1 = groupH1(group);
+const description = groupDescription(group);
+const question = groupQuestion(group);
+const answer = groupAnswer(group);
+const intro = groupIntro(group);
+// Hand-written paragraphs, after the generated ones rather than instead of
+// them: the counts and the year span stay, the specifics are added.
+const notes = groupNotes(group);
+const sections = groupSections(group);
 
 // Tags reachable from this group, so a silver page offers "junk silver" and
 // "Canada" rather than the whole tag list. Built from the coins present, so it
-// cannot advertise a tag page this group has nothing on.
-const tagSlugs = new Set(coins.flatMap((c) => c.tags));
-const tags = TAGS.filter((t) => tagSlugs.has(t.slug));
+// cannot advertise a tag page this group has nothing on -- or one that is
+// registered and unpopulated, which has no page at all.
+const tags = tagsInGroup(group);
+
+// The melt twin, when it is built. See the note on the tag page: the archive
+// exists for every populated group while MELT_PAGE_FOR_EVERY_COIN is true,
+// and a hard-coded href would be a 404 the day it is not.
+const meltTwin = meltGroups().some((g) => g.slug === group.slug)
+  ? meltGroupPath(group.slug)
+  : undefined;
 ---
 <Base
-  title={group.seoTitle}
-  description={group.description}
+  title={groupSeoTitle(group)}
+  description={description}
   path={path}
   crumbs={[
     { label: 'Coin values', href: '/coin-value' },
@@ -56,30 +87,31 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug));
   schemas={[
     webPageSchema({
       type: 'CollectionPage',
-      name: group.h1,
-      description: group.description,
+      name: h1,
+      description: description,
       path,
-      dateModified: updated,
     }),
     itemListSchema({
-      name: group.h1,
-      description: group.description,
+      name: h1,
+      description: description,
       items: types.map((t) => ({
         name: `${group.name} ${t.namePlural.toLowerCase()}`,
         path: typePath(group.slug, t.slug),
       })),
     }),
-    faqSchema([{ q: group.faqQuestion, a: group.bluf }]),
+    faqSchema([{ q: question, a: answer }]),
   ]}
 >
   <section class="container-page pt-8 pb-10">
     <div class="prose-page">
-      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{group.h1}</h1>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style={`--metal: var(--metal-${group.slug})`}></div>
       <div class="verdict" style={`--metal: var(--metal-${group.slug})`}>
-        <span class="verdict-label">{group.faqQuestion}</span>
-        <p>{group.bluf}</p>
+        <span class="verdict-label">{question}</span>
+        <p>{answer}</p>
       </div>
-      {group.intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
+      {intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
+      {notes.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
       {group.meltDriven && (
         <p class="mathline">
           <strong>The arithmetic:</strong> metal value = actual metal weight in
@@ -88,26 +120,28 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug));
           up is the spot price.
         </p>
       )}
+      {meltTwin && (
+        <p>
+          The same coins with the arithmetic already done, and nothing else on
+          the page, are at
+          {' '}<a href={meltTwin}>{group.name.toLowerCase()} melt values</a>.
+        </p>
+      )}
     </div>
   </section>
 
   <section class="container-page pb-12">
     <div class="prose-page" style="margin-bottom: 1.1rem">
-      <h2 style="margin-top: 0">{group.name} coins by denomination</h2>
-      <p>
-        Pick the denomination you are holding. Each one answers the same
-        question for that coin specifically, with the metal weight already
-        worked out.
-      </p>
+      <h2 style="margin-top: 0">{sections.denominations.heading}</h2>
+      <p>{sections.denominations.intro}</p>
     </div>
     <div class="tile-grid">
       {types.map((t) => {
-        const n = coinsInGroupType(group.slug, t.slug).length;
         return (
           <a href={typePath(group.slug, t.slug)} class="tile" style={`--metal: var(--metal-${group.slug})`}>
             <h3><span class="metal-dot" aria-hidden="true"></span>{group.name} {t.namePlural.toLowerCase()}</h3>
-            <p>{pairQuestion(group, t)} {t.bluf}</p>
-            <p class="tile-meta">{n} {n === 1 ? 'entry' : 'entries'}</p>
+            <p>{pairTeaser(group, t)}</p>
+            <p class="tile-meta">{pairStat(group, t)}</p>
           </a>
         );
       })}
@@ -116,7 +150,7 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug));
 
   <section class="container-page pb-12">
     <div class="prose-page" style="margin-bottom: 1.1rem">
-      <h2 style="margin-top: 0">Every {group.name.toLowerCase()} coin in the catalogue</h2>
+      <h2 style="margin-top: 0">{sections.coins.heading}</h2>
     </div>
     <div class="tile-grid">
       {coins.map((c) => <CoinTile coin={c} />)}
@@ -126,7 +160,7 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug));
   {tags.length > 0 && (
     <section class="container-page pb-20">
       <div class="prose-page" style="margin-bottom: 1.1rem">
-        <h2 style="margin-top: 0">Related series, countries and topics</h2>
+        <h2 style="margin-top: 0">{sections.tags.heading}</h2>
       </div>
       <div class="pill-row">
         {tags.map((t) => <a href={tagPath(t.slug)} class="pill">{t.name}</a>)}

@@ -34,7 +34,7 @@
       ]
     },
     {
-      "source": "/favicon.svg",
+      "source": "/favicon.ico",
       "headers": [
         {
           "key": "Cache-Control",
@@ -61,6 +61,24 @@
       ]
     },
     {
+      "source": "/api/spot",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/api/((?!spot$).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/robots.txt",
       "headers": [
         {
@@ -79,7 +97,7 @@
       ]
     },
     {
-      "source": "/((?!_astro/|fonts/|og/|favicon\\.svg|logo\\.png|apple-touch-icon\\.png|robots\\.txt|sitemap-.*\\.xml).*)",
+      "source": "/((?!api/|_astro/|fonts/|og/|favicon\\.ico|logo\\.png|apple-touch-icon\\.png|robots\\.txt|sitemap-.*\\.xml).*)",
       "headers": [
         {
           "key": "Cache-Control",

@@ -24,7 +24,14 @@ same page, never for a second page.
 | `/coin-value` | coin values | Same person, one step in: they know the site can answer and want the index. | coin value chart, coin price guide, coin values by year |
 | `/coin-value/tagged` | coin categories | A browser rather than a searcher. Low volume, high internal-linking value. | coin series list, coin types by country |
 | `/pricing` | *(none yet)* | Nobody, until SPEC.md decides anything is sold. | |
-| `/answers/<slug>` | one question each | See `src/data/answers.ts`. Still the two starter examples. | |
+| `/melt-value` | coin melt value | Someone with a jar who knows the word "melt". Sent on to whatever their coins are made of. | melt value calculator, what is melt value |
+| `/melt-value/<group>` | silver coin melt value | Someone who knows their coins are silver and wants the whole branch in one place. Its clad twin answers "which coins have no silver". | gold coin melt value, how much silver is in a coin, silver content of coins, coins with no melt value |
+| `/melt-value/<group>/<type>` | silver quarter melt value | Knows the metal and the denomination and wants the figure for that pair. The level the flat namespace had no page for. | how much silver is in a quarter, silver dime melt value |
+| `/melt-value/tagged` | *(none yet)* | A browser rather than a searcher. Low volume, high internal-linking value. | |
+| `/melt-value/tagged/<tag>` | junk silver melt value | Knows the jargon and wants what a set adds up to as metal. | what is a bag of junk silver worth, 90% silver melt value |
+| `/common-questions` | coin questions | A browser rather than a searcher. Low volume, high internal-linking value. | common coin questions |
+| `/common-questions/topic/<slug>` | four topics, hand-written | Somebody browsing a subject rather than asking one question: "coin grading and condition", "selling coins". Its real job is internal linking — it is what puts every question about one subject one click from the others. | what a coin is worth, silver gold and spot prices |
+| `/common-questions/<slug>` | one question each | See `src/data/questions.ts`. Written one at a time, never generated. | |
 
 ### Catalogue pages
 
@@ -39,8 +46,13 @@ each level follows so a new entry does not have to re-derive it.
 | Coin (issue) | `<year> <denomination> value` | 1964 quarter value | The largest group by volume on the whole site. One specific coin in hand, read off the date. |
 | Coin (series) | `<series> value` | mercury dime value | Slightly more knowledgeable; knows the series name. |
 | Tag (series) | varies, hand-written | which washington quarters are silver | The disambiguating question, which is why series tag pages carry a different question from the coin pages under them. |
+| Series (key dates) | `<series> key dates` | morgan dollar key dates | Reading a list, not holding a coin. Owned by the series tag page, never by a coin page. |
+| Series (varieties) | `<series> <variety>` | 1955 doubled die penny | Has a specific suspicion about a specific coin. High intent, and the one phrase where the honest answer is usually "no". |
+| Series (mint marks) | `<series> mint mark` | where is the mint mark on a morgan dollar | Cannot find the letter. Answered in one sentence on the series page, above the table that needs it. |
 | Tag (country) | `<country> coin values` | canadian coin values | Foreign coin, no idea where to start. |
 | Tag (topic) | the phrase the trade uses | junk silver value | Knows the jargon. Smaller, but converts. |
+| Melt (coin) | `<coin> melt value` | 1964 quarter melt value | Has several of one coin and wants the metal figure, not the coin's story. Generated for every catalogue entry from `src/lib/melt.ts`, at the coin's own address with `/coin-value` swapped for `/melt-value`. |
+| Melt (archive) | `<group> <type> melt value` | silver quarter melt value | The melt tree mirrors the catalogue, so every archive has a twin asking the metal question instead of the price question. |
 
 ### The three phrases the whole site is arranged around
 
@@ -55,7 +67,10 @@ serves them:
    every coin page and in the BLUF of every clad and silver group page.
 3. **`how much silver is in a <coin>`** — the melt query. Answered by the
    `silverOzt` field, stated as arithmetic the reader can complete rather than
-   as a number that would need a live spot price to be true.
+   as a number that would need a live spot price to be true. This is the phrase
+   the melt tree exists for: at every level, the coin page answers "what is it
+   worth" and its twin under `/melt-value` answers "how much metal is in it",
+   and neither page carries the other's question in its FAQ markup.
 
 ## Rules
 

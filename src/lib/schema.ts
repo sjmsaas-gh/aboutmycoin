@@ -10,13 +10,7 @@
  * whenever a page passes `crumbs`. Everything else a page asks for by name.
  */
 import { SITE } from './site';
-import {
-  PRO_MONTHLY,
-  PRO_YEARLY,
-  PRO_AVAILABLE,
-  ONE_TIME,
-  ONE_TIME_AVAILABLE,
-} from './pricing';
+import type { MetalLabel } from './spot';
 
 /** The card every page already uses for og:image; also the Article image. */
 const DEFAULT_IMAGE = '/og/default.png';
@@ -134,45 +128,18 @@ export function webApplicationSchema(opts: {
     softwareVersion: '1.0',
     isAccessibleForFree: true,
     featureList: opts.featureList,
-    offers: [
-      {
-        '@type': 'Offer',
-        name: 'Free',
-        price: '0',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
-      },
-      {
-        '@type': 'Offer',
-        name: 'One-time',
-        price: String(ONE_TIME),
-        priceCurrency: 'USD',
-        // PreOrder rather than InStock while it cannot actually be bought.
-        // Claiming InStock for a button that does not exist is the kind of
-        // small lie that costs a rich result.
-        availability: ONE_TIME_AVAILABLE
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/PreOrder',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Pro (monthly)',
-        price: String(PRO_MONTHLY),
-        priceCurrency: 'USD',
-        availability: PRO_AVAILABLE
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/PreOrder',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Pro (annual)',
-        price: String(PRO_YEARLY),
-        priceCurrency: 'USD',
-        availability: PRO_AVAILABLE
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/PreOrder',
-      },
-    ],
+    // One offer, free, because that is everything the site currently does.
+    // The paid tiers came out when the decision was taken not to sell anything
+    // at first: an Offer with a price is a claim that a thing can be bought,
+    // and PreOrder is a claim that it is coming. Neither is true today. They
+    // go back when /pricing does -- see src/pages/_pricing.astro.
+    offers: {
+      '@type': 'Offer',
+      name: 'Free',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+    },
     publisher: { '@id': `${SITE.url}/#organization` },
     // AggregateRating and Review are deliberately absent. They go in only when
     // there are genuine reviews to cite. Fabricating them is a manual action.
@@ -227,12 +194,22 @@ export function howToSchema(opts: {
   };
 }
 
+/**
+ * An `Article`, with no dates on it.
+ *
+ * `datePublished` and `dateModified` are deliberately absent. Everything this
+ * site answers -- what a coin is made of, what it weighs, which dates are
+ * scarce -- was settled before the page was written and will be true after it,
+ * so a date on the article says only when somebody last touched the file. That
+ * is noise to a reader and a claim to a crawler, and a crawler that finds it
+ * unchanged across a year of builds has learned nothing worth knowing. The one
+ * figure on this site that does go stale is the spot price, and it carries its
+ * own date wherever it is printed -- see `src/lib/spot.ts`.
+ */
 export function articleSchema(opts: {
   headline: string;
   description: string;
   path: string;
-  datePublished: string;
-  dateModified: string;
   image?: string;
 }) {
   return {
@@ -241,8 +218,6 @@ export function articleSchema(opts: {
     headline: opts.headline,
     description: opts.description,
     mainEntityOfPage: { '@type': 'WebPage', '@id': abs(opts.path) },
-    datePublished: opts.datePublished,
-    dateModified: opts.dateModified,
     // Google lists `image` as recommended for Article. The site card is the
     // only image a page has, and it is the one og:image already points at.
     image: abs(opts.image ?? DEFAULT_IMAGE),
@@ -299,7 +274,6 @@ export function datasetSchema(opts: {
   path: string;
   variableMeasured: string[];
   measurementTechnique: string;
-  dateModified: string;
   keywords: string[];
 }) {
   return {
@@ -313,7 +287,6 @@ export function datasetSchema(opts: {
     publisher: { '@id': `${SITE.url}/#organization` },
     variableMeasured: opts.variableMeasured,
     measurementTechnique: opts.measurementTechnique,
-    dateModified: opts.dateModified,
     keywords: opts.keywords,
     // No `license` and no `distribution`. There is no download endpoint and no
     // licence has been chosen for the data, and asserting either would be a
@@ -323,7 +296,7 @@ export function datasetSchema(opts: {
 
 /**
  * A bare page-type declaration for pages that are neither an Article nor an
- * application -- /contact, /privacy, /about. Cheap, and it removes the
+ * application -- /contact and /privacy. Cheap, and it removes the
  * ambiguity of a page whose only types are Organization and BreadcrumbList.
  */
 export function webPageSchema(opts: {
@@ -331,7 +304,6 @@ export function webPageSchema(opts: {
   name: string;
   description: string;
   path: string;
-  dateModified?: string;
 }) {
   return {
     '@context': 'https://schema.org',
@@ -347,7 +319,6 @@ export function webPageSchema(opts: {
     ...(opts.type === 'AboutPage'
       ? { mainEntity: { '@id': `${SITE.url}/#organization` } }
       : {}),
-    ...(opts.dateModified ? { dateModified: opts.dateModified } : {}),
   };
 }
 
@@ -383,10 +354,9 @@ export function coinProductSchema(opts: {
   weightGrams?: number;
   diameterMm?: number;
   /** Actual metal weight in troy ounces, with the metal named. */
-  metalContent?: { metal: 'Silver' | 'Gold'; troyOunces: number };
+  metalContent?: { metal: MetalLabel; troyOunces: number };
   /** The series the coin belongs to, as a browsable category path. */
   category: string;
-  dateModified: string;
 }) {
   const props: Record<string, unknown>[] = [];
   if (opts.metalContent) {

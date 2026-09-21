@@ -1,0 +1,435 @@
+---
+/**
+ * The email sign-up box.
+ *
+ * A component rather than a block of markup on the home page, because this is
+ * meant to appear in more than one place -- under the hero today, at the foot
+ * of a coin page later -- and the copy and the endpoint have to be the same in
+ * all of them. The words live in `src/lib/subscribe.ts`; nothing here is typed
+ * twice.
+ *
+ * Like the contact form, it is JavaScript-submitted rather than a plain
+ * `method="post"`: the site is a static build with no server to POST a form
+ * to, and the anti-spam token has to be fetched at interaction time rather
+ * than baked into HTML that is byte-identical for every visitor and every
+ * scraper.
+ *
+ * Everything on the page is styled from the semantic tokens, so the box needs
+ * no dark-mode rule of its own.
+ */
+import { SUBSCRIBE_COPY, SUBSCRIBE_LIMITS } from '../lib/subscribe';
+import type { SubscribePitch } from '../lib/subscribe';
+import { HONEYPOT_FIELD } from '../lib/contact';
+
+interface Props {
+  /** Extra classes on the outer element, for page-level spacing. */
+  class?: string;
+  /**
+   * Whether the box draws its own card. True on a page, false when something
+   * else already supplies the panel -- the sign-up dock, which owns its own
+   * border, shadow and padding and would otherwise draw a card inside a card.
+   */
+  surface?: boolean;
+  /**
+   * The heading and the paragraph above the fields, which are the only part
+   * of this box that changes between the places it appears. Everything the
+   * form promises -- the button, the privacy line, the success line -- comes
+   * from `SUBSCRIBE_COPY` regardless, so a caller cannot reword a promise by
+   * passing a pitch. The default is the home page's.
+   */
+  pitch?: SubscribePitch;
+}
+const { class: className = '', surface = true, pitch = SUBSCRIBE_COPY } = Astro.props;
+
+/*
+ * Every id on this component is suffixed, and every hook the script uses is a
+ * `data-` attribute rather than an id.
+ *
+ * Two sign-up boxes on one page is a plausible layout -- hero and footer -- and
+ * duplicate ids would silently wire the second box's labels to the first box's
+ * inputs. The suffix is derived per instance so that stays impossible.
+ */
+const uid = Math.random().toString(36).slice(2, 8);
+const id = (name: string) => `signup-${name}-${uid}`;
+---
+<aside
+  class={[surface && 'card p-6 sm:p-7', className].filter(Boolean).join(' ') || undefined}
+  style={surface ? 'background: var(--bg-sunken)' : undefined}
+  data-signup-box
+>
+  {/*
+    The pitch is grouped so it can be hidden as one thing. It argues for doing
+    something the visitor has now done, and an argument left on screen after
+    it has been won reads as a box that did not notice.
+  */}
+  <div data-signup-intro>
+    <h2 class="text-2xl" style="margin: 0 0 0.5rem">{pitch.heading}</h2>
+    <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0 0 1.25rem">
+      {pitch.body}
+    </p>
+  </div>
+
+  {/*
+    novalidate: the script does the checking, so the messages are ours and all
+    of them appear at once, rather than the browser's one-bubble-at-a-time
+    behaviour which differs in every engine. The inputs keep their `required`
+    and `type` attributes for assistive tech.
+  */}
+  <form data-signup-form novalidate class="grid gap-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="label" for={id('first-name')}>First name</label>
+        <input
+          class="field"
+          id={id('first-name')}
+          data-field="firstName"
+          name="firstName"
+          type="text"
+          required
+          maxlength={SUBSCRIBE_LIMITS.FIRST_NAME_MAX}
+          autocomplete="given-name"
+          aria-describedby={id('first-name-error')}
+        />
+        <p class="field-error" id={id('first-name-error')} data-error="firstName" hidden></p>
+      </div>
+
+      <div>
+        <label class="label" for={id('email')}>Email address</label>
+        <input
+          class="field"
+          id={id('email')}
+          data-field="email"
+          name="email"
+          type="email"
+          required
+          maxlength={SUBSCRIBE_LIMITS.EMAIL_MAX}
+          autocomplete="email"
+          inputmode="email"
+          aria-describedby={id('email-error')}
+        />
+        <p class="field-error" id={id('email-error')} data-error="email" hidden></p>
+      </div>
+    </div>
+
+    {/*
+      The honeypot. Visually off-screen, reachable by a screen reader, skipped
+      by the tab order, and named so no browser autofills it -- an autofilled
+      honeypot silently bins a real sign-up. See HONEYPOT_FIELD in
+      src/lib/contact.ts.
+    */}
+    <div class="honeypot" aria-hidden="true">
+      <label for={id('hp')}>Leave this field empty</label>
+      <input id={id('hp')} data-field={HONEYPOT_FIELD} name={HONEYPOT_FIELD} type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button class="btn btn-primary" type="submit" data-submit>{SUBSCRIBE_COPY.button}</button>
+      {/*
+        One live region for the whole form. role="status" rather than
+        role="alert" so it does not interrupt what is being read; the text is
+        swapped between "Adding you…", a failure, and nothing.
+      */}
+      <p class="text-sm" role="status" aria-live="polite" data-status style="color: var(--bad)"></p>
+    </div>
+
+    <p class="text-sm" style="color: var(--text-muted); margin: 0">
+      {SUBSCRIBE_COPY.privacy} <a href="/privacy">What we do with it</a>.
+    </p>
+  </form>
+
+  {/*
+    The success state replaces the form AND the pitch above it: a form still on
+    screen after a successful sign-up is an invitation to press the button
+    twice. tabindex="-1" so focus can be moved here, which is what tells a
+    screen reader the page changed.
+
+    --good is the green in the status ramp, picked to stay legible against both
+    surfaces and to survive the common colour-vision deficiencies. It is not
+    the only signal -- the words say the same thing -- which is the rule the
+    token block in global.css states for all three status colours.
+  */}
+  <p
+    data-signup-done
+    hidden
+    tabindex="-1"
+    class="text-lg"
+    style="color: var(--good); font-weight: 600; margin: 0"
+  >
+    {SUBSCRIBE_COPY.success}
+  </p>
+
+  <noscript>
+    <p class="mt-4 text-sm" style="color: var(--text-muted)">
+      This form needs JavaScript, because the spam protection is a token
+      fetched when you start typing rather than a puzzle you have to solve.
+    </p>
+  </noscript>
+</aside>
+
+<script>
+  /*
+   * Client half of the sign-up box.
+   *
+   * Two jobs: fetch the anti-spam token at the right moment, and make the
+   * server's verdicts readable. Everything it validates is validated again on
+   * the server -- this half exists to save a round trip and to put the error
+   * next to the field, never as the check that matters.
+   *
+   * It wires up every box on the page rather than one by id, because two of
+   * these in one document is a layout somebody will reasonably try.
+   */
+  import {
+    EMAIL_RE,
+    SUBSCRIBE_COPY,
+    SUBSCRIBE_ENDPOINT,
+    SUBSCRIBE_LIMITS,
+  } from '../lib/subscribe';
+  import { HONEYPOT_FIELD, MIN_FILL_SECONDS, TOKEN_REFRESH_SECONDS, tokenIssuedAt } from '../lib/contact';
+
+  /**
+   * Field-level copy, keyed by the reason the server (or we) refused it.
+   *
+   * Keyed by reason and not just by field for the same reason the contact
+   * form's table is: one string per field forces one sentence to cover
+   * opposite problems.
+   */
+  const COPY: Record<string, Record<string, string>> = {
+    firstName: {
+      required: 'A first name, so the emails can say hello properly.',
+      too_long: `That is longer than ${SUBSCRIBE_LIMITS.FIRST_NAME_MAX} characters — a first name is plenty.`,
+    },
+    email: {
+      required: 'Please add the address the emails should go to.',
+      bad_email: 'That does not look like an address we could send to.',
+    },
+  };
+
+  /**
+   * Form-level copy, keyed by the endpoint's error code.
+   *
+   * `not_configured` is worded as a fault on our side and not on theirs,
+   * because that is what it is: the list is not wired up yet, and telling
+   * someone "try again" about a 503 wastes their afternoon.
+   */
+  const STATUS: Record<string, string> = {
+    not_configured: 'The list is not switched on yet. Nothing was saved — sorry.',
+    expired: 'This page has been open a while. Reload it and try once more.',
+    too_fast: 'One moment — press it once more.',
+    bad_token: 'Something went wrong with the form. Reload the page and try again.',
+    signup_failed: 'That did not go through. Please try again in a moment.',
+    offline: 'Could not reach us. Check your connection and try again.',
+  };
+
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  function wire(box: HTMLElement) {
+    const form = box.querySelector<HTMLFormElement>('[data-signup-form]');
+    const done = box.querySelector<HTMLElement>('[data-signup-done]');
+    // Optional: the intro is chrome, and a host that dropped it should not
+    // cost the box its success state.
+    const intro = box.querySelector<HTMLElement>('[data-signup-intro]');
+    const status = box.querySelector<HTMLElement>('[data-status]');
+    const button = box.querySelector<HTMLButtonElement>('[data-submit]');
+    if (!form || !done || !status || !button) return;
+
+    /*
+     * The token is fetched on first interaction, not on page load.
+     *
+     * On load it would be requested by every crawler and every visitor who
+     * never intends to sign up, and -- more importantly -- its age is the
+     * fill-time measurement. Starting the clock when someone starts typing is
+     * what makes "faster than a human could type this" mean anything;
+     * starting it on load would only measure how long the tab had been open.
+     */
+    let token: string | null = null;
+    let pending: Promise<void> | null = null;
+
+    function fetchToken(): Promise<void> {
+      if (token) return Promise.resolve();
+      if (pending) return pending;
+      pending = fetch(SUBSCRIBE_ENDPOINT)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (typeof d?.token === 'string') token = d.token;
+        })
+        .catch(() => {
+          /* Offline, or the endpoint is down. Left null; the submit handler
+             retries once and reports it if that fails too. */
+        })
+        .finally(() => {
+          pending = null;
+        });
+      return pending;
+    }
+
+    form.addEventListener('focusin', () => void fetchToken(), { once: true });
+
+    /** Age in seconds of the token we are holding, or null if we have none. */
+    function tokenAge(): number | null {
+      const issued = tokenIssuedAt(token);
+      return issued === null ? null : Math.floor(Date.now() / 1000) - issued;
+    }
+
+    /** Replaces a token old enough to be near expiry, before it is refused. */
+    async function ensureFreshToken(): Promise<void> {
+      const age = tokenAge();
+      if (age !== null && age > TOKEN_REFRESH_SECONDS) token = null;
+      await fetchToken();
+    }
+
+    /**
+     * Waits out the server's minimum fill time, if the token is younger.
+     *
+     * Two fields is genuinely fast to fill, so this box trips the floor far
+     * more often than the contact form does. Absorbing the wait here is the
+     * difference between a button that takes a second and a rejection the
+     * visitor has to read, understand and act on.
+     */
+    async function waitForFillFloor(): Promise<void> {
+      const age = tokenAge();
+      // No readable age means the server will refuse it anyway; a flat second
+      // covers a clock skewed enough that our arithmetic disagrees with the
+      // server's.
+      const remaining = age === null ? 1 : MIN_FILL_SECONDS - age + 0.2;
+      if (remaining > 0) await sleep(remaining * 1000);
+    }
+
+    const field = (name: string) =>
+      form.querySelector<HTMLInputElement>(`[data-field="${name}"]`);
+
+    function showError(name: string, text: string | null) {
+      const input = field(name);
+      // `form!`, and the assertion is not laziness: this is a hoisted function
+      // declaration, and TypeScript discards the non-null narrowing the guard
+      // at the top of `wire` established when it looks inside one. The guard
+      // has already returned if `form` is null.
+      const out = form!.querySelector<HTMLElement>(`[data-error="${name}"]`);
+      if (!input || !out) return;
+      if (text) {
+        out.textContent = text;
+        out.removeAttribute('hidden');
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        out.textContent = '';
+        out.setAttribute('hidden', '');
+        input.removeAttribute('aria-invalid');
+      }
+    }
+
+    const copyFor = (name: string, reason: string) =>
+      COPY[name]?.[reason] ?? 'Please check this.';
+
+    const FIELDS = ['firstName', 'email'];
+
+    // Clearing on input rather than on blur: an error that stays put while the
+    // person is visibly fixing it reads as though the fix did not work.
+    for (const name of FIELDS) {
+      field(name)?.addEventListener('input', () => showError(name, null));
+    }
+
+    /** Mirrors the server's checks closely enough to catch the ordinary slips. */
+    function localErrors(values: Record<string, string>): Record<string, string> {
+      const bad: Record<string, string> = {};
+      if (!values.firstName) bad.firstName = 'required';
+      else if (values.firstName.length > SUBSCRIBE_LIMITS.FIRST_NAME_MAX) {
+        bad.firstName = 'too_long';
+      }
+      if (!values.email) bad.email = 'required';
+      else if (!EMAIL_RE.test(values.email)) bad.email = 'bad_email';
+      return bad;
+    }
+
+    /** One POST. Returns the parsed body, or null if the request itself failed. */
+    const post = async (values: Record<string, string>): Promise<any | null> => {
+      try {
+        const res = await fetch(SUBSCRIBE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...values, token }),
+        });
+        return await res.json().catch(() => ({ error: 'signup_failed' }));
+      } catch {
+        return null;
+      }
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      status.textContent = '';
+
+      const values: Record<string, string> = {
+        firstName: field('firstName')?.value.trim() ?? '',
+        email: field('email')?.value.trim() ?? '',
+        [HONEYPOT_FIELD]: field(HONEYPOT_FIELD)?.value ?? '',
+      };
+
+      const local = localErrors(values);
+      for (const name of FIELDS) showError(name, null);
+      if (Object.keys(local).length) {
+        for (const [name, reason] of Object.entries(local)) {
+          showError(name, copyFor(name, reason));
+        }
+        field(Object.keys(local)[0]!)?.focus();
+        return;
+      }
+
+      button.disabled = true;
+      const label = button.textContent;
+      button.textContent = 'Adding you…';
+      status.textContent = '';
+
+      try {
+        await ensureFreshToken();
+        if (!token) {
+          status.textContent = STATUS.offline!;
+          return;
+        }
+        await waitForFillFloor();
+
+        let body = await post(values);
+        // One silent retry, and only for `too_fast`: that verdict means the
+        // same token works a moment later, so asking the visitor to press the
+        // button again would be asking them to do what we can do for them.
+        if (body?.error === 'too_fast') {
+          await sleep(1500);
+          body = await post(values);
+        }
+
+        if (body === null) {
+          status.textContent = STATUS.offline!;
+          return;
+        }
+
+        if (body.subscribed) {
+          form.hidden = true;
+          if (intro) intro.hidden = true;
+          done.removeAttribute('hidden');
+          done.focus();
+          /*
+           * Announced so whatever is hosting the box can react -- the dock
+           * uses it to stop offering the list to someone who has just joined
+           * it. It bubbles, and carries nothing: a listener that needed the
+           * address would be a listener with the address in the DOM.
+           */
+          box.dispatchEvent(new CustomEvent('signup:success', { bubbles: true }));
+          return;
+        }
+
+        if (body.error === 'invalid' && body.reasons) {
+          for (const [name, reason] of Object.entries(body.reasons as Record<string, string>)) {
+            showError(name, copyFor(name, reason));
+          }
+          field(Object.keys(body.reasons)[0]!)?.focus();
+          return;
+        }
+
+        status.textContent = STATUS[body.error as string] ?? STATUS.signup_failed!;
+      } finally {
+        button.disabled = false;
+        button.textContent = label ?? SUBSCRIBE_COPY.button;
+      }
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-signup-box]').forEach(wire);
+</script>

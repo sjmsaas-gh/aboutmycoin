@@ -1,0 +1,157 @@
+---
+/**
+ * One common question: /common-questions/<slug>.
+ *
+ * Nothing on the page is typed twice. The H1, the opening answer, the
+ * FAQPage `acceptedAnswer` and the breadcrumb trail all come from the same
+ * `Question` object.
+ *
+ * The one thing NOT in that object is a metal price. A page that needs to
+ * show one sets `spotPanel`, and the figures come from `src/lib/spot.ts` with
+ * their dateline attached -- so a price can never be stranded in a paragraph
+ * that nobody remembers to update. See the header of questions.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import { SITE } from '../../lib/site';
+import { articleSchema, faqSchema } from '../../lib/schema';
+import {
+  QUESTIONS,
+  QUESTIONS_ROOT,
+  questionBySlug,
+  categoryOf,
+  categoryPath,
+  questionPath,
+  questionsInCategory,
+  questionTitle,
+  questionDescription,
+  questionHtml,
+  type Question,
+} from '../../data/questions';
+import { SPOT, METAL_LABEL, spotStamp, type Metal } from '../../lib/spot';
+// Imported for its side effect: it throws if this page's question is also
+// marked up somewhere else on the site. See src/data/faq-registry.ts.
+import '../../data/faq-registry';
+
+export function getStaticPaths() {
+  return QUESTIONS.map((q) => ({ params: { slug: q.slug }, props: { question: q } }));
+}
+
+export interface Props { question: Question }
+const { question } = Astro.props;
+
+const path = questionPath(question);
+const seoTitle = questionTitle(question);
+const description = questionDescription(question);
+const related = (question.related ?? []).map(questionBySlug).filter(Boolean) as Question[];
+// The topic this question is filed under. Required and validated, so the
+// non-null assertion is the registry's guarantee rather than optimism.
+const category = categoryOf(question)!;
+// Siblings, minus the ones the related list above already named: two lists on
+// one page repeating the same three links is a page that looks longer than it
+// is. When related covers the whole topic this leaves nothing, and the
+// section is then the topic link and the sentence around it.
+const siblings = questionsInCategory(category.slug).filter(
+  (q) => q.slug !== question.slug && !(question.related ?? []).includes(q.slug),
+);
+const metals = Object.keys(SPOT) as Metal[];
+---
+<Base
+  title={seoTitle}
+  description={description}
+  path={path}
+  type="article"
+  crumbs={[
+    { label: 'Common questions', href: QUESTIONS_ROOT },
+    { label: category.name, href: categoryPath(category) },
+    { label: question.question, href: path },
+  ]}
+  schemas={[
+    articleSchema({
+      headline: question.question,
+      description,
+      path,
+    }),
+    faqSchema([{ q: question.question, a: question.answer }]),
+  ]}
+>
+  <article class="container-page pt-8 pb-20">
+    <div class="prose-page">
+      <p class="tile-meta" style="margin: 0 0 0.4rem">
+        <a href={categoryPath(category)}>{category.name}</a>
+      </p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{question.question}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+
+      {/* BLUF, in exactly the words the FAQPage schema carries. A model that
+          quotes only this has quoted something true and self-contained.
+
+          The label is "The short answer" rather than the question, which is
+          what every other verdict block on the site puts there. On those
+          pages the H1 is a coin name and the question is new information;
+          here the H1 IS the question, and repeating it above its own answer
+          reads as a page that has lost its place. */}
+      <div class="verdict" style="--metal: var(--accent)">
+        <span class="verdict-label">The short answer</span>
+        <p>{question.answer}</p>
+      </div>
+    </div>
+
+    {question.spotPanel && (
+      /* The prices, from spot.ts, each with its own dateline. Rendered rather
+         than written, so no paragraph on this page can state a figure that
+         the rest of the site has moved past. */
+      <div class="card fact-card" style="margin-top: 1.75rem">
+        <p class="figure-label">Reference prices</p>
+        <dl class="spec-grid">
+          {metals.map((m) => (
+            <>
+              <dt>{METAL_LABEL[m]}</dt>
+              <dd data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+    )}
+
+    <div class="prose-page">
+      {question.sections.map((s) => (
+        <section>
+          <h2>{s.heading}</h2>
+          {s.paragraphs.map((p) => <p set:html={questionHtml(p)} />)}
+        </section>
+      ))}
+
+      {related.length > 0 && (
+        <section>
+          <h2>Related questions</h2>
+          <ul>
+            {related.map((r) => <li><a href={questionPath(r)}>{r.question}</a></li>)}
+          </ul>
+        </section>
+      )}
+
+      <section>
+        <h2>More on {category.name.toLowerCase()}</h2>
+        <p>{category.bluf}</p>
+        {siblings.length > 0 && (
+          <ul>
+            {siblings.map((q) => <li><a href={questionPath(q)}>{q.question}</a></li>)}
+          </ul>
+        )}
+        <p>
+          <a href={categoryPath(category)}>{category.h1}</a> collects every
+          question on this topic in one place.
+        </p>
+      </section>
+
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 1.1rem">
+        <a href={QUESTIONS_ROOT}>All common questions</a>
+      </p>
+    </div>
+  </article>
+</Base>

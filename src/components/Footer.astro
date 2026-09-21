@@ -4,7 +4,9 @@ import Logo from './Logo.astro';
 const year = new Date().getFullYear();
 
 /**
- * RENAME: the columns. `/llms.txt` in the last column is deliberate -- linking
+ * The columns. No Pricing link: nothing is sold yet and /pricing is not a
+ * route. See src/pages/_pricing.astro.
+ * `/llms.txt` in the last column is deliberate -- linking
  * it from the footer is one of the few ways a crawler discovers the file, and
  * it costs a line.
  */
@@ -14,15 +16,13 @@ const cols = [
     links: [
       { href: '/coin-value', label: 'Browse by metal' },
       { href: '/coin-value/tagged', label: 'Series and countries' },
-      { href: '/answers', label: 'Answers' },
-      { href: '/faq', label: 'FAQ' },
-      { href: '/pricing', label: 'Pricing' },
+      { href: '/melt-value', label: 'Melt values' },
+      { href: '/common-questions', label: 'Common questions' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { href: '/about', label: 'About' },
       { href: '/contact', label: 'Contact' },
     ],
   },

@@ -38,7 +38,7 @@ export const THIRD_PARTIES: ThirdParty[] = [
   },
   {
     name: 'Resend',
-    role: 'sends the contact-form email and the license key email.',
+    role: 'sends the contact-form email and the license key email, and holds the email list.',
   },
   ...(assetOrigin
     ? [

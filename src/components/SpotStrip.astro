@@ -1,0 +1,49 @@
+---
+/**
+ * The reference metal prices, stated once, under the hero.
+ *
+ * Numbers are the most convincing thing a reference site can put above the
+ * fold, and these are the ones the whole catalogue is built on: every melt
+ * figure on every coin page is a troy-ounce weight multiplied by one of them.
+ * Showing them here is showing the input to the arithmetic, not a market quote.
+ *
+ * Every metal the site can price, not only the ones the catalogue has coins
+ * in yet: this strip is the site stating its inputs, so it is the one place
+ * a price belongs before a coin needs it. /melt-value is the other way round
+ * -- it lists the metals it has pages for, because each figure there is a
+ * link to a page rather than an input.
+ *
+ * Which is exactly why the note below is not optional. These are prices read at
+ * a stated time, not a quote, and the wording that says so comes out of
+ * src/lib/spot.ts -- `spotStripNote()`, built from the same `spotBasis()` phrase
+ * every coin page carries -- so it cannot be softened here and left alone
+ * elsewhere. `tests/build-smoke.test.mjs` fails the build if any page prints a
+ * per-ounce figure without it.
+ *
+ * The figures and the note carry `data-spot`, so the browser replaces them
+ * with whatever /api/spot answers -- see src/lib/spot-dom.ts. What is rendered
+ * here is the built-in reading, which is what a crawler reads and what a reader
+ * without JavaScript keeps. This component does not change when the cache
+ * behind that endpoint does: the prices, the time and the wording all come from
+ * the module, on both sides.
+ */
+import { METAL_LABEL, SPOT, formatUsd, spotStripNote, type Metal } from '../lib/spot';
+
+const metals = Object.keys(SPOT) as Metal[];
+---
+<div class="spot-strip">
+  <dl class="spot-figures">
+    {metals.map((m) => (
+      <div class="spot-figure" style={`--metal: var(--metal-${m})`}>
+        <dt><span class="metal-dot" aria-hidden="true"></span>{METAL_LABEL[m]}</dt>
+        {/* Number and unit in ONE text node, not split across a span. A reader
+            quoting the figure gets the unit with it, and the build check that
+            hunts for an uncaveated "$65.00/ozt" can only see it if the string
+            is contiguous -- splitting it to style the unit smaller would slip
+            the page past its own guard rail. */}
+        <dd data-spot="price-unit" data-spot-metal={m}>{`${formatUsd(SPOT[m])}/ozt`}</dd>
+      </div>
+    ))}
+  </dl>
+  <p class="spot-note" data-spot="strip-note">{spotStripNote()}</p>
+</div>

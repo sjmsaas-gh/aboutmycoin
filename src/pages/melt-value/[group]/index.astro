@@ -1,0 +1,275 @@
+---
+/**
+ * A composition archive on the melt side: /melt-value/<group>.
+ *
+ * The twin of /coin-value/<group>, segment for segment, and the page that
+ * used to be /melt-value/<metal>. It answers "how much is the silver in a
+ * coin worth" where the catalogue's archive answers "what are silver coins
+ * worth": same coins, two questions, and the house rule is that a question is
+ * answered -- and marked up -- on one page. So this carries the metal
+ * content, the multiplication and the price; it does not carry a second copy
+ * of the archive's intro, its key dates or its grading advice, and the link
+ * at the foot is how a reader who wanted those gets there.
+ *
+ * A group whose coins contain no precious metal gets the same page with the
+ * same shape and the answer "none". That is the clad, copper, nickel and
+ * steel case, and it replaced a separate "no melt value" category page: a
+ * fifth bucket beside the metals was a special case, and under a mirrored
+ * tree it is just a group whose figure is zero.
+ *
+ * Nothing here is written per group. Every sentence comes out of
+ * src/lib/melt.ts, so the opening answer, the figures and the tables cannot
+ * drift apart, and a new metal is a price in spot.ts rather than a page.
+ */
+import Base from '../../../layouts/Base.astro';
+import MeltTile from '../../../components/MeltTile.astro';
+import { SITE } from '../../../lib/site';
+import {
+  itemListSchema,
+  webPageSchema,
+  faqSchema,
+  datasetSchema,
+} from '../../../lib/schema';
+import { METAL_LABEL, formatUsd, markedUsd, spotStamp, spotCaveat, spotPrice } from '../../../lib/spot';
+import {
+  MELT_ROOT,
+  meltGroups,
+  meltGroupPath,
+  meltTypePath,
+  meltTagPath,
+  meltGroupH1,
+  meltGroupSeoTitle,
+  meltGroupQuestion,
+  meltGroupAnswer,
+  meltGroupDescription,
+  meltGroupMetals,
+  meltCoinsInGroup,
+  meltCoinsInGroupType,
+  meltTypes,
+  meltTags,
+  meltTotal,
+  spotLadder,
+} from '../../../lib/melt';
+import { groupPath, TAGS, type Group } from '../../../data/coins';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../data/faq-registry';
+
+export function getStaticPaths() {
+  // Populated groups only. An archive with nothing on it does not get a URL,
+  // the same filter the catalogue's archives use.
+  return meltGroups().map((group) => ({ params: { group: group.slug }, props: { group } }));
+}
+
+export interface Props { group: Group }
+const { group } = Astro.props;
+
+const path = meltGroupPath(group.slug);
+const coins = meltCoinsInGroup(group.slug);
+const types = meltTypes(group.slug);
+const metals = meltGroupMetals(group.slug);
+const question = meltGroupQuestion(group);
+// Plain for the FAQPage schema, marked for the reader. `data-spot-sync` holds
+// the plain form so the browser can put its rewrite into the schema too.
+const answer = meltGroupAnswer(group);
+const answerHtml = meltGroupAnswer(group, markedUsd);
+const description = meltGroupDescription(group);
+
+// Tags reachable from this group, so the silver page offers "junk silver" and
+// "Canada" rather than the whole list. Built from the coins present, so it
+// cannot advertise a page this group has nothing on.
+const tagSlugs = new Set(coins.flatMap((c) => c.tags));
+const built = new Set(meltTags().map((t) => t.slug));
+const tags = TAGS.filter((t) => tagSlugs.has(t.slug) && built.has(t.slug));
+---
+<Base
+  title={meltGroupSeoTitle(group)}
+  description={description}
+  path={path}
+  crumbs={[
+    { label: 'Melt values', href: MELT_ROOT },
+    { label: group.name, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: meltGroupH1(group),
+      description,
+      path,
+    }),
+    itemListSchema({
+      name: meltGroupH1(group),
+      description,
+      items: types.map((t) => ({
+        name: `${group.name} ${t.namePlural.toLowerCase()} melt value`,
+        path: meltTypePath(group.slug, t.slug),
+      })),
+    }),
+    faqSchema([{ q: question, a: answer }]),
+    ...(metals.length > 0
+      ? [
+          datasetSchema({
+            name: `${SITE.name} ${group.name.toLowerCase()} coin melt values`,
+            description: `Precious-metal content and melt value for every ${group.name.toLowerCase()} coin in the catalogue. Each entry states the content in troy ounces and the value of that content at a named, dated price.`,
+            path,
+            variableMeasured: [
+              'Metal content (troy ounces)',
+              'Spot price used (USD per troy ounce)',
+              'Melt value (USD)',
+            ],
+            measurementTechnique: `Melt value is the coin’s actual precious-metal weight in troy ounces, taken from published mint specifications, multiplied by a single price per metal that is stated and dated on every page. It is the value of the metal, not a price any buyer has offered.`,
+            keywords: [
+              `${group.name.toLowerCase()} coin melt value`,
+              `metal content of ${group.name.toLowerCase()} coins`,
+              'spot price',
+            ],
+          }),
+        ]
+      : []),
+  ]}
+>
+  <section class="container-page pt-8 pb-8" style={`--metal: var(--metal-${group.slug})`}>
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{meltGroupH1(group)}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+      <div class="verdict">
+        <span class="verdict-label">{question}</span>
+        <p data-spot-sync={answer} set:html={answerHtml} />
+      </div>
+    </div>
+  </section>
+
+  {metals.length > 0 && (
+    <section class="container-page pb-10" style={`--metal: var(--metal-${group.slug})`}>
+      {metals.length === 1 ? (
+        <div class="card fact-card">
+          <p class="figure-label">{METAL_LABEL[metals[0]]} price these figures are worked at</p>
+          <p class="text-2xl" style="margin: 0.15rem 0 0.4rem" data-spot="price-unit" data-spot-metal={metals[0]}>{`${formatUsd(spotPrice(metals[0]))}/ozt`}</p>
+          <p class="text-sm" style="color: var(--text-muted); margin: 0" data-spot="caveat" data-spot-metal={metals[0]}>{spotCaveat(metals[0])}</p>
+        </div>
+      ) : (
+        <div class="card fact-card">
+          <p class="figure-label">Prices these figures are worked at</p>
+          <dl class="spec-grid">
+            {metals.map((m) => (
+              <>
+                <dt>{METAL_LABEL[m]}</dt>
+                <dd data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</dd>
+              </>
+            ))}
+          </dl>
+        </div>
+      )}
+    </section>
+  )}
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{group.name} coins by denomination</h2>
+      <p>Pick the denomination you are holding.</p>
+    </div>
+    <div class="tile-grid">
+      {types.map((t) => {
+        const inPair = meltCoinsInGroupType(group.slug, t.slug);
+        const pairTotal = meltTotal(inPair);
+        return (
+          <a href={meltTypePath(group.slug, t.slug)} class="tile" style={`--metal: var(--metal-${group.slug})`}>
+            <h3><span class="metal-dot" aria-hidden="true"></span>{group.name} {t.namePlural.toLowerCase()}</h3>
+            <p>
+              {pairTotal > 0
+                ? `What the metal in a ${t.name.toLowerCase()} comes to, issue by issue.`
+                : `No silver and no gold in any of them. What they are made of instead.`}
+            </p>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{group.name} coins</h2>
+    </div>
+    <div class="tile-grid">
+      {coins.map((c) => <MeltTile coin={c} />)}
+    </div>
+  </section>
+
+  {/* The ladder lives here and nowhere below. While the price is typed in by
+      hand, this is what keeps the branch correct on a day the site has not
+      been rebuilt: the reader finds today's price in the left column and
+      scales every figure under this page by the number beside it. It is a
+      multiplier rather than a second column of prices, because the reader
+      already has the figures -- they are above -- and what they are missing
+      is the ratio between our price and today's. */}
+  {metals.map((m) => (
+    <section class="container-page pb-12">
+      <div class="prose-page" style="margin-bottom: 1.1rem">
+        <h2 style="margin-top: 0">If {m} is not <span data-spot="price" data-spot-metal={m}>{formatUsd(spotPrice(m))}</span></h2>
+        <p>
+          {METAL_LABEL[m]} moves daily and the figures above do not. Find
+          today’s price in the left column and multiply by the number beside
+          it — every {m} figure on these pages is a weight times one price, so
+          they all scale together.
+        </p>
+      </div>
+      <div class="card table-scroll" style="padding: 0.4rem 0">
+        <table class="fact-table">
+          <thead>
+            <tr>
+              <th>{`${METAL_LABEL[m]} price`}</th>
+              <th style="text-align: right">Multiply by</th>
+            </tr>
+          </thead>
+          {/* Rebuilt wholesale by src/lib/spot-dom.ts when a new price lands:
+              a new spot price moves the rungs as well as the ratios, and a
+              ladder still centred on yesterday's price under figures worked at
+              today's is the one block on this page that would visibly
+              contradict itself. The markup renderLadder() writes is this
+              markup, row for row. */}
+          <tbody data-spot="ladder" data-spot-metal={m}>
+            {spotLadder(m).map((price) => (
+              <tr>
+                <td>
+                  {`${formatUsd(price)}/ozt`}
+                  {price === spotPrice(m) && <span class="tag-this"> used above</span>}
+                </td>
+                <td style="text-align: right">{(price / spotPrice(m)).toFixed(2)}&times;</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p class="text-sm" style="color: var(--text-muted); padding: 0.6rem 1rem 0.2rem">
+          <span data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</span>.
+        </p>
+      </div>
+    </section>
+  ))}
+
+  {tags.length > 0 && (
+    <section class="container-page pb-12">
+      <div class="prose-page" style="margin-bottom: 1.1rem">
+        <h2 style="margin-top: 0">Related series, countries and topics</h2>
+      </div>
+      <div class="pill-row">
+        {tags.map((t) => <a href={meltTagPath(t.slug)} class="pill">{t.name}</a>)}
+      </div>
+    </section>
+  )}
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <h2 style="margin-top: 0">The metal, not the coin</h2>
+      <p>
+        It is the metal, not the coin. A scarce date, a mint mark or an
+        uncirculated strike can be worth a large multiple of the figures above,
+        and none of that is arithmetic —
+        {' '}<a href={groupPath(group.slug)}>{group.name.toLowerCase()} coin values</a> is
+        the same set of coins with that side of the answer on it.
+      </p>
+      <p class="text-sm" style="color: var(--text-muted)">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+    </div>
+  </section>
+</Base>

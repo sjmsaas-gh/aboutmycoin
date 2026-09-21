@@ -19,18 +19,55 @@
  *
  * Only tags with coins get a page. A registered tag with nothing on it is the
  * doorway page this whole registry is arranged to make impossible.
+ *
+ * ---------------------------------------------------------------------------
+ * THIS IS ALSO THE SERIES PAGE
+ * ---------------------------------------------------------------------------
+ *
+ * A `kind: 'series'` tag carrying `SeriesInfo` grows four more sections here:
+ * the run at a glance, the metal eras, the mints and their marks, the key
+ * dates and the varieties. There is deliberately no second URL for it. A
+ * series is already a tag, the tag already has a page, and
+ * /coin-value/series/<slug> alongside /coin-value/tagged/<slug> would be the
+ * site competing with itself for one search -- which is why `series` stays a
+ * reserved segment with nothing behind it.
+ *
+ * What goes here and what stays on the coin page is decided by one question:
+ * is the fact true of the whole run, or of one issue? The run, its designer,
+ * where the mint mark sits, which dates are scarce and which die varieties
+ * exist are series facts and live here. Weight, diameter, metal content and
+ * the melt figure are issue facts and live on the coin page, which this page
+ * links to rather than restating. The coin page keeps a three-row summary of
+ * the series and a link up here; that is a glance, not a copy.
+ *
+ * The key-date and variety rows link to a coin page the moment that coin is
+ * in the catalogue and read as plain text until then -- `validateTaxonomy()`
+ * throws on a slug with no coin behind it, so the link can never be a 404.
  */
 import Base from '../../../layouts/Base.astro';
 import CoinTile from '../../../components/CoinTile.astro';
 import { itemListSchema, webPageSchema, faqSchema } from '../../../lib/schema';
+import { meltTags, meltTagPath } from '../../../lib/melt';
+import {
+  TAG_KIND_LABEL,
+  tagAnswer,
+  tagDescription,
+  tagH1,
+  tagIntro,
+  tagNotes,
+  tagQuestion,
+  tagSections,
+  tagSeoTitle,
+} from '../../../lib/catalog-copy';
 import {
   populatedTags,
   coinsWithTag,
   groupsForTag,
+  coinBySlug,
   coinPath,
   groupPath,
   tagPath,
-  latestUpdated,
+  runLabel,
   groupBySlug,
   type Tag,
 } from '../../../data/coins';
@@ -45,19 +82,116 @@ const { tag } = Astro.props;
 const path = tagPath(tag.slug);
 const coins = coinsWithTag(tag.slug);
 const groups = groupsForTag(tag.slug);
-const updated = latestUpdated(coins, tag.updated);
 
-const KIND_LABEL: Record<Tag['kind'], string> = {
-  series: 'Series',
-  country: 'Country',
-  format: 'Format',
-  theme: 'Topic',
-  composition: 'Composition',
+// Every string on the page. Generated from the tag, its `kind` and the coins
+// carrying it, unless the registry writes one by hand -- see the header of
+// catalog-copy.ts. The kinds are five different questions, so the generator
+// branches on `kind` rather than filling one template five times.
+const h1 = tagH1(tag);
+const description = tagDescription(tag);
+const question = tagQuestion(tag);
+const answer = tagAnswer(tag);
+const intro = tagIntro(tag);
+const notes = tagNotes(tag);
+const sections = tagSections(tag);
+
+// The structured half of a series tag. Undefined on every other kind of tag,
+// and undefined on a series nobody has researched, which is the signal to
+// render the prose intro and nothing else rather than a table of blanks.
+const series = tag.kind === 'series' ? tag.series : undefined;
+
+/**
+ * A link to another tag page, or nothing at all.
+ *
+ * An unpopulated tag is registered but not built, so a hard-coded href to one
+ * is a 404 in a static site. Every cross-link out of this page goes through
+ * here, and the sentence around it is written to read correctly without it.
+ */
+const builtTag = (slug: string): string | undefined =>
+  populatedTags().some((t) => t.slug === slug) ? tagPath(slug) : undefined;
+
+const keyDateTagPath = builtTag('key-date');
+
+// The melt twin, when it is built. Guarded rather than assumed: while
+// MELT_PAGE_FOR_EVERY_COIN is true every populated tag has one, and the day
+// that flag flips a hard-coded href here would be a 404 in a static build.
+const meltTwin = meltTags().some((t) => t.slug === tag.slug) ? meltTagPath(tag.slug) : undefined;
+// Never re-cased: "United States coins", not "united states coins".
+const meltTwinLabel = /coins?$|coinage$/i.test(tag.name) ? tag.name : `${tag.name} coins`;
+
+/** A key date that has its own page yet, or undefined. */
+const entryPath = (slug?: string) => {
+  const coin = slug ? coinBySlug(slug) : undefined;
+  return coin ? coinPath(coin) : undefined;
 };
+
+/**
+ * The cheat sheet: everything on this series worth a second look, in one
+ * scan, above everything else.
+ *
+ * Somebody arrives here holding a coin. The designer, the edge and the metal
+ * eras are what they want second; what they want first is "is mine one of the
+ * ones that matter", and that answer is a list of labels, not prose. So the
+ * labels come first and the evidence follows underneath.
+ *
+ * It is derived, never written. Every label here is read out of `SeriesInfo`,
+ * so the cheat sheet cannot disagree with the tables below it -- which is the
+ * whole risk of putting a summary above a detail, and the reason there is no
+ * field anywhere for "cheat sheet".
+ *
+ * The three columns are three different jobs, and that is the useful part of
+ * the split. A key date is read off the coin. A variety is looked at and
+ * judged. An error is weighed or tested. `method` says which, once per
+ * column, rather than once per row.
+ */
+interface CheatColumn {
+  id: string;
+  title: string;
+  method: string;
+  labels: string[];
+}
+const cheat: CheatColumn[] = [
+  {
+    id: 'key-dates',
+    title: 'Dates and mint marks',
+    method: 'Read the date and the mint mark. No magnification, no judgement \u2014 either it says 1932-D or it does not.',
+    labels: (series?.keyDates ?? []).map((k) => k.label),
+  },
+  {
+    id: 'varieties',
+    title: 'Varieties',
+    method: 'Look at one specific feature under magnification and decide what you are seeing. Most candidates are not.',
+    labels: (series?.varieties ?? []).map((v) => v.label),
+  },
+  {
+    id: 'errors',
+    title: 'Mint errors',
+    method: 'Weigh it or put a magnet to it. These are settled by a measurement, and looking at them settles nothing.',
+    labels: (series?.errors ?? []).map((e) => e.label),
+  },
+].filter((c) => c.labels.length > 0);
+
+/** Series facts that are one short value each, so they share a grid. */
+const glance: { label: string; value: string }[] = series
+  ? [
+      { label: 'Struck', value: runLabel(series.years) },
+      ...(series.designer ? [{ label: 'Designer', value: series.designer }] : []),
+      // One composition era is a fact, not a timeline. Two or more get the
+      // table below instead, because then the year decides the metal.
+      ...(series.compositions.length === 1
+        ? [{ label: 'Composition', value: series.compositions[0].composition }]
+        : []),
+      ...(series.obverse ? [{ label: 'Obverse', value: series.obverse }] : []),
+      ...(series.reverse ? [{ label: 'Reverse', value: series.reverse }] : []),
+      ...(series.edge ? [{ label: 'Edge', value: series.edge }] : []),
+    ]
+  : [];
+
+
 ---
 <Base
-  title={tag.seoTitle}
-  description={tag.description}
+  title={tagSeoTitle(tag)}
+  description={description}
   path={path}
   crumbs={[
     { label: 'Coin values', href: '/coin-value' },
@@ -66,28 +200,29 @@ const KIND_LABEL: Record<Tag['kind'], string> = {
   schemas={[
     webPageSchema({
       type: 'CollectionPage',
-      name: tag.h1,
-      description: tag.description,
+      name: h1,
+      description,
       path,
-      dateModified: updated,
     }),
     itemListSchema({
-      name: tag.h1,
-      description: tag.description,
+      name: h1,
+      description,
       items: coins.map((c) => ({ name: c.name, path: coinPath(c) })),
     }),
-    faqSchema([{ q: tag.faqQuestion, a: tag.bluf }]),
+    faqSchema([{ q: question, a: answer }]),
   ]}
 >
   <section class="container-page pt-8 pb-10">
     <div class="prose-page">
-      <p class="tile-meta" style="margin: 0 0 0.4rem">{KIND_LABEL[tag.kind]}</p>
-      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">{tag.h1}</h1>
+      <p class="tile-meta" style="margin: 0 0 0.4rem">{TAG_KIND_LABEL[tag.kind]}</p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
       <div class="verdict" style={groups.length === 1 ? `--metal: var(--metal-${groups[0].slug})` : undefined}>
-        <span class="verdict-label">{tag.faqQuestion}</span>
-        <p>{tag.bluf}</p>
+        <span class="verdict-label">{question}</span>
+        <p>{answer}</p>
       </div>
-      {tag.intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
+      {intro.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
+      {notes.map((p) => <p style="margin-top: 1.3rem">{p}</p>)}
 
       {groups.length > 1 && (
         <p>
@@ -105,14 +240,265 @@ const KIND_LABEL: Record<Tag['kind'], string> = {
     </div>
   </section>
 
+  {series && (
+    <article class="container-page pb-4">
+      {cheat.length > 0 && (
+        <>
+          {/* Above the glance, deliberately. The reader has a coin in their
+              hand and one question about it; the designer and the edge type
+              can wait until that question is answered. */}
+          <div class="prose-page">
+            <h2 style="margin-top: 0">Cheat sheet</h2>
+            <p>
+              Every date, variety and error in this series worth a second
+              look. No prices: which of these are scarce has been settled for
+              a century, and what they fetch is true for a week.
+            </p>
+          </div>
+          <div class="cheat-grid">
+            {cheat.map((c) => (
+              <div class="card cheat-card">
+                <h3>
+                  {c.title}
+                  <span class="stat-figure">{c.labels.length}</span>
+                </h3>
+                <ul>
+                  {c.labels.map((l) => <li>{l}</li>)}
+                </ul>
+                <p class="cheat-method">{c.method}</p>
+                <p class="cheat-jump"><a href={`#${c.id}`}>Detail and cautions &darr;</a></p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* The run at a glance. Facts in rows: a series page is a reference
+          page, and a paragraph that says "struck from 1932 to the present by
+          three mints" is a row pretending to be prose. */}
+      <div class="prose-page">
+        <h2 style="margin-top: 0">The series at a glance</h2>
+      </div>
+      <div class="card fact-card">
+        <dl class="spec-grid">
+          {glance.map((f) => (
+            <>
+              <dt>{f.label}</dt>
+              <dd>{f.value}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+
+      {series.compositions.length > 1 && (
+        <>
+          <div class="prose-page">
+            <h2>What it is made of, and when</h2>
+            <p>
+              The metal changed partway through, so the date decides the metal
+              and the metal decides most of the value.
+            </p>
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table">
+              <thead>
+                <tr><th>Years</th><th>Composition</th><th>Filed under</th></tr>
+              </thead>
+              <tbody>
+                {series.compositions.map((c) => {
+                  const g = groupBySlug(c.group);
+                  return (
+                    <tr>
+                      <td>{runLabel(c.years)}</td>
+                      <td>{c.composition}</td>
+                      <td>{g ? <a href={groupPath(g.slug)}>{g.name}</a> : c.group}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Where it was struck. The mark, not the city, is what is punched on
+          the coin, so the mark column leads the answer to "what does the
+          letter mean". `mintMarkLocation` comes first because a reader who
+          cannot find a mint mark cannot use the table at all. */}
+      <div class="prose-page">
+        <h2>Mints and mint marks</h2>
+        {series.mintMarkLocation && <p>{series.mintMarkLocation}</p>}
+      </div>
+      <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+        <table class="fact-table">
+          <thead>
+            <tr><th>Mint mark</th><th>Mint</th><th>Years</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            {series.mints.map((m) => (
+              <tr>
+                <td class="mark-cell">{m.mark === '' ? 'None' : m.mark}</td>
+                <td>{m.city}</td>
+                <td>{m.years ? runLabel(m.years) : runLabel(series.years)}</td>
+                <td>{m.note ?? ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {series.keyDates && series.keyDates.length > 0 && (
+        <>
+          <div class="prose-page">
+            <h2 id="key-dates">Key dates</h2>
+            <p>
+              These are the issues worth conspicuously more than the rest of
+              the run, and every one of them is identified by reading the date
+              and the mint mark rather than by judging the coin. Mintages are
+              the mint&rsquo;s own published figures. No prices: which dates
+              are scarce has been settled for a century, and what they fetch
+              is true for a week.
+            </p>
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table">
+              <thead>
+                <tr><th>Date</th><th style="text-align: right">Mintage</th><th>Why it is scarce</th></tr>
+              </thead>
+              <tbody>
+                {series.keyDates.map((k) => {
+                  const href = entryPath(k.coin);
+                  return (
+                    <tr>
+                      <td class="mark-cell">{href ? <a href={href}>{k.label}</a> : k.label}</td>
+                      <td style="text-align: right">
+                        {k.mintage ? k.mintage.toLocaleString('en-US') : '\u2014'}
+                      </td>
+                      <td>{k.why}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {keyDateTagPath && (
+            <div class="prose-page">
+              <p>
+                <a href={keyDateTagPath}>What a key date is, and why a low mintage is worth money &rarr;</a>
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {series.varieties && series.varieties.length > 0 && (
+        <>
+          <div class="prose-page">
+            <h2 id="varieties">Varieties</h2>
+            <p>
+              A variety is not a key date. A key date is read off the coin with
+              no judgement at all; a variety asks you to look at one specific
+              feature and decide what you are seeing, which is why each row
+              below says what to look at rather than what to look for in
+              general.
+            </p>
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table">
+              <thead>
+                <tr><th>Variety</th><th>What to look at</th></tr>
+              </thead>
+              <tbody>
+                {series.varieties.map((v) => (
+                  <tr>
+                    <td class="mark-cell">{v.label}</td>
+                    <td>
+                      {v.lookFor}
+                      {v.caution && <span class="row-caution">{v.caution}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Mint errors. A separate section from varieties because they are
+          settled differently: a variety is a judgement about a feature and an
+          error is a measurement, so the useful column here is the test rather
+          than what to look at. Only errors documented on THIS series --
+          off-centre strikes and clipped planchets happen to every coin ever
+          struck and are not a fact about the Mercury dime. */}
+      {series.errors && series.errors.length > 0 && (
+        <>
+          <div class="prose-page">
+            <h2 id="errors">Mint errors</h2>
+            <p>
+              An error is not a variety. A variety is a die, so every coin
+              struck from it carries the same feature and you identify it by
+              looking. An error is one coin going wrong — the wrong blank
+              fed into the press — and looking at it proves nothing,
+              because the mistake is in the metal rather than in the design.
+              A scale and a magnet settle every row below in under a minute,
+              which is why the confirmed population is in the dozens and the
+              number of people who think they have one is not.
+            </p>
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table">
+              <thead>
+                <tr><th>Error</th><th>Confirmed</th><th>What happened, and how to settle it</th></tr>
+              </thead>
+              <tbody>
+                {series.errors.map((e) => (
+                  <tr>
+                    <td class="mark-cell">{e.label}</td>
+                    <td>{e.known ?? '\u2014'}</td>
+                    <td>
+                      {e.what}
+                      <span class="row-check">{e.check}</span>
+                      <span class="row-caution">{e.caution}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {((series.varieties && series.varieties.length > 0) ||
+        (series.errors && series.errors.length > 0)) && (
+        <div class="prose-page">
+          <p class="text-sm" style="color: var(--text-muted)">
+            Not an appraisal, and not an authentication. A coin worth four
+            figures because of a variety or an error is worth certifying by a
+            grading service before it is worth anything at all. Each one is a
+            specialty with its own literature behind it.
+          </p>
+        </div>
+      )}
+    </article>
+  )}
+
   <section class="container-page pb-20">
     <div class="prose-page" style="margin-bottom: 1.1rem">
-      <h2 style="margin-top: 0">{coins.length} {coins.length === 1 ? 'coin' : 'coins'} tagged {tag.name.toLowerCase()}</h2>
+      <h2 style="margin-top: 0">{sections.coins.heading}</h2>
     </div>
     <div class="tile-grid">
       {coins.map((c) => (
         <CoinTile coin={c} showGroup groupName={groupBySlug(c.group)?.name} />
       ))}
     </div>
+    {meltTwin && (
+      <div class="prose-page" style="margin-top: 2rem">
+        <p class="text-sm" style="color: var(--text-muted)">
+          What the metal in these adds up to, with the weights and the
+          arithmetic and none of the above, is
+          {' '}<a href={meltTwin}>melt value of {meltTwinLabel}</a>.
+        </p>
+      </div>
+    )}
   </section>
 </Base>

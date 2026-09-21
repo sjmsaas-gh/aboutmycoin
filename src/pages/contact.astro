@@ -18,7 +18,7 @@ import { MESSAGE_TYPES, LIMITS, HONEYPOT_FIELD } from '../lib/contact';
 import { webPageSchema } from '../lib/schema';
 import { SITE } from '../lib/site';
 
-const description = `Send feedback, a testimonial, a product suggestion or a bug report to the ${SITE.name} team. We read everything.`;
+const description = `Report a problem, ask for a coin to be added, correct a page or send a suggestion to the ${SITE.name} team. Every message is read.`;
 ---
 <Base
   title="Contact"
@@ -36,38 +36,8 @@ const description = `Send feedback, a testimonial, a product suggestion or a bug
 >
   <section class="container-page pt-12 pb-8">
     <div class="prose-page">
-      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Contact</h1>
-      <p>
-        Feedback, a bug, an idea for the next feature, a kind word we can quote
-        — it all arrives in the same inbox, and it is read by the person who
-        builds the thing.
-      </p>
-      <p>
-        If something is misbehaving, it is worth a look at the{' '}
-        <a href="/faq">FAQ and troubleshooting page</a> first — the common
-        failures are covered there, usually with the fix.
-      </p>
-
-      <!-- Says what a paid plan does and does not buy, before someone pays for
-           it expecting a support desk. Framed as what we do rather than what we
-           refuse, because the honest version is genuinely not unkind: small
-           tool, one maintainer, bug reports get read first. -->
-      <div class="card not-prose p-5 mt-6" style="background: var(--bg-sunken)">
-        <h2 class="text-lg" style="margin: 0 0 0.4rem">About technical support</h2>
-        <!-- RENAME: keep the shape of this, change the specifics. Saying what
-             a paid plan does NOT buy, before someone pays for it, is cheaper
-             than the disappointed email afterwards. Frame it as what you do
-             rather than what you refuse -- the honest version is not unkind. -->
-        <p class="text-[0.95rem]" style="margin: 0; color: var(--text-muted)">
-          {SITE.name} is a tool, not a service with a support desk — a purchase
-          pays for the software, not for hands-on help, so please don’t buy one
-          expecting a support contract. That said, every message here is read,
-          and we answer as many as time allows. Reports of something genuinely
-          broken go to the front of the queue: tell us which browser you were
-          using and what you saw, and there is a good chance it gets fixed for
-          everyone.
-        </p>
-      </div>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.5rem">Contact Us</h1>
+      <p>Drop us a line.</p>
     </div>
   </section>
 
@@ -104,12 +74,8 @@ const description = `Send feedback, a testimonial, a product suggestion or a bug
             maxlength={LIMITS.EMAIL_MAX}
             autocomplete="email"
             inputmode="email"
-            aria-describedby="email-hint email-error"
+            aria-describedby="email-error"
           />
-          <p class="text-sm mt-1" id="email-hint" style="color: var(--text-muted)">
-            Used to reply to you, and for nothing else. It is not stored or
-            added to any list.
-          </p>
           <p class="field-error" id="email-error" hidden></p>
         </div>
 
@@ -118,7 +84,8 @@ const description = `Send feedback, a testimonial, a product suggestion or a bug
           <!-- No blank placeholder option that means "nothing chosen": a select
                that starts on a real value cannot be submitted unanswered, and
                the required-field error for a dropdown is the one nobody ever
-               understands. `Feedback` is first because it is the common case. -->
+               understands. The order, and which one is therefore the default,
+               lives with the list in src/lib/contact.ts. -->
           <select class="field" id="messageType" name="messageType" required aria-describedby="messageType-error">
             {MESSAGE_TYPES.map((t) => <option value={t.id}>{t.label}</option>)}
           </select>
@@ -161,11 +128,6 @@ const description = `Send feedback, a testimonial, a product suggestion or a bug
                text is swapped between "Sending…", a failure, and nothing. -->
           <p id="form-status" class="text-sm" role="status" aria-live="polite" style="color: var(--bad)"></p>
         </div>
-
-        <p class="text-sm" style="color: var(--text-muted)">
-          This form is protected against automated abuse — no puzzles, no
-          reCAPTCHA, and nothing about you is sent anywhere but to us.
-        </p>
       </form>
 
       <!-- The success state replaces the form rather than sitting above it: a
@@ -174,12 +136,7 @@ const description = `Send feedback, a testimonial, a product suggestion or a bug
            which is what tells a screen reader the page changed. -->
       <div id="sent" class="not-prose card p-6" hidden tabindex="-1">
         <h2 class="text-2xl" style="margin: 0 0 0.5rem">Thanks — your message is on its way.</h2>
-        <p style="margin: 0">
-          We read everything that arrives. We can’t promise a reply to every
-          message, but we will genuinely try, and anything that turns out to be
-          a bug gets looked at first.
-        </p>
-        <p class="mt-4" style="margin-bottom: 0">
+        <p style="margin-bottom: 0">
           <a href="/" class="btn btn-secondary">Back to the home page</a>
         </p>
       </div>

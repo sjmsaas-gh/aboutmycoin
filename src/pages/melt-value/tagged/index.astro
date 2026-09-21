@@ -1,0 +1,132 @@
+---
+/**
+ * The tag index on the melt side: /melt-value/tagged.
+ *
+ * The twin of /coin-value/tagged, and it exists for the same two reasons: the
+ * reserved `tagged` segment should be a real page rather than the 404 a
+ * visitor reaches by deleting the last part of a URL, and the two axes of the
+ * structure need explaining to a human in one place.
+ *
+ * Grouped by kind, because "series", "country" and "topic" are different
+ * questions and a flat alphabetical list of thirty pills answers none of them.
+ *
+ * No FAQPage markup, exactly as on the catalogue's index: this page is a
+ * directory, and the questions belong to the pages it points at.
+ */
+import Base from '../../../layouts/Base.astro';
+import TileCard from '../../../components/TileCard.astro';
+import { itemListSchema, webPageSchema } from '../../../lib/schema';
+import {
+  MELT_ROOT,
+  MELT_TAGGED_ROOT,
+  MELT_TAGGED_H1,
+  MELT_TAGGED_DESCRIPTION,
+  meltTags,
+  meltTagPath,
+} from '../../../lib/melt';
+import { tagArtKey } from '../../../lib/card-art';
+import type { Tag } from '../../../data/coins';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../data/faq-registry';
+
+const path = MELT_TAGGED_ROOT;
+const tags = meltTags();
+
+const ORDER: { kind: Tag['kind']; title: string; blurb: string }[] = [
+  {
+    kind: 'series',
+    title: 'By series',
+    blurb:
+      'A series whose composition changed partway through is split across the tree by metal, and the melt figure is the reason the split exists. These pages put the run back together and price every part of it.',
+  },
+  {
+    kind: 'country',
+    title: 'By country',
+    blurb:
+      'Coins are filed by what they are made of, not by where they were struck, so the country view is assembled from tags.',
+  },
+  {
+    kind: 'composition',
+    title: 'By composition detail',
+    blurb: 'Finer than the top-level metal groups: a specific fineness or construction, which is what actually sets the weight.',
+  },
+  { kind: 'format', title: 'By format', blurb: 'How the coin was made and sold, rather than what it is.' },
+  {
+    kind: 'theme',
+    title: 'By topic',
+    blurb: 'The categories a jar of coins actually gets sorted into.',
+  },
+];
+
+const sections = ORDER.map((o) => ({ ...o, tags: tags.filter((t) => t.kind === o.kind) })).filter(
+  (s) => s.tags.length > 0,
+);
+---
+<Base
+  title="Coin Melt Values by Series, Country and Topic"
+  description={MELT_TAGGED_DESCRIPTION}
+  path={path}
+  crumbs={[
+    { label: 'Melt values', href: MELT_ROOT },
+    { label: 'Topics', href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: MELT_TAGGED_H1,
+      description: MELT_TAGGED_DESCRIPTION,
+      path,
+    }),
+    itemListSchema({
+      name: MELT_TAGGED_H1,
+      description: MELT_TAGGED_DESCRIPTION,
+      items: tags.map((t) => ({ name: t.name, path: meltTagPath(t.slug) })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{MELT_TAGGED_H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg">
+        <strong>
+          What the metal in a series, a country, an alloy or a category comes
+          to, added up and sorted richest first.
+        </strong>
+      </p>
+      <p>
+        The same labels cut across
+        {' '}<a href="/coin-value/tagged">the catalogue</a>, where the question
+        is what the coins are worth rather than what is in them.
+      </p>
+    </div>
+  </section>
+
+  {sections.length === 0 ? (
+    <section class="container-page pb-20">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">No topics yet</h2>
+        <p>
+          A topic page appears here as soon as a coin is tagged with it. The
+          tags themselves are already written, and each one is held back until
+          it has something to list, because a topic page with nothing on it is
+          a heading and an empty grid.
+        </p>
+        <p><a href={MELT_ROOT}>Back to melt values</a>.</p>
+      </div>
+    </section>
+  ) : sections.map((s) => (
+    <section class="container-page pb-12">
+      <div class="prose-page" style="margin-bottom: 1rem">
+        <h2 style="margin-top: 0">{s.title}</h2>
+        <p>{s.blurb}</p>
+      </div>
+      <div class="tile-grid">
+        {s.tags.map((t) => (
+          <TileCard href={meltTagPath(t.slug)} label={t.name} artKey={tagArtKey(t.slug)} />
+        ))}
+      </div>
+    </section>
+  ))}
+  <div class="pb-8"></div>
+</Base>

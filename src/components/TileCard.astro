@@ -1,0 +1,44 @@
+---
+/**
+ * A way into the catalogue, as a card: a heading and a picture, nothing else.
+ *
+ * One component for every category listing on the site -- the metals, the
+ * series, the countries, the topics, on the home page and on both hubs -- so
+ * the cards on /coin-value and the cards on /melt-value cannot drift into two
+ * shapes. What differs between them is the href, which is the whole point of
+ * the two sections.
+ *
+ * There is no summary line and no stat line by design. A card said
+ * "1960-1964 · quarters" under "Silver", which is a caption for the page
+ * behind it rather than a reason to click, and it put a fact about the
+ * catalogue's current contents on a card whose subject is the metal. The
+ * picture does the work the sentence was doing badly.
+ *
+ * `metal` tints the hover border and the dot beside the heading, and is left
+ * off where the subject is not a composition group: a topic is not a metal
+ * and a coloured dot claiming it is one is a dot that means nothing.
+ */
+import TileArt from './TileArt.astro';
+import { cardArt, type CardKey } from '../lib/card-art';
+
+interface Props {
+  href: string;
+  label: string;
+  /** A composition group's slug, where the subject is one. */
+  metal?: string;
+  /** Which picture this subject has, if any. */
+  artKey: CardKey;
+}
+const { href, label, metal, artKey } = Astro.props;
+---
+<a
+  href={href}
+  class="tile tile-way"
+  style={metal ? `--metal: var(--metal-${metal})` : '--metal: var(--accent)'}
+>
+  <h3>
+    {metal && <span class="metal-dot" aria-hidden="true"></span>}
+    {label}
+  </h3>
+  <TileArt art={cardArt(artKey)} />
+</a>

@@ -73,7 +73,7 @@ export const SITE = {
    * a missing file is a 404 on every page of the site. Add entries here only
    * once `npm run fonts` has produced them -- see assets/fonts-src/README.md.
    */
-  preloadFonts: [] as string[],
+  preloadFonts: ['/fonts/body-subset.woff2', '/fonts/display-subset.woff2'] as string[],
   /**
    * Theme colours for the browser chrome, light and dark.
    *
@@ -81,7 +81,7 @@ export const SITE = {
    * before any stylesheet, so a var() here resolves to nothing. Keep these in
    * step with --bg in src/styles/global.css by hand.
    */
-  themeColor: { light: '#fbfbfa', dark: '#111110' },
+  themeColor: { light: '#ffffff', dark: '#101009' },
 } as const;
 
 /* ===========================================================================

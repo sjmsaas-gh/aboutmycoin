@@ -1,0 +1,168 @@
+---
+/**
+ * A cross-cutting melt view: /melt-value/tagged/<tag>.
+ *
+ * The twin of /coin-value/tagged/<tag>, and the half of the structure the
+ * metal-and-denomination tree cannot express. A coin has exactly one address
+ * in the tree and any number of tags, so this is the page that gathers a
+ * series, a country or a topic back into one list.
+ *
+ * It does not total them. "One of each" is a set nobody holds -- a reader
+ * with a jar of junk silver has a weight, not one of every issue -- and a
+ * figure that answers no question still gets quoted as though it did. Each
+ * tile is a route to the coin, and the coin's own page does the arithmetic
+ * with a box for the quantity actually in hand.
+ *
+ * WHAT IS NOT HERE, AND WHY
+ *
+ * The series facts. A `kind: 'series'` tag carries its run, its mints, its
+ * metal eras, its key dates and its varieties, and all of that is on the
+ * catalogue's tag page -- the series page -- and nowhere else. None of it is
+ * arithmetic, none of it changes when the spot price does, and a second copy
+ * of a cheat sheet is a cheat sheet that drifts. This page carries the
+ * figures and one link across to the series.
+ *
+ * `tagged` is a reserved segment in both sections at once, so a group or type
+ * slug colliding with it would shadow four pages rather than two;
+ * validateMeltPaths() throws on it.
+ */
+import Base from '../../../layouts/Base.astro';
+import MeltTile from '../../../components/MeltTile.astro';
+import { SITE } from '../../../lib/site';
+import { itemListSchema, webPageSchema, faqSchema } from '../../../lib/schema';
+import { METAL_LABEL, markedUsd, spotStamp } from '../../../lib/spot';
+import {
+  MELT_ROOT,
+  MELT_TAGGED_ROOT,
+  meltTags,
+  meltTagPath,
+  meltTagH1,
+  meltTagSeoTitle,
+  meltTagQuestion,
+  meltTagAnswer,
+  meltTagDescription,
+  meltCoinsWithTag,
+  meltGroupPath,
+  meltPath,
+  metalsIn,
+} from '../../../lib/melt';
+import { groupsForTag, tagPath, type Tag } from '../../../data/coins';
+import { tagH1 } from '../../../lib/catalog-copy';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../data/faq-registry';
+
+export function getStaticPaths() {
+  return meltTags().map((tag) => ({ params: { tag: tag.slug }, props: { tag } }));
+}
+
+export interface Props { tag: Tag }
+const { tag } = Astro.props;
+
+const path = meltTagPath(tag.slug);
+const coins = meltCoinsWithTag(tag.slug);
+const groups = groupsForTag(tag.slug);
+const metals = metalsIn(coins);
+const question = meltTagQuestion(tag);
+// Plain for the FAQPage schema, marked for the reader -- see the coin melt
+// page for the reasoning behind the pair and behind `data-spot-sync`.
+const answer = meltTagAnswer(tag);
+const answerHtml = meltTagAnswer(tag, markedUsd);
+const description = meltTagDescription(tag);
+// Never re-cased. See the note on tagCoins() in src/lib/melt.ts.
+const tagCoins = /coins?$|coinage$/i.test(tag.name) ? tag.name : `${tag.name} coins`;
+---
+<Base
+  title={meltTagSeoTitle(tag)}
+  description={description}
+  path={path}
+  crumbs={[
+    { label: 'Melt values', href: MELT_ROOT },
+    { label: 'Topics', href: MELT_TAGGED_ROOT },
+    { label: tag.name, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: meltTagH1(tag),
+      description,
+      path,
+    }),
+    itemListSchema({
+      name: meltTagH1(tag),
+      description,
+      items: coins.map((c) => ({ name: `${c.name} melt value`, path: meltPath(c) })),
+    }),
+    faqSchema([{ q: question, a: answer }]),
+  ]}
+>
+  <section class="container-page pt-8 pb-8">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{meltTagH1(tag)}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <div class="verdict" style="--metal: var(--accent)">
+        <span class="verdict-label">{question}</span>
+        <p data-spot-sync={answer} set:html={answerHtml} />
+      </div>
+    </div>
+  </section>
+
+  {metals.length > 0 && (
+    <section class="container-page pb-10">
+      <div class="card fact-card">
+        <p class="figure-label">Worked at</p>
+        <dl class="spec-grid">
+          {metals.map((m) => (
+            <>
+              <dt>{METAL_LABEL[m]}</dt>
+              <dd data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )}
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{tagCoins.charAt(0).toUpperCase() + tagCoins.slice(1)}</h2>
+    </div>
+    <div class="tile-grid">
+      {coins.map((c) => (
+        <MeltTile coin={c} showGroup={groups.length > 1} groupName={c.group} showFigure={false} />
+      ))}
+    </div>
+  </section>
+
+  {groups.length > 1 && (
+    <section class="container-page pb-12">
+      <div class="prose-page" style="margin-bottom: 1.1rem">
+        <h2 style="margin-top: 0">Split by what they are made of</h2>
+        <p>
+          These coins are not all the same metal, which is the whole reason
+          this page exists: the tree files them in {groups.length} different
+          branches and the figures differ accordingly.
+        </p>
+      </div>
+      <div class="pill-row">
+        {groups.map((g) => <a href={meltGroupPath(g.slug)} class="pill">{g.name}</a>)}
+      </div>
+    </section>
+  )}
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <p class="text-sm" style="color: var(--text-muted)">
+        {tag.kind === 'series'
+          ? <>The run itself — the years, the mints, the key dates and the varieties — is on
+            {' '}<a href={tagPath(tag.slug)}>{tagH1(tag)}</a>, with what each issue
+            is worth as a coin rather than as metal.</>
+          : <>What these are worth as coins rather than as metal is
+            {' '}<a href={tagPath(tag.slug)}>{tagH1(tag)}</a>.</>}
+      </p>
+      <p class="text-sm" style="color: var(--text-muted)">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+    </div>
+  </section>
+</Base>

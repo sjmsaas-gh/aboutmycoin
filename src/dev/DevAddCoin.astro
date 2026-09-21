@@ -1,0 +1,80 @@
+---
+/**
+ * The procedure for adding a coin, next to the live state of the taxonomy.
+ * Development only.
+ *
+ * The prose is NOT written here. It is `ADDING-A-COIN.md` at the repo root,
+ * imported and rendered, because that file has to be readable with no dev
+ * server running -- in a diff, on GitHub, in a session that starts cold --
+ * and two copies of a procedure is how a procedure becomes wrong. What this
+ * page adds is the half a document cannot have: the groups, denominations,
+ * tags and metals you are choosing from, counted from the registry as it is
+ * right now.
+ */
+import DevShell from './DevShell.astro';
+import { Content as Procedure } from '../../ADDING-A-COIN.md';
+import { taxonomyRows, counts } from './inventory';
+
+const taxonomy = taxonomyRows();
+const coinCount = counts()[0].n;
+---
+<DevShell
+  title="Adding a coin"
+  lede="The procedure from ADDING-A-COIN.md, and the live taxonomy you are choosing from. Pick the two axes first — they are the URL, and the URL is permanent."
+>
+  <h2>What you are choosing from</h2>
+  <p class="blurb">
+    Counted from the registry this second, with {coinCount} coin{coinCount === 1 ? '' : 's'} in
+    the catalogue. <strong>not built</strong> means the entry is written and
+    waiting: it becomes a URL the day a coin references it.
+  </p>
+  {taxonomy.map((t) => (
+    <details>
+      <summary>
+        <span class="path">{t.title}</span>
+        <span class="name">{t.rows.filter((r) => r.live).length} live of {t.rows.length}</span>
+      </summary>
+      <div class="detail">
+        <p class="blurb">{t.blurb}</p>
+        <table>
+          <thead><tr><th>Slug</th><th>Name</th><th>Kind</th><th>Coins</th><th>Archive</th></tr></thead>
+          <tbody>
+            {t.rows.map((r) => (
+              <tr>
+                <td class="mono">{r.slug}</td>
+                <td>{r.name}</td>
+                <td class="muted">{r.kind}</td>
+                <td>{r.count}</td>
+                <td>
+                  {r.live
+                    ? <a class="mono" href={r.path} target="_blank" rel="noreferrer">{r.path}</a>
+                    : <span class="muted mono">{r.path} <span class="pill">not built</span></span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  ))}
+
+  <h2>The procedure</h2>
+  <p class="blurb">
+    Rendered from <code>ADDING-A-COIN.md</code>. Edit that file, not this page.
+    The editorial half — how each field is written — is
+    <code>COIN-ARTICLE-GUIDE.md</code>.
+  </p>
+  <div class="panel prose">
+    <Procedure />
+  </div>
+
+  <style is:inline>
+    .prose h1 { font-size: 1.35rem; margin-top: 0; }
+    .prose h2 { font-size: 1.02rem; margin-top: 1.8rem; }
+    .prose p, .prose li { max-width: 74ch; }
+    .prose code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 0.25em; }
+    .prose pre code { border: 0; background: none; padding: 0; }
+    .prose hr { border: 0; border-top: 1px solid var(--line); margin: 1.6rem 0; }
+    .prose table { margin: 0.6rem 0 1rem; }
+  </style>
+</DevShell>

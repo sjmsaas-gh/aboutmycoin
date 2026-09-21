@@ -1,0 +1,101 @@
+---
+/**
+ * The hero's finder: denomination, then coin, then go.
+ *
+ * The one action this site wants is "find my coin", and a button that says so
+ * is a promise; a control that does it is the product. This is the product, in
+ * the smallest honest form: two selects and a submit.
+ *
+ * It CANNOT dead-end. Both lists are built from the catalogue at build time, so
+ * every option leads to a page that exists -- there is no free-text box, no
+ * "no results" state and no search index to keep in step. A visitor whose coin
+ * is not in the catalogue sees that it is not on the list, which is the truth,
+ * rather than typing it in and being told nothing was found.
+ *
+ * The script is eleven lines, inline, and does one thing: hide the coins that
+ * belong to another denomination, then navigate on submit. No island, no
+ * framework, no hydration -- the catalogue pages ship zero JavaScript and this
+ * is not the page to break that habit on.
+ *
+ * With JavaScript off the form is hidden by the <noscript> style and a plain
+ * link to the catalogue takes its place. A form that renders, accepts a
+ * selection and then sits there is the failure mode the house rules call
+ * dishonest.
+ */
+import { COINS, TYPES, coinPath } from '../data/coins';
+
+/**
+ * Denominations that actually have coins, in taxonomy order rather than in
+ * catalogue order, so the list reads cent-to-dollar however the entries were
+ * added.
+ */
+const types = TYPES.filter((t) => COINS.some((c) => c.type === t.slug));
+
+/** Every coin, grouped under its denomination for the second select. */
+const options = types.flatMap((t) =>
+  COINS.filter((c) => c.type === t.slug).map((c) => ({
+    type: t.slug,
+    label: c.shortName ?? c.name,
+    path: coinPath(c),
+  })),
+);
+
+const first = types[0]?.slug ?? '';
+---
+{options.length > 0 && (
+  <>
+    <form class="finder" id="coin-finder" action="/coin-value" method="get">
+      <div class="finder-field">
+        <label class="label" for="finder-type">Denomination</label>
+        <select class="field" id="finder-type" name="type">
+          {types.map((t) => <option value={t.slug}>{t.name}</option>)}
+        </select>
+      </div>
+
+      <div class="finder-field">
+        <label class="label" for="finder-coin">Coin</label>
+        <select class="field" id="finder-coin" name="coin">
+          {options.map((o) => (
+            <option value={o.path} data-type={o.type} hidden={o.type !== first}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <button class="btn btn-primary finder-go" type="submit">Find it</button>
+    </form>
+
+    <noscript>
+      <style>#coin-finder { display: none }</style>
+      <p class="mt-2">
+        <a href="/coin-value">Browse the catalogue by metal and denomination</a>
+        — the finder above needs JavaScript, this does not.
+      </p>
+    </noscript>
+
+    <script is:inline>
+      (() => {
+        const form = document.getElementById('coin-finder');
+        if (!form) return;
+        const type = form.querySelector('#finder-type');
+        const coin = form.querySelector('#finder-coin');
+        /* `hidden` rather than removing the options: the full list stays in
+           the DOM, so switching denomination back and forth never has to
+           rebuild it and never loses an entry. */
+        const sync = () => {
+          let firstVisible = null;
+          for (const o of coin.options) {
+            o.hidden = o.dataset.type !== type.value;
+            if (!o.hidden && !firstVisible) firstVisible = o;
+          }
+          if (firstVisible) coin.value = firstVisible.value;
+        };
+        type.addEventListener('change', sync);
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          if (coin.value) window.location.assign(coin.value);
+        });
+        sync();
+      })();
+    </script>
+  </>
+)}

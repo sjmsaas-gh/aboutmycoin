@@ -1,4 +1,18 @@
 ---
+/*
+ * NOT A ROUTE. Astro skips any file in src/pages whose name starts with an
+ * underscore, so this page is not built and not in the sitemap.
+ *
+ * Nothing is sold on this site yet -- see SPEC.md. The page is kept rather
+ * than deleted because the Stripe plumbing behind it (api/, src/server/,
+ * src/lib/pricing.ts, PricingTiers.astro, BuyButton.tsx) is intact and
+ * tested, and bringing the whole thing back is one rename.
+ *
+ * Before renaming it back: `src/lib/pricing.ts` is still starter placeholder
+ * content, and the build check in tests/build-smoke.test.mjs will fail while
+ * a page offers something whose *_AVAILABLE flag is false. That check is the
+ * point -- decide what is sold first, then re-enable the page.
+ */
 /**
  * Where Stripe returns the buyer after checkout.
  *

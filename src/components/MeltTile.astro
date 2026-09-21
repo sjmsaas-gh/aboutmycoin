@@ -1,0 +1,58 @@
+---
+/**
+ * One coin in a melt listing: the /melt-value twin of CoinTile.
+ *
+ * Same shape, same grid, same place on the page -- and a different payload,
+ * which is the whole relationship between the two sections. CoinTile shows
+ * the coin's `bluf`, because the catalogue's answer is a judgement that has
+ * to be worded. This shows the figure and the weight behind it, because this
+ * section's answer is a multiplication and the number is the answer.
+ *
+ * A coin with no precious metal still gets a tile and it says "None". That is
+ * the answer somebody sorting a jar came for, and a tile that quietly
+ * disappeared would leave them wondering whether the coin was missing or the
+ * site was.
+ *
+ * `showFigure` turns the payload off, and the denomination archive is where it
+ * is used: that page's listing is a route to the issue rather than a column of
+ * figures, and the figure belongs on the page that shows its working. The
+ * ordering is still richest first, so the list means the same thing.
+ */
+import { meltPath, meltOf, formatOzt } from '../lib/melt';
+import { formatUsd } from '../lib/spot';
+import { yearLabel, type Coin } from '../data/coins';
+
+interface Props {
+  coin: Coin;
+  /** Hidden when the surrounding page is already a single-group listing. */
+  showGroup?: boolean;
+  groupName?: string;
+  /** Off where the listing is navigation rather than a table of figures. */
+  showFigure?: boolean;
+}
+const { coin, showGroup = false, groupName, showFigure = true } = Astro.props;
+
+const melt = meltOf(coin);
+const meta = [
+  yearLabel(coin),
+  coin.country,
+  showGroup && groupName ? groupName : null,
+].filter(Boolean).join(' · ');
+---
+<a href={meltPath(coin)} class="tile" style={`--metal: var(--metal-${coin.group})`}>
+  <h3><span class="metal-dot" aria-hidden="true"></span>{coin.name}</h3>
+  {showFigure && (melt ? (
+    <p class="tile-figure">
+      {/* The figure the browser rescales when the spot endpoint answers. The
+          weight beside it does not move, so it carries no marker. */}
+      <span data-spot="value" data-spot-metal={melt.metal} data-spot-ozt={melt.troyOunces}>{formatUsd(melt.value)}</span>
+      <span class="tile-figure-note">{formatOzt(melt.troyOunces)} troy oz {melt.metal}</span>
+    </p>
+  ) : (
+    <p class="tile-figure">
+      None
+      <span class="tile-figure-note">No silver and no gold in it</span>
+    </p>
+  ))}
+  <p class="tile-meta">{meta}</p>
+</a>

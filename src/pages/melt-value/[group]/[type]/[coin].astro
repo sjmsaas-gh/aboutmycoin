@@ -1,0 +1,282 @@
+---
+/**
+ * One coin's melt value: /melt-value/<group>/<type>/<coin>.
+ *
+ * The same address as the coin's catalogue entry with one segment changed,
+ * which is the whole contract between the two sections: a reader on the wrong
+ * one of the pair edits `/coin-value` to `/melt-value` and lands on the other
+ * half of the answer. `validateMeltPaths()` throws if that ever stops being
+ * true.
+ *
+ * Generated for every coin in the catalogue, including the ones with no
+ * precious metal in them -- see the header of src/lib/melt.ts for why that is
+ * a deliberate exception and how to reverse it.
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT IS ON THIS PAGE, AND WHAT DELIBERATELY IS NOT
+ * ---------------------------------------------------------------------------
+ *
+ * The page is the figure and the two things you can only do once you have it:
+ *
+ *   1. The answer   one sentence, in the words the FAQPage schema carries.
+ *   2. The figure   the big number, its working, its dateline, a "how many
+ *                   do you have" input that drives both, the one sentence
+ *                   saying what the number is not, and a link out to the coin
+ *                   itself. One block: an input that restates the figure
+ *                   above it instead of changing it is duplication with a
+ *                   text box in it.
+ *
+ * Everything else was cut, because the coin page already carries it and two
+ * pages saying the same thing is two pages competing for the same search.
+ * Gone, and not to be put back one block at a time:
+ *
+ *   - the specification rows. Composition, weight, diameter, face value,
+ *     mint marks and both faces are the coin page's "Coin info" table.
+ *   - the eyebrow line. Metal, denomination, country and year are all on the
+ *     coin page, and the breadcrumb trail already says where this sits.
+ *   - the ladder of other spot prices. It is on the group archive, one level
+ *     up, as a column of multipliers against a whole branch. Next to a single
+ *     figure the reader already has, a second column of other prices restates
+ *     the arithmetic the page just showed.
+ *   - "more on this coin", as a list. One link, in the figure block, with the
+ *     coin's own name as the link text: that is the route back to everything
+ *     else, and a second list of archive links here only splits the crawl.
+ *
+ * The test for adding anything: could it be read off the coin page? Then it
+ * goes on the coin page. This page owns the arithmetic and nothing else.
+ */
+import Base from '../../../../layouts/Base.astro';
+import { SITE } from '../../../../lib/site';
+import { articleSchema, faqSchema, webPageSchema } from '../../../../lib/schema';
+import { formatUsd, markedUsd } from '../../../../lib/spot';
+import {
+  MELT_ROOT,
+  meltGroupPath,
+  meltTypePath,
+  meltCoins,
+  meltPath,
+  meltOf,
+  meltH1,
+  meltSeoTitle,
+  meltQuestion,
+  meltAnswer,
+  meltDescription,
+  mintRoll,
+  formatOzt,
+} from '../../../../lib/melt';
+import { coinPath, groupBySlug, typeBySlug, type Coin } from '../../../../data/coins';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../../data/faq-registry';
+
+export function getStaticPaths() {
+  return meltCoins().map((coin) => ({
+    params: { group: coin.group, type: coin.type, coin: coin.slug },
+    props: { coin },
+  }));
+}
+
+export interface Props { coin: Coin }
+const { coin } = Astro.props;
+
+// Non-null: validateTaxonomy() throws at build time on an unknown group or
+// type, so by the time this renders every lookup has resolved.
+const group = groupBySlug(coin.group)!;
+const type = typeBySlug(coin.type)!;
+
+const path = meltPath(coin);
+const question = meltQuestion(coin);
+// Two renderings of ONE sentence. The plain one goes into the FAQPage
+// schema and the meta description; the marked one is what the reader sees,
+// with each figure in a span the browser recomputes when /api/spot answers.
+// `data-spot-sync` carries the plain form, so when the browser rewrites the
+// visible sentence it rewrites the schema's copy of it to match -- a page
+// whose structured data states a different price from its body is the
+// mismatch Google issues manual actions for.
+const answer = meltAnswer(coin);
+const answerHtml = meltAnswer(coin, markedUsd);
+const melt = meltOf(coin);
+const roll = mintRoll(coin);
+
+/**
+ * United States cents and five-cent coins are the two denominations it is
+ * actually illegal to melt, which is worth saying on the page where somebody
+ * has just been told the metal is not the answer. Scoped to those two,
+ * because it is not true of anything else, and it is the only sentence on the
+ * no-metal variant that the coin page does not already carry.
+ */
+const meltingProhibited =
+  !melt && coin.country === 'United States' && (coin.type === 'cent' || coin.type === 'nickel');
+---
+<Base
+  title={meltSeoTitle(coin)}
+  description={meltDescription(coin)}
+  path={path}
+  type="article"
+  crumbs={[
+    { label: 'Melt values', href: MELT_ROOT },
+    // The catalogue's trail, one section over. Both archives are built
+    // whenever a coin is in them -- the filters that build them are the ones
+    // that built this page -- so neither crumb can point at a 404.
+    { label: group.name, href: meltGroupPath(group.slug) },
+    { label: type.namePlural, href: meltTypePath(group.slug, type.slug) },
+    { label: coin.name, href: path },
+  ]}
+  schemas={[
+    articleSchema({
+      headline: meltH1(coin),
+      description: meltDescription(coin),
+      path,
+    }),
+    webPageSchema({
+      type: 'WebPage',
+      name: meltH1(coin),
+      description: meltDescription(coin),
+      path,
+    }),
+    // One question, and it is not the one the coin page owns. "What is the
+    // melt value of X" and "how much is X worth" are two searches by two
+    // people; src/data/faq-registry.ts throws if they ever collide.
+    faqSchema([{ q: question, a: answer }]),
+    // No Product schema here. The coin's own page carries that, and declaring
+    // the same object twice on two URLs is the site competing with itself.
+  ]}
+>
+  <article class="container-page pt-8 pb-20" style={`--metal: var(--metal-${group.slug})`}>
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{meltH1(coin)}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+
+      {/* The label is "The short answer" rather than the question, because the
+          H1 has just asked it in as many words. */}
+      <div class="verdict">
+        <span class="verdict-label">The short answer</span>
+        <p data-spot-sync={answer} set:html={answerHtml} />
+      </div>
+    </div>
+
+    {melt ? (
+      <>
+        {/* The figure and the "how many" input are ONE block, not two.
+
+            They were two, and the calculator's default state restated the
+            number directly above it -- the same duplication this page was
+            stripped to remove, reproduced inside a single screen. Now the
+            input drives the headline figure and the working line beneath it,
+            which is what a reader expects of a box next to a number anyway.
+
+            There is no script on this page. The input is wired by
+            src/lib/spot-dom.ts, which Base.astro loads everywhere, and the
+            multiplication it does is the same `formatUsd()` and `formatOzt()`
+            the build called -- imported, not copied. This block used to carry
+            an inline script with its own `usd()` and `oz()`, and a test that
+            lifted them out of this file with a regex to check they still
+            agreed with the real ones. One implementation needs no such test.
+
+            It degrades correctly: the input is server-rendered at 1 and every
+            figure around it is the one-coin answer at the reference price, so
+            with JavaScript off, or with the endpoint unreachable, this is a
+            correct static block rather than an empty box. */}
+        <section class="figure-block not-prose" aria-labelledby="melt-heading">
+          <p class="figure-label" id="melt-heading">{melt.metalLabel} melt value</p>
+
+          {/* aria-live so the figure is announced as it changes; a screen
+              reader otherwise hears nothing happen when the number is typed. */}
+          {/* Three things move here and they all move through spot-dom.ts:
+              the price, when the endpoint answers, and the quantity, when the
+              reader types. `data-spot-qty` is what marks a figure as one the
+              count multiplies -- the per-ounce price below is not one. */}
+          <p
+            class="figure-big"
+            id="calc-total"
+            aria-live="polite"
+            data-spot="value"
+            data-spot-metal={melt.metal}
+            data-spot-ozt={melt.troyOunces}
+            data-spot-qty
+          >{formatUsd(melt.value)}</p>
+
+          <p class="figure-working">
+            <span
+              id="calc-ozt"
+              data-spot="ozt"
+              data-spot-ozt={melt.troyOunces}
+              data-spot-suffix={` troy oz ${melt.metal}`}
+              data-spot-qty
+            >{formatOzt(melt.troyOunces)} troy oz {melt.metal}</span>
+            {' '}&times;{' '}<span
+              data-spot="price"
+              data-spot-metal={melt.metal}
+            >{formatUsd(melt.perOunce)}</span> per troy ounce
+          </p>
+          <p class="figure-stamp" data-spot="stamp" data-spot-metal={melt.metal}>{melt.stamp}</p>
+
+          <div class="calc-row">
+            <label class="calc-label" for="calc-count">How many do you have?</label>
+            <input
+              id="calc-count"
+              class="calc-input"
+              type="number"
+              min="0"
+              max="1000000"
+              step="1"
+              value="1"
+              inputmode="numeric"
+              autocomplete="off"
+            />
+          </div>
+
+          <p class="figure-note">
+            {melt.note}
+            {' '}Worked at full mint weight, so a worn lot comes to slightly
+            less.{roll && ` A mint roll of ${type.namePlural.toLowerCase()} is ${roll}.`}
+          </p>
+
+          {/* The one route back. Everything this page does not say -- the
+              specification, the scarcity, what makes one worth more than its
+              metal -- is behind this link, under the coin's own name. */}
+          <p class="figure-link">
+            <a href={coinPath(coin)}>{coin.name} &rarr;</a>
+          </p>
+        </section>
+      </>
+    ) : (
+      <>
+        {/* No figure, and the block says so in the same shape rather than
+            disappearing. "None" in the place a number would be is the answer
+            somebody searching "is there any silver in this" came for. */}
+        <section class="figure-block not-prose" aria-labelledby="melt-heading">
+          <p class="figure-label" id="melt-heading">Melt value</p>
+          <p class="figure-big">None</p>
+          <p class="figure-working">No silver and no gold in it</p>
+          <p class="figure-note">
+            Worth its face value of {coin.faceValue}, unless the date, the mint
+            mark or a striking error says otherwise.
+          </p>
+          <p class="figure-link">
+            <a href={coinPath(coin)}>{coin.name} &rarr;</a>
+          </p>
+        </section>
+
+        {meltingProhibited && (
+          <div class="prose-page">
+            <p>
+              Melting United States cents and five-cent coins for their metal
+              is prohibited by federal regulation, so the question does not
+              arise for this one in any case.
+            </p>
+          </div>
+        )}
+      </>
+    )}
+
+    <div class="prose-page">
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+        {' '}<a href="/common-questions/what-is-spot-price">What spot price is</a>.
+      </p>
+
+    </div>
+  </article>
+
+</Base>

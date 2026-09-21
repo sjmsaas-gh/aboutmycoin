@@ -3,7 +3,22 @@ import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
-import { lastmodFor } from './src/lib/page-dates.ts';
+/*
+ * Serves `api/*` from `src/server/` while `astro dev` is running, and at no
+ * other time -- the plugin declares `apply: 'serve'`, so a build never loads
+ * it. Without it the contact form's token fetch 404s locally and the page
+ * reports that it could not reach the server. See src/dev/api-middleware.mjs.
+ */
+import { devApiRoutes } from './src/dev/api-middleware.mjs';
+/*
+ * Imported for its side effect, and imported HERE on purpose.
+ *
+ * faq-registry.ts throws when two pages claim one FAQ question across the
+ * catalogue, the melt section and the common questions. This file is read on
+ * every build regardless of which routes are included, so the import belongs
+ * here rather than in a module some builds might not reach.
+ */
+import './src/data/faq-registry.ts';
 import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,8 +49,24 @@ function priorityFor(url) {
   if (p === '/coin-value') return 0.9;
   if (p.startsWith('/coin-value/tagged/')) return 0.7;
   if (p.startsWith('/coin-value/')) return 0.8;
-  if (p.startsWith('/answers/')) return 0.8;
-  if (p === '/answers' || p === '/pricing') return 0.7;
+  // The melt pages and the common questions are the two supporting clusters:
+  // each one targets a phrase of its own, and each one feeds the catalogue
+  // rather than competing with it.
+  //
+  // /melt-value mirrors /coin-value segment for segment, so the tests below
+  // mirror the ones above -- one notch lower at every level, because a melt
+  // page answers the narrower question and feeds the catalogue entry beside
+  // it. Keep the two blocks in step: a level that exists in one tree and not
+  // the other is a level somebody forgot to build.
+  if (/^\/melt-value\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return 0.8;
+  if (p.startsWith('/melt-value/tagged/')) return 0.6;
+  if (p.startsWith('/melt-value/')) return 0.7;
+  // A topic page sits between the hub and the answers, and is worth less than
+  // either: it holds no answer of its own and every question on it is one
+  // click away on the hub as well.
+  if (/^\/common-questions\/topic\/[^/]+$/.test(p)) return 0.5;
+  if (/^\/common-questions\/[^/]+$/.test(p)) return 0.7;
+  if (p === '/melt-value' || p === '/common-questions') return 0.6;
   return 0.4;
 }
 
@@ -126,20 +157,21 @@ export default defineConfig({
       //
       // RENAME: add any page you mark `noindex` in Seo props to this pattern.
       filter: (page) => !/\/(404|500|checkout-complete)\/?$/.test(page),
-      // lastmod comes from src/lib/page-dates.ts, the same dates the pages put
-      // in their own schema, and is left out entirely for a page with no real
-      // date. It used to fall back to the build date, which told Google every
-      // page changed on every deploy -- see the note in page-dates.ts.
+      // No `lastmod`, anywhere. What this site states about a coin -- its
+      // weight, its metal, which dates are scarce -- was settled long before
+      // the page was written, so there is no honest date to give, and the
+      // alternative is the build date, which tells Google every page changed
+      // on every deploy. A crawler that has been told that once discounts the
+      // signal for good. The spot price is the one figure with a shelf life
+      // and it carries its own date on the page that prints it.
       serialize: (item) => {
         const url =
           item.url.endsWith('/') && item.url !== `${SITE_URL}/`
             ? item.url.slice(0, -1)
             : item.url;
-        const lastmod = lastmodFor(url.replace(SITE_URL, '') || '/');
         return {
           ...item,
           url,
-          ...(lastmod ? { lastmod } : {}),
           priority: priorityFor(url),
         };
       },
@@ -147,7 +179,7 @@ export default defineConfig({
     trailingSlashRedirects(),
   ],
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), devApiRoutes()],
   },
   build: {
     inlineStylesheets: 'auto',

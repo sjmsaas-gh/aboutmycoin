@@ -27,14 +27,21 @@ import { statSync, existsSync } from 'node:fs';
  * back to a system font mid-sentence. Audit the built HTML against this list
  * rather than trusting it.
  */
-const EXTRA = ['2018', '2019', '201C', '201D', '2013', '2014', '2026', '00D7', '00B7', '2713', '00A9', '00B0', '00AE', '00A0'];
+// NOTE: 2713 (the tick) was removed from this list when the fonts were added.
+// Neither source contains it -- a Google Fonts *latin* subset has no dingbats --
+// so asking for it was exactly the silent no-op the comment above warns about.
+// If a tick ever appears in copy it will render from a system font; put it in an
+// <svg> instead of trusting a glyph the webfont does not have.
+const EXTRA = ['2018', '2019', '201C', '201D', '2013', '2014', '2026', '00D7', '00B7', '00A9', '00B0', '00AE', '00A0'];
 const ASCII = 'U+0020-007E';
 const UNICODES = [ASCII, ...EXTRA.map((c) => `U+${c}`)].join(',');
 
 /** RENAME: add the fonts this site uses. */
 const FONTS = [
-  // { src: 'assets/fonts-src/display-latin.woff2', out: 'public/fonts/display-subset.woff2' },
-  // { src: 'assets/fonts-src/body-latin.woff2',    out: 'public/fonts/body-subset.woff2' },
+  // Plus Jakarta Sans, variable 500-800, for headings and the masthead.
+  { src: 'assets/fonts-src/jakarta-latin.woff2', out: 'public/fonts/display-subset.woff2' },
+  // Inter, variable 400-700, for everything else.
+  { src: 'assets/fonts-src/inter-latin.woff2', out: 'public/fonts/body-subset.woff2' },
 ];
 
 if (FONTS.length === 0) {

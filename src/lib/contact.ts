@@ -21,12 +21,19 @@
  * a human picks. Ids are stable -- renaming one silently invalidates any
  * bookmarked or prefilled link and changes what the inbox filters see, so add a
  * new id rather than editing an old one.
+ *
+ * The first entry is what the select opens on -- there is no blank "choose
+ * one" option, because a dropdown that starts unanswered is the one required
+ * field nobody understands the error for. So the order is not cosmetic: the
+ * message that arrives unread-and-unchanged is a `technical`, which is the one
+ * worth seeing first in the inbox.
  */
 export const MESSAGE_TYPES = [
+  { id: 'technical', label: 'Technical issue' },
+  { id: 'coin-request', label: 'Ask for a coin to be added' },
   { id: 'feedback', label: 'Feedback' },
-  { id: 'testimonial', label: 'Testimonial or review' },
-  { id: 'suggestion', label: 'Product suggestion' },
-  { id: 'technical', label: 'Technical difficulties' },
+  { id: 'suggestion', label: 'Suggestion' },
+  { id: 'correction', label: 'Something on a page is wrong' },
   { id: 'other', label: 'Other' },
 ] as const;
 

@@ -1,0 +1,27 @@
+---
+/**
+ * The one script that keeps every price on the site younger than the cache.
+ *
+ * Rendered by `Base.astro` on every page, not opted into per page. That is
+ * deliberate: a price appears on the home page, on both archive trees, on
+ * every coin page, on every melt page and in one common question, and a flag
+ * somebody has to remember fails silently -- the page still builds, still
+ * validates, and quietly shows last week's silver price for as long as nobody
+ * notices. `bootSpot()` returns on its first line when the page has no figure
+ * on it, so the cost of that decision is one early return.
+ *
+ * Not an island and not a framework component. This is a plain module script:
+ * Astro bundles it, hashes it, and it is deferred by default, so it is off the
+ * critical path and imports the real `src/lib/spot.ts` rather than a copy of
+ * its arithmetic. The house rule about islands is about hydration, which this
+ * does not do -- there is no component here, only a fetch and some text nodes.
+ *
+ * It talks to `/api/spot` on this origin and to nothing else, so it needs no
+ * change to `connect-src` in any of the three host configs, and it will still
+ * need none on the day a metered feed is wired in behind that endpoint.
+ */
+---
+<script>
+  import { bootSpot } from '../lib/spot-dom';
+  void bootSpot();
+</script>

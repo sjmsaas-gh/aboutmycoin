@@ -1,0 +1,200 @@
+---
+/**
+ * The shell for the /dev tools. Development only -- this never ships.
+ *
+ * Deliberately NOT Base.astro. These pages are not site pages: they carry no
+ * canonical, no JSON-LD, no header, no footer and no sign-up dock, because
+ * the inspector's whole job is to read those things off the real pages and a
+ * shell that emitted its own would be reporting on itself. The styling is
+ * self-contained for the same reason -- it should be obvious at a glance that
+ * you are looking at the workbench rather than the site.
+ */
+interface Props {
+  title: string;
+  lede: string;
+}
+const { title, lede } = Astro.props;
+
+const TOOLS = [
+  { href: '/dev', label: 'Overview' },
+  { href: '/dev/pages', label: 'Every page' },
+  { href: '/dev/coins', label: 'Coins' },
+  { href: '/dev/add-a-coin', label: 'Adding a coin' },
+];
+const here = Astro.url.pathname.replace(/\/$/, '') || '/dev';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — aboutmycoin dev</title>
+    <style is:inline>
+      :root {
+        color-scheme: light dark;
+        --bg: #fbfaf8;
+        --panel: #ffffff;
+        --ink: #1b1b1f;
+        --muted: #5f6470;
+        --line: #e2e0dc;
+        --accent: #8a6a1f;
+        --new: #1f6f43;
+        --warn: #9a3412;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #15161a;
+          --panel: #1c1e23;
+          --ink: #e8e6e3;
+          --muted: #9aa0ab;
+          --line: #2c2f36;
+          --accent: #e0b443;
+          --new: #6ee7a8;
+          --warn: #fca5a5;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      a { color: inherit; }
+      code, .mono { font-family: var(--mono); font-size: 0.87em; }
+      .wrap { max-width: 78rem; margin: 0 auto; padding: 1.5rem 1.25rem 5rem; }
+      .bar {
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .bar-inner {
+        max-width: 78rem;
+        margin: 0 auto;
+        padding: 0.7rem 1.25rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .brand {
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-right: 0.4rem;
+      }
+      .brand span {
+        font-weight: 500;
+        color: var(--warn);
+        font-size: 0.8rem;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 0.05rem 0.45rem;
+        margin-left: 0.4rem;
+        vertical-align: 1px;
+      }
+      .bar a {
+        text-decoration: none;
+        color: var(--muted);
+        padding: 0.2rem 0;
+        border-bottom: 2px solid transparent;
+      }
+      .bar a[aria-current] { color: var(--ink); border-bottom-color: var(--accent); }
+      h1 { font-size: 1.6rem; margin: 1.4rem 0 0.4rem; letter-spacing: -0.02em; }
+      h2 { font-size: 1.1rem; margin: 2rem 0 0.3rem; letter-spacing: -0.01em; }
+      h3 { font-size: 0.95rem; margin: 1.2rem 0 0.3rem; }
+      p.lede { color: var(--muted); margin: 0 0 1.4rem; max-width: 62ch; }
+      p.blurb { color: var(--muted); margin: 0.1rem 0 0.8rem; max-width: 74ch; font-size: 0.92rem; }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.9rem 1rem;
+        margin: 0.7rem 0 1.4rem;
+      }
+      table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+      th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+      tr:last-child td { border-bottom: 0; }
+      .grid { display: grid; gap: 0.6rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+      .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem 0.9rem; }
+      .stat b { display: block; font-size: 1.5rem; letter-spacing: -0.02em; }
+      .stat span { color: var(--muted); font-size: 0.82rem; }
+      .pill {
+        display: inline-block;
+        font-size: 0.72rem;
+        border-radius: 999px;
+        padding: 0.05rem 0.5rem;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .pill.new { color: var(--new); border-color: currentColor; }
+      .pill.warn { color: var(--warn); border-color: currentColor; }
+      details { border-top: 1px solid var(--line); }
+      details:first-of-type { border-top: 0; }
+      summary {
+        cursor: pointer;
+        padding: 0.45rem 0.2rem;
+        display: flex;
+        gap: 0.6rem;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+      summary::-webkit-details-marker { display: none; }
+      summary::before { content: "▸"; color: var(--muted); }
+      details[open] > summary::before { content: "▾"; }
+      summary .path { font-family: var(--mono); font-size: 0.85rem; }
+      summary .name { color: var(--muted); font-size: 0.85rem; }
+      .detail { padding: 0.2rem 0 0.9rem 1.3rem; }
+      pre {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.6rem 0.7rem;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        margin: 0.3rem 0;
+        max-height: 22rem;
+      }
+      .kv { display: grid; grid-template-columns: 8.5rem 1fr; gap: 0.15rem 0.7rem; font-size: 0.88rem; }
+      .kv dt { color: var(--muted); }
+      .kv dd { margin: 0; }
+      .row-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.4rem 0 0.8rem; }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        background: var(--panel);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 0.25rem 0.6rem;
+        cursor: pointer;
+      }
+      .muted { color: var(--muted); }
+      ol.steps { padding-left: 1.2rem; }
+      ol.steps > li { margin-bottom: 1.1rem; }
+      ol.steps > li > strong { display: block; }
+    </style>
+  </head>
+  <body>
+    <nav class="bar">
+      <div class="bar-inner">
+        <span class="brand">aboutmycoin<span>dev only</span></span>
+        {TOOLS.map((t) => (
+          <a href={t.href} aria-current={here === t.href ? 'page' : undefined}>{t.label}</a>
+        ))}
+        <a href="/" style="margin-left: auto">the site &rarr;</a>
+      </div>
+    </nav>
+    <div class="wrap">
+      <h1>{title}</h1>
+      <p class="lede">{lede}</p>
+      <slot />
+    </div>
+  </body>
+</html>

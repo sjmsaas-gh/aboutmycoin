@@ -12,58 +12,152 @@
  *   4. Proof: what it actually does, in concrete terms.
  *   5. The FAQ, rendered from the same array that builds the FAQPage schema.
  *
- * RENAME: every string on this page is placeholder. The structure is not.
+ * What makes this page work as the front of a REFERENCE site rather than as a
+ * landing page is that (3) is a working control and (4) is data. The hero
+ * carries the finder itself, the strip under it states the two metal prices the
+ * whole catalogue is arithmetic on, and the tiles are the catalogue's own
+ * denominations rather than three feature claims. Everything on the page is
+ * generated from the catalogue, so nothing here can promise a page that does
+ * not exist, and the page fills out on its own as coins are added.
  */
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Placeholder from '../layouts/Placeholder.astro';
-import Faq from '../components/Faq.astro';
+import SignupForm from '../components/SignupForm.astro';
+import CoinFinder from '../components/CoinFinder.astro';
+import TileCard from '../components/TileCard.astro';
+import SpotStrip from '../components/SpotStrip.astro';
+import heroCoins from '../assets/hero-coins.png';
 import { SITE, HOME_PLACEHOLDER } from '../lib/site';
-import { faqSchema, webApplicationSchema, type Faq as FaqItem } from '../lib/schema';
-import { GATE_EXPLAINER, ONE_TIME_OFFER, PRO_MONTHLY } from '../lib/pricing';
-import { ANSWERS } from '../data/answers';
+import { webApplicationSchema } from '../lib/schema';
+import { CARDS_PER_SECTION, axisArtKey, groupArtKey } from '../lib/card-art';
+import {
+  COINS,
+  populatedGroups,
+  populatedTags,
+  groupPath,
+} from '../data/coins';
+import {
+  QUESTIONS,
+  QUESTIONS_ROOT,
+  questionPath,
+  questionTeaser,
+} from '../data/questions';
 
 /**
- * The FAQ array. Rendered visibly AND fed to faqSchema, so the two cannot
- * disagree -- Google penalises structured data that does not match the page.
+ * The five most-asked common questions, with the opening of each answer.
  *
- * Answers are plain text and self-contained on purpose: an answer engine will
- * quote one of these with no page around it.
+ * Real pages, in the registry's own order -- which is the order the questions
+ * are asked in -- so the front of the site leads with what most visitors
+ * arrived wanting and the section fills out on its own as questions are
+ * written. The teaser is `questionTeaser()`, derived from the answer the linked
+ * page opens with, because a summary typed here is a summary that drifts from
+ * the page it is advertising.
+ *
+ * No FAQPage markup on this page. Each of these questions is marked up where
+ * it is answered, once -- the house rule -- so the home page links there and
+ * claims nothing. That is why `faqSchema` is gone from the schemas below.
  */
-const faqs: FaqItem[] = [
+const HOME_QUESTIONS = QUESTIONS.slice(0, 5);
+
+/**
+ * The sections of a coin page, in the order a coin page renders them.
+ *
+ * These feed `featureList` in the schema AND render visibly a few lines down,
+ * from this one array, because the house rule is that visible HTML and
+ * structured data are built from the same object. Every card is a block that
+ * is really on the template: if a section is cut from the coin page, the card
+ * for it comes out of this array in the same commit. Nothing aspirational goes
+ * in, and a card for a block that renders conditionally says when.
+ */
+const capabilities = [
   {
-    q: 'What is this?',
-    a: 'A placeholder home page in a site starter. Replace this array with the questions people genuinely ask before buying, answered in one short paragraph each.',
+    title: 'The answer in the first sentence',
+    body: 'What the coin is made of and what that is worth, before anything else on the page.',
   },
   {
-    q: 'What does it cost?',
-    a: GATE_EXPLAINER,
+    title: 'Melt value, with the working shown',
+    body: 'Troy ounces times the metal price, printed as the multiplication rather than as a result — with the price it used and the day that price was set. Coins with no silver or gold say so.',
   },
   {
-    q: 'Do I need an account?',
-    a: 'No. A purchase issues a license key, and the key is the whole thing — there is no password to lose and no account to close.',
+    title: 'The specification in rows',
+    body: 'Composition, weight, diameter, precious-metal content in troy ounces, face value, both faces, and the mints that struck that year.',
+  },
+  {
+    title: 'Whether it beats melt',
+    body: 'How common the issue is, its mintage, and what would have to be true of your coin for it to be worth more than its metal.',
+  },
+  {
+    title: 'Prices by grade, or nothing',
+    body: 'A value range against a named grade where there is a source we will stand behind, and a plain line saying there is none where there is not.',
+  },
+  {
+    title: 'The series around it',
+    body: 'The years, the designer, where the mint mark sits, and the dates the metal changed — plus the other years we hold and a link to all of them.',
   },
 ];
 
-const features = [
-  {
-    title: 'First real thing it does',
-    body: 'One or two sentences, concrete and checkable. Numbers where you have them. No adjective that a competitor could also claim.',
-  },
-  {
-    title: 'Second real thing',
-    body: 'Say what it replaces and how long that used to take. Specific beats impressive.',
-  },
-  {
-    title: 'Third real thing',
-    body: 'The one nobody else does, or the one you do differently. If there is nothing to put here, the product is not ready to market.',
-  },
-];
 /**
- * PRE-LAUNCH: in a build, this page renders the holding page instead of
- * anything below; in `npm run dev` it renders the real thing, so the home page
- * can be worked on while the public sees a blank white document. Nothing below
- * has been changed or deleted. See the HOLDING PAGE block in lib/site.ts.
+ * The metals that have coins in them, as cards.
+ *
+ * Composition is the first axis of the address structure and the one a visitor
+ * can settle by looking at the coin, so the home page offers that choice and
+ * nothing finer: one card per populated group, and the group archive behind it
+ * splits into denominations. The grid grows on its own as the catalogue gains
+ * a metal, and `populatedGroups()` keeps an empty one off the page.
+ *
+ * A heading and a picture, and nothing else. What silver is has to be read
+ * rather than seen, which is the one thing a photograph of the coins does
+ * better than a paragraph; the group archive still opens with the generated
+ * teaser, so nothing is lost by the card not repeating it. The picture itself
+ * is looked up by `TileCard` from src/lib/card-art.ts, which is the same
+ * lookup both hubs use, so a metal's card is one card wherever it is offered.
+ *
+ * Capped at `CARDS_PER_SECTION` like every other card section, though nine
+ * composition groups is the whole registry and the slice only ever bites if
+ * one is added.
  */
+const groups = populatedGroups().slice(0, CARDS_PER_SECTION);
+
+/**
+ * The catalogue's other three ways in, as their own section under the metals.
+ *
+ * /coin-value offers four axes -- metal, series, country, topic -- and the
+ * home page offered only the first, so a visitor who knows the name on the
+ * coin had to go down a metal branch to find the way they wanted. They get the
+ * same grid as the metals and a heading of their own, because a metal is
+ * something a visitor reads off the coin in their hand and a series or a
+ * country is something they already know the name of: two different questions,
+ * and one grid mixing them makes the reader sort the tiles themselves. Each
+ * card points at the section of the hub that holds that list rather than
+ * carrying a copy of it: the hub is where those lists are generated, and a
+ * second copy here would be a second thing to keep in step.
+ *
+ * Each card renders only when the hub really has that section, which is the
+ * same `populatedTags()` filter the hub itself reads -- an anchor to a section
+ * that did not render is a card that lands the reader nowhere.
+ */
+const tagKinds = new Set(populatedTags().map((t) => t.kind));
+const catalogWays = [
+  {
+    label: 'By Series',
+    href: '/coin-value#by-series',
+    artKey: axisArtKey('by-series'),
+    when: tagKinds.has('series'),
+  },
+  {
+    label: 'By Country',
+    href: '/coin-value#by-country',
+    artKey: axisArtKey('by-country'),
+    when: tagKinds.has('country'),
+  },
+  {
+    label: 'By Topic',
+    href: '/coin-value#by-topic',
+    artKey: axisArtKey('by-topic'),
+    when: [...tagKinds].some((k) => k !== 'series' && k !== 'country'),
+  },
+].filter((w) => w.when);
 ---
 {HOME_PLACEHOLDER ? <Placeholder /> : (
   <Base
@@ -71,62 +165,165 @@ const features = [
     description={SITE.description}
     path="/"
     schemas={[
-      faqSchema(faqs),
-      /* RENAME: if this site is not software, replace this with Product or
-         Service schema. Do not stretch WebApplication over something else. */
       webApplicationSchema({
-        applicationCategory: 'BusinessApplication',
-        keywords: ['placeholder keyword', 'another placeholder keyword'],
-        featureList: features.map((f) => f.title),
+        applicationCategory: 'ReferenceApplication',
+        keywords: ['coin value', 'coin identification', 'silver coin melt value', 'what is my coin worth'],
+        featureList: capabilities.map((c) => c.title),
       }),
     ]}
   >
-    <section class="container-page pt-16 pb-12 sm:pt-24">
-      <div class="max-w-3xl">
-        <h1 class="text-4xl sm:text-6xl">
-          Say what this is, in one line, using the words people search for
-        </h1>
-        <!-- BLUF. Someone who reads only this paragraph should know whether the
-             product is for them and roughly what it costs. -->
-        <p class="mt-6 text-lg sm:text-xl" style="color: var(--text-muted)">
-          {SITE.description}
-        </p>
-        <div class="mt-9 flex flex-wrap gap-3">
-          <a href="/pricing" class="btn btn-primary">Get started</a>
-          <a href="/answers" class="btn btn-secondary">Read the answers</a>
+    <section class="container-page pt-12 pb-10 sm:pt-16">
+      <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center">
+        <div class="max-w-2xl">
+          <h1 class="text-4xl sm:text-6xl">
+            What's my coin <span style="color: var(--accent)">worth</span>?
+          </h1>
+          <!-- BLUF. Someone who reads only this paragraph should know whether the
+               product is for them and roughly what it costs. -->
+          <p class="mt-6 text-lg sm:text-xl" style="color: var(--text-muted)">
+            Have you ever wondered what your coin is worth? Is it rare? What is its
+            melt value? We gather extensive data on all types of coins &mdash; so you
+            don't have to. Find your coin and learn more.
+          </p>
+
+          <!--
+            The call to action is the tool, not a button that leads to the tool.
+            CoinFinder renders nothing while the catalogue is empty, so the link
+            below it is the one that always works and the one the header
+            repeats.
+          -->
+          <div class="mt-8">
+            <CoinFinder />
+          </div>
+          {COINS.length > 0 && (
+            <p class="mt-4 text-sm" style="color: var(--text-muted)">
+              <a href="/coin-value">Browse every coin</a>.
+            </p>
+          )}
         </div>
-        <p class="mt-4 text-sm" style="color: var(--text-muted)">
-          Free to start. {ONE_TIME_OFFER.priceLabel} once, or ${PRO_MONTHLY}/month.
-        </p>
+
+        <!--
+          The LCP element on this template, so it is eager and high priority:
+          lazy-loading the one image above the fold delays the very thing the
+          metric measures. Astro emits width and height from the file, which is
+          what keeps the layout from shifting when it arrives.
+
+          The photograph is a cut-out on a white sweep. In light mode .hero-figure
+          puts a soft radial glow behind it and nothing else -- no plate, no card
+          and no shadow, any of which would draw the rectangle the cut-out exists
+          to avoid. In dark mode the same wrapper becomes a deliberate light
+          sweep, because the file itself has no alpha channel and a white
+          photograph on a near-black page is a white rectangle whether or not
+          anyone meant it. Replacing the file with a true cut-out on transparency
+          would let that rule go.
+        -->
+        <div class="hero-figure">
+          <Image
+            src={heroCoins}
+            alt="A stack of silver US coins: an 1884 Morgan dollar standing on edge, a 1958 Franklin half dollar leaning beside it."
+            widths={[560, 840, 1120]}
+            sizes="(min-width: 1024px) 560px, (min-width: 640px) 80vw, 100vw"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            class="w-full h-auto"
+          />
+        </div>
       </div>
     </section>
 
-    <section class="container-page py-12">
+    <!--
+      The two numbers the catalogue is arithmetic on. Directly under the hero
+      because they are the most concrete thing on the page and because every
+      melt figure a visitor meets later was worked from them.
+    -->
+    <section class="container-page pb-12">
+      <SpotStrip />
+    </section>
+
+    {groups.length > 0 && (
+      <section class="container-page pb-12">
+        <h2 class="text-2xl sm:text-3xl" style="margin: 0 0 0.35rem">By Metal Type</h2>
+        <div class="reeded" aria-hidden="true" style="--metal: var(--metal-silver)"></div>
+        <div class="tile-grid" style="margin-top: 1.2rem">
+          {groups.map((group) => (
+            <TileCard
+              href={groupPath(group.slug)}
+              label={group.name}
+              metal={group.slug}
+              artKey={groupArtKey(group.slug)}
+            />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/*
+      The other three axes. Same grid as the metals above, under a heading of
+      their own. The cards carry a heading and a picture and no sentence: a
+      pile of dated US silver and a pile of foreign coins say "series" and
+      "country" faster than a teaser would, and a teaser written to fill the
+      gap on the topic card -- the one with no photograph yet -- is a sentence
+      nobody would keep.
+    */}
+    {catalogWays.length > 0 && (
+      <section class="container-page pb-12">
+        <h2 class="text-2xl sm:text-3xl" style="margin: 0 0 0.35rem">By Series, Country, or Topic</h2>
+        <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+        <div class="tile-grid" style="margin-top: 1.2rem">
+          {catalogWays.map((way) => (
+            <TileCard href={way.href} label={way.label} artKey={way.artKey} />
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="container-page pb-12">
+      <h2 class="text-2xl sm:text-3xl" style="margin: 0 0 1.2rem">What every coin page gives you</h2>
       <div class="grid gap-6 md:grid-cols-3">
-        {features.map((f) => (
+        {capabilities.map((c) => (
           <div class="card p-6">
-            <h2 class="text-xl" style="margin: 0 0 0.5rem">{f.title}</h2>
-            <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{f.body}</p>
+            <h3 class="text-xl" style="margin: 0 0 0.5rem">{c.title}</h3>
+            <p class="text-[0.97rem]" style="color: var(--text-muted); margin: 0">{c.body}</p>
           </div>
         ))}
       </div>
     </section>
 
-    <section class="container-page py-12">
-      <div class="prose-page">
-        <h2 style="margin-top: 0">Straight answers</h2>
-        <p>
-          Each of these is a full page answering one question. They exist because
-          somebody types that question, not because a keyword tool suggested it.
-        </p>
-        <ul>
-          {ANSWERS.map((a) => (
-            <li><a href={`/answers/${a.slug}`}>{a.question}</a></li>
-          ))}
-        </ul>
+    <!--
+      The sign-up box, below the proof rather than in the footer. Someone who
+      has just seen what the catalogue does is the one person likely to want the
+      email; by the footer they have either found their coin and gone, or given
+      up. The copy and the endpoint live in src/lib/subscribe.ts and
+      src/server/subscribe.ts.
+    -->
+    <section class="container-page pb-4">
+      <div class="max-w-2xl">
+        <SignupForm />
       </div>
     </section>
 
-    <Faq faqs={faqs} />
+    {HOME_QUESTIONS.length > 0 && (
+      <section id="questions" class="container-page py-12">
+        <h2 class="text-2xl sm:text-3xl" style="margin: 0 0 0.35rem">Common Coin Questions</h2>
+        <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+        <dl class="space-y-7" style="margin-top: 1.4rem; max-width: 46rem">
+          {HOME_QUESTIONS.map((q) => (
+            <div>
+              <dt class="font-semibold text-lg mb-1.5">
+                <a href={questionPath(q)}>{q.question}</a>
+              </dt>
+              <dd style="color: var(--text-muted); margin: 0">
+                {questionTeaser(q)}{' '}
+                <a href={questionPath(q)}>Read the full answer</a>.
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p class="mt-8">
+          <a href={QUESTIONS_ROOT}>View more common coin questions</a>.
+        </p>
+      </section>
+    )}
   </Base>
 )}

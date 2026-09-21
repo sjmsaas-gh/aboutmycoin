@@ -11,7 +11,9 @@
  *     needs the real filename and fails on `.js`.
  *
  * `.js`-meaning-`.ts` is the standard TypeScript ESM convention, so the source
- * follows it and this hook teaches Node the same mapping. Tests only.
+ * follows it and this hook teaches Node the same mapping. Tests, and the
+ * scripts in `scripts/` that import a module in `src/lib/` -- nothing that
+ * ships is resolved through it.
  *
  * The second rule covers `src/lib/`, which imports *extensionlessly*. The two
  * halves of the source legitimately differ: `src/server/` and `api/` are
@@ -20,7 +22,7 @@
  * resolved by Vite, which prefers extensionless. Rewriting one convention into
  * the other to satisfy the test runner would be the test tail wagging the build
  * dog, so the hook understands both. It is also what lets build-smoke import
- * `src/lib/pricing.ts`.
+ * `src/lib/pricing.ts` and `scripts/fetch-spot.mjs` import `src/lib/spot.ts`.
  */
 import { register } from 'node:module';
 

@@ -1,0 +1,44 @@
+---
+/**
+ * The picture slot on a `.tile-way` card, and the empty slot where there is no
+ * picture yet.
+ *
+ * One component rather than the same `<Image>` on the home page twice: the
+ * widths, the `sizes` and the lazy-loading are one fact about how big this slot
+ * ever gets, and a second copy of them is a second thing to keep in step with
+ * the CSS. Pass no `art` and it renders the drawn placeholder from
+ * scripts/generate-card-art.mjs, which is what a subject whose photograph has
+ * not been shot yet gets -- and today that is most of them. A picture nobody
+ * has taken shows a blank disc rather than an empty rectangle, so a grid of
+ * cards is the same grid before and after the photography.
+ *
+ * The picture is decorative: the card's own heading already names the subject,
+ * and a screen reader reading "silver coin" after the heading "Silver" is the
+ * heading twice. So the wrapper is aria-hidden and the alt is empty, and the
+ * link's accessible name stays the heading. That holds only while the picture
+ * says nothing the heading does not -- an image carrying a fact of its own
+ * would need real alt text and this wrapper unhidden.
+ *
+ * Every file comes out of scripts/generate-card-art.mjs already 16:9 and
+ * already trimmed to a fixed margin, so `object-fit: cover` in .tile-art
+ * crops nothing.
+ */
+import { Image } from 'astro:assets';
+import placeholder from '../assets/cards/placeholder.webp';
+
+interface Props {
+  art?: ImageMetadata;
+}
+
+const { art } = Astro.props;
+---
+<div class="tile-art" aria-hidden="true">
+  <Image
+    src={art ?? placeholder}
+    alt=""
+    widths={[320, 480, 800]}
+    sizes="(min-width: 64rem) 24rem, (min-width: 40rem) 45vw, 90vw"
+    loading="lazy"
+    decoding="async"
+  />
+</div>

@@ -34,74 +34,119 @@
    a 1.5s LCP budget cannot afford.
    --------------------------------------------------------------------------- */
 
-/*
 @font-face {
-  font-family: 'YourBody';
+  font-family: 'Jakarta';
+  font-style: normal;
+  font-weight: 500 800;
+  font-display: swap;
+  src: url('/fonts/display-subset.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
   src: url('/fonts/body-subset.woff2') format('woff2');
 }
-@font-face {
-  font-family: 'YourDisplay';
-  font-style: normal;
-  font-weight: 600 700;
-  font-display: swap;
-  src: url('/fonts/display-subset.woff2') format('woff2');
-}
-*/
 
 /*
-  Metric-adjusted fallbacks. Without these the swap from the system font to the
-  webfont reflows the text and spends most of the CLS budget in one go. The
-  numbers are per-font: measure them, do not copy these.
+  Metric-adjusted fallbacks. Without these the swap from Arial to the webfont
+  reflows every line of text on the page and spends most of the CLS budget in
+  one go.
 
+  These numbers were MEASURED, not copied: `size-adjust` is Arial's x-height
+  ratio (1062/2048) over each font's own, and the ascent and descent are each
+  font's hhea metrics divided by that adjustment. Re-measure after replacing a
+  font file -- a stale override is worse than no override, because it shifts
+  text confidently in the wrong direction.
+
+     Inter              upem 2048  x-height 1118  hhea 1984 / -494 / 0
+     Plus Jakarta Sans  upem 1000  x-height  536  hhea 1038 / -222 / 0
+*/
 @font-face {
-  font-family: 'YourBody Fallback';
+  font-family: 'Inter Fallback';
   src: local('Arial');
-  size-adjust: 107%;
-  ascent-override: 90%;
-  descent-override: 22%;
+  size-adjust: 95.0%;
+  ascent-override: 102.0%;
+  descent-override: 25.4%;
   line-gap-override: 0%;
 }
-*/
+@font-face {
+  font-family: 'Jakarta Fallback';
+  src: local('Arial');
+  size-adjust: 96.7%;
+  ascent-override: 107.3%;
+  descent-override: 22.9%;
+  line-gap-override: 0%;
+}
 
 /* ---------------------------------------------------------------------------
    Design tokens.
    --------------------------------------------------------------------------- */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  --font-display: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Inter for text, Plus Jakarta Sans for headings. Both are self-hosted,
+     subset to the glyphs this site's copy actually uses, and preloaded via
+     SITE.preloadFonts -- there is no request to a font CDN from any page, for
+     privacy and because a cross-origin font is a render-blocking round trip a
+     1.5s LCP budget cannot pay for.
 
-  /* Neutral ramp. Replace with a ramp that has a temperature of its own. */
-  --color-neutral-50: #fbfbfa;
-  --color-neutral-100: #f4f4f2;
-  --color-neutral-200: #e6e6e3;
-  --color-neutral-300: #d2d2cd;
-  --color-neutral-400: #a3a39c;
+     The `* Fallback` families are the metric-adjusted Arial aliases defined
+     above, and they must come BEFORE the generic stack or the swap reflows. */
+  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui,
+    -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Jakarta', 'Jakarta Fallback', 'Inter', ui-sans-serif,
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+
+  /* Neutral ramp: cool grey, faintly blue, so it sits under the blue accent
+     rather than fighting it. Not a warm paper tone and not a pure grey: pure
+     grey next to a saturated blue reads as dirty, and a warm grey reads as a
+     different design. */
+  --color-neutral-50: #f6f8fb;
+  --color-neutral-100: #eceff5;
+  --color-neutral-200: #dce1ea;
+  --color-neutral-300: #bcc5d4;
+  --color-neutral-400: #8792a5;
   /* Carries body copy as --text-muted, so it has to clear 4.5:1 against both
-     --bg and --bg-sunken. Currently 5.1:1 and 4.8:1. Re-check with a contrast
+     --bg and --bg-sunken. Currently 6.0:1 and 5.2:1. Re-check with a contrast
      tool after changing the ramp; this is the one value people break. */
-  --color-neutral-500: #70706a;
-  --color-neutral-600: #57574f;
-  --color-neutral-700: #3d3d37;
-  --color-neutral-800: #292926;
-  --color-neutral-900: #1a1a18;
-  --color-neutral-950: #111110;
+  --color-neutral-500: #5a6474;
+  --color-neutral-600: #414a59;
+  --color-neutral-700: #2b3340;
+  --color-neutral-800: #1a202a;
+  --color-neutral-900: #0f141c;
+  --color-neutral-950: #070a0f;
 
-  /* Accent. One accent colour, used for the CTA, links and focus rings. */
-  --color-accent-50: #eef2ff;
-  --color-accent-100: #e0e7ff;
-  --color-accent-200: #c7d2fe;
-  --color-accent-300: #a5b4fc;
-  --color-accent-400: #818cf8;
-  --color-accent-500: #6366f1;
-  --color-accent-600: #4f46e5;
-  --color-accent-700: #4338ca;
-  --color-accent-800: #3730a3;
-  --color-accent-900: #312e81;
+  /* Accent: the blue of the wordmark. One accent colour, used for the CTA,
+     links and focus rings.
+     Chosen for a functional reason as much as a brand one. The metal swatches
+     on catalogue pages are all desaturated or warm -- silver, gold, copper,
+     nickel, clad, steel -- so a saturated blue can never be mistaken for one
+     of them. An indigo or a brass accent would have been. Blue survives the
+     same test the verdigris it replaced was picked to pass. */
+  --color-accent-50: #eaf2fc;
+  --color-accent-100: #d3e4f8;
+  --color-accent-200: #a7c8ef;
+  --color-accent-300: #6ea4e2;
+  --color-accent-400: #3d82d1;
+  --color-accent-500: #2166b6;
+  /* 7.8:1 on white, which is what lets it carry link text and not just fills. */
+  --color-accent-600: #14529b;
+  --color-accent-700: #104280;
+  --color-accent-800: #0e3667;
+  --color-accent-900: #0c2d55;
+
+  /* The height of the sticky header, as a token because two rules depend on
+     it: the bar itself sets it, and `scroll-padding-top` below reserves it so
+     an in-page anchor does not land underneath the bar. Retyping 3rem in the
+     second place is how an anchor quietly starts landing behind the header. */
+  --header-h: 3rem;
+
+  /* Corner radius, as two steps rather than a value per component. Tighter
+     than the starter's: a reference table reads as more authoritative with
+     crisper corners, and the one soft thing on the page should be the coin. */
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
 
   /* Status colours. Chosen to stay distinguishable for the most common
      colour-vision deficiencies, and never used as the only signal -- anything
@@ -118,11 +163,32 @@
    Components use ONLY these names. That is what makes a re-skin one edit. */
 :root {
   color-scheme: light dark;
-  --bg: var(--color-neutral-50);
+  /* Plain white, not the warm neutral-50 the ramp starts on.
+     The coin photography is shot on a white sweep, so any tinted page
+     background puts a visible rectangle around every cut-out. The warm ramp
+     survives in the borders, the sunken surfaces and the muted text, which is
+     where it was doing the work anyway. */
+  --bg: #ffffff;
   --bg-raised: #ffffff;
+  /* Still the warm tint, and one step darker than it looks like it needs to
+     be: against a white page a sunken panel has to be visible, and the whole
+     ramp is quiet enough that neutral-50 would have read as a rendering
+     artefact rather than as a panel. */
   --bg-sunken: var(--color-neutral-100);
-  --border: var(--color-neutral-200);
-  --border-strong: var(--color-neutral-300);
+  /* Borders are black at low alpha, not a light grey from the ramp.
+     A tinted grey hairline on a white page is a different colour at every
+     opacity a browser renders it at; black-with-alpha is the same hairline
+     over white, over the sunken panel and over a photograph, which is what
+     makes a 1px rule read as one line rather than as three shades of it.
+     --border is the hairline between things; --border-strong is the edge of
+     something you can type in or press, and has to be visible on its own. */
+  --border: rgba(7, 10, 15, 0.16);
+  --border-strong: rgba(7, 10, 15, 0.52);
+  /* Shadows, also black rather than a tinted grey, for the same reason.
+     Two steps: --shadow-sm is the resting state of a card, --shadow is for
+     something genuinely above the page, like the mobile menu. */
+  --shadow-sm: 0 1px 2px rgba(7, 10, 15, 0.05), 0 1px 3px rgba(7, 10, 15, 0.08);
+  --shadow: 0 6px 16px rgba(7, 10, 15, 0.1), 0 2px 4px rgba(7, 10, 15, 0.07);
   --text: var(--color-neutral-900);
   --text-muted: var(--color-neutral-500);
   --accent: var(--color-accent-600);
@@ -138,15 +204,21 @@
   :root {
     --bg: var(--color-neutral-950);
     --bg-raised: var(--color-neutral-900);
-    --bg-sunken: #0b0b0a;
-    --border: var(--color-neutral-800);
-    --border-strong: var(--color-neutral-700);
+    --bg-sunken: #0b0b08;
+    /* Inverted, and deliberately NOT black-with-alpha: a dark border on a dark
+       background is an invisible border. Dark mode gets its separation from a
+       lighter line, and its shadows get darker rather than softer, because
+       there is nothing below black to spread into. */
+    --border: rgba(236, 239, 245, 0.14);
+    --border-strong: rgba(236, 239, 245, 0.38);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow: 0 6px 16px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.45);
     --text: var(--color-neutral-100);
     --text-muted: var(--color-neutral-400);
     --accent: var(--color-accent-400);
     --accent-hover: var(--color-accent-300);
     --accent-contrast: var(--color-neutral-950);
-    --accent-soft: #1e1b3a;
+    --accent-soft: #0d2b26;
     --good: var(--color-status-good-dark);
     --ok: var(--color-status-ok-dark);
     --bad: var(--color-status-bad-dark);
@@ -159,6 +231,11 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* The header is sticky, so it sits over the top of whatever an in-page
+       link scrolls to. This reserves its height plus a gap, on the scrolling
+       element, which covers every route in: a click on an anchor, a page
+       loaded at a #fragment, and the browser's own find-and-focus. */
+    scroll-padding-top: calc(var(--header-h) + 1.25rem);
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -214,8 +291,22 @@
   }
 
   .prose-page { max-width: 44rem; }
+  /* Headings are tightened and weighted rather than set in a display face.
+     There is no webfont on this site -- a @font-face needs a matching preload
+     and a real file, and neither exists yet -- so the whole visual difference
+     between a heading and a paragraph has to come from size, weight and
+     tracking. Negative tracking is what stops the system stack reading as a
+     default. */
+  .prose-page h1,
+  h1 {
+    font-weight: 750;
+    letter-spacing: -0.024em;
+    line-height: 1.08;
+  }
   .prose-page h2 {
     font-size: 1.75rem;
+    font-weight: 680;
+    letter-spacing: -0.014em;
     margin-top: 2.75rem;
     margin-bottom: 0.75rem;
   }
@@ -232,15 +323,32 @@
   .prose-page ul { list-style: disc; }
   .prose-page ol { list-style: decimal; }
   .prose-page li { margin-bottom: 0.4rem; }
-  /* `:not(.btn)`, or this out-specifies .btn-primary and every button-styled
-     link inside a prose column renders accent text on an accent fill --
-     unreadable, and found only on a live checkout page. */
-  .prose-page a:not(.btn) {
+  /* -------------------------------------------------------------------------
+     Links in body copy.
+     -------------------------------------------------------------------------
+     The default for every link inside <main> is accent colour AND an
+     underline, scoped to the page body so the header, the footer and the skip
+     link keep their own treatment. It is scoped to `main` rather than to
+     `.prose-page` because most of this site's sentences are not in a prose
+     column -- the home page's answer teasers, the sign-up form's privacy line,
+     a coin name in a cheat-sheet table -- and every one of those shipped as
+     inherited body text with no way to tell it was a link.
+
+     Colour alone is not enough: the accent against --text is a hue change, and
+     a reader who cannot see the hue sees an ordinary word. The underline is
+     the part that carries the meaning.
+
+     What opts out below is the chrome that happens to be an anchor -- a
+     button, a tile, a pill, a breadcrumb, an island's internals. Each one wins
+     on specificity because it names a class and `main a` names none; a new
+     link-shaped component needs the same. Anything that is a sentence gets the
+     underline and should. */
+  main a {
     color: var(--accent);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
-  .prose-page a:not(.btn):hover { color: var(--accent-hover); }
+  main a:hover { color: var(--accent-hover); }
 
   .btn {
     display: inline-flex;
@@ -248,12 +356,14 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radius);
     font-weight: 600;
     font-size: 1rem;
     line-height: 1.2;
     transition: background-color 120ms ease, border-color 120ms ease;
     cursor: pointer;
+    /* Opts a button-styled link out of the `main a` underline. */
+    text-decoration: none;
   }
   .btn-primary {
     background-color: var(--accent);
@@ -281,7 +391,10 @@
   .card {
     background-color: var(--bg-raised);
     border: 1px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: var(--radius-lg);
+    /* On a white page a card that is also white needs the shadow to exist at
+       all -- the border alone draws an outline, not an object. */
+    box-shadow: var(--shadow-sm);
   }
 
   /* Form controls. Kept here rather than in the contact page so a second form
@@ -297,7 +410,7 @@
     display: block;
     width: 100%;
     padding: 0.65rem 0.8rem;
-    border-radius: 0.625rem;
+    border-radius: var(--radius);
     border: 1px solid var(--border-strong);
     background-color: var(--bg-raised);
     color: var(--text);
@@ -347,7 +460,7 @@
   }
 
   /* Escape hatch for interactive islands embedded mid-article. */
-  .prose-page .not-prose a { color: inherit; text-decoration: none; }
+  .not-prose a { color: inherit; text-decoration: none; }
   .prose-page .not-prose p,
   .prose-page .not-prose ul,
   .prose-page .not-prose ol { margin-bottom: 0; padding-left: 0; list-style: none; }
@@ -407,6 +520,25 @@
 }
 
 @layer components {
+  /* Reeding: the milled grooves round the edge of a coin, as a hairline rule.
+     A repeating-linear-gradient, so it costs no image and no request, and it
+     is the second and last playful device on the site -- used under a
+     catalogue H1 and nowhere else, because a motif that appears everywhere
+     stops being a motif and becomes a texture.
+
+     aria-hidden wherever it is used: it is decoration and announces nothing. */
+  .reeded {
+    height: 6px;
+    margin-bottom: 1.35rem;
+    border-radius: 1px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--metal, var(--accent)) 0 1px,
+      transparent 1px 4px
+    );
+    opacity: 0.55;
+  }
+
   /* The one playful device: a disc with a rim highlight, sized in em so it
      scales with whatever text it sits beside. */
   .metal-dot {
@@ -454,7 +586,7 @@
     border: 1px solid var(--border);
     border-left: 4px solid var(--metal, var(--accent));
     background-color: var(--bg-raised);
-    border-radius: 0.875rem;
+    border-radius: var(--radius-lg);
     padding: 1.15rem 1.35rem;
   }
   .verdict p { margin: 0; font-size: 1.12rem; line-height: 1.6; }
@@ -478,7 +610,7 @@
     display: block;
     background-color: var(--bg-raised);
     border: 1px solid var(--border);
-    border-radius: 0.875rem;
+    border-radius: var(--radius-lg);
     padding: 1.1rem 1.2rem;
     text-decoration: none;
     color: inherit;
@@ -521,6 +653,58 @@
     color: var(--text-muted);
   }
 
+  /* A tile that offers a way into the catalogue rather than a coin: a
+     heading and a picture, no sentence. The art slot is reserved here rather
+     than left to the image, so the card is the height it will be once the
+     picture lands and the grid does not reflow on the day it does. */
+  .tile-way {
+    display: flex;
+    flex-direction: column;
+  }
+  /* 16:9, which is the shape scripts/generate-card-art.mjs pads every card
+     photograph out to -- including the drawn placeholder, which is what a
+     subject with no photograph shows. The ratio is stated in both places
+     because it is the contract between them: a slot of one shape and a file of
+     another is either a cropped subject or a margin that differs card by card.
+     Every slot has an image in it, so the grid does not reflow on the day a
+     real photograph replaces a placeholder. */
+  .tile-art {
+    margin-top: 0.55rem;
+    flex: 0 0 auto;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .tile-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  /* A melt tile's payload: the figure where a catalogue tile carries a
+     sentence. Not clamped, because it is two short lines by construction and
+     the clamp on `.tile p` would cut the weight off the bottom of the
+     shorter one. */
+  .tile .tile-figure {
+    display: block;
+    -webkit-line-clamp: none;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 650;
+    line-height: 1.2;
+    color: var(--text);
+  }
+  .tile .tile-figure-note {
+    display: block;
+    margin-top: 0.2rem;
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 450;
+    color: var(--text-muted);
+  }
+
   /* Specification table. A definition grid rather than a <table>, because it
      is one coin's attributes rather than rows of comparable things -- and it
      reflows to one column on a phone without a horizontal scroll. */
@@ -545,7 +729,7 @@
     font-variant-numeric: tabular-nums;
     background-color: var(--bg-sunken);
     border: 1px solid var(--border);
-    border-radius: 0.625rem;
+    border-radius: var(--radius);
     padding: 0.85rem 1rem;
     font-size: 0.98rem;
     line-height: 1.7;
@@ -595,6 +779,250 @@
   }
   .pill:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* -------------------------------------------------------------------------
+     The big figure: melt value, and the one thing the page is really for.
+     -------------------------------------------------------------------------
+     Sized in vw with a clamp rather than a fixed rem, because the whole point
+     is that it reads as a headline on a phone held at arm's length. Tabular
+     figures so the digits line up, and a tight negative tracking because at
+     this size the default spacing looks loose. */
+  .figure-block {
+    margin: 1.75rem 0 2.25rem;
+    padding: 1.4rem 1.5rem 1.25rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--metal, var(--accent));
+    border-radius: var(--radius-lg, 12px);
+    background: var(--surface);
+  }
+  .figure-label {
+    margin: 0 0 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .figure-big {
+    margin: 0;
+    font-size: clamp(2.75rem, 11vw, 4.25rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  /* The working, directly under the figure: the reader can redo the sum. */
+  .figure-working {
+    margin: 0.35rem 0 0;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  /* The dateline: which price, set when, not a live quote. Small and dry --
+     it belongs with the arithmetic, not with the prose -- but never removed,
+     because it is the licence for printing the figure above at all. */
+  .figure-stamp {
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  /* The one sentence under every melt figure. */
+  .figure-note {
+    margin: 0.9rem 0 0;
+    padding: 0.85rem 0 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+  /* Two hairlines in a row when the quantity input sits between the figure
+     and its note. The input's rule is the one that separates them. */
+  .calc-row + .figure-note { border-top: 0; padding-top: 0; margin-top: 0.75rem; }
+
+  /* The way out of the figure block: the melt page, where the same number is
+     the whole subject rather than one row of the coin's entry. Sits under the
+     note, inside the block, because it is about the figure above it. */
+  .figure-link {
+    margin: 0.7rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  /* No link rule here: the cross-link to a page's twin is a sentence, and it
+     takes the underlined `main a` default like every other one. */
+
+  /* The "how many do you have" input, on a melt page. Sized to sit on the
+     same baseline as the price beside it, and wide enough for six digits --
+     a number box that clips at four says the page expects a small answer. */
+  .calc-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 1rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+  .calc-input {
+    width: 6.5rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 1.25rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .calc-input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  .calc-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  /* Badge and a single figure on one line, in place of a sentence. */
+  .stat-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin: 0 0 1.1rem;
+  }
+  .stat-figure {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+
+  /* The three-word answer to "is it worth more than its metal". */
+  .answer-line {
+    font-size: 1.6rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 0 0 0.6rem;
+    color: var(--text);
+  }
+
+  /* The pull quote under the premium block. Deliberately unlike the .verdict
+     box at the top of the page -- no fill, no border box, a single rule down
+     the left -- because it is the one sentence on the page that is not a
+     measurement, and dressing it like the BLUF would have the page open and
+     close with what looks like the same element. */
+  .pull-quote {
+    margin: 1.6rem 0 0.6rem;
+    padding-left: 1.1rem;
+    border-left: 3px solid var(--metal, var(--accent));
+  }
+  .pull-quote blockquote {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.28rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--text);
+  }
+  .pull-quote p {
+    margin: 0.7rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--text-muted);
+  }
+
+  /* Fact tables: mints, metal eras, grades. Dense, tabular, no zebra -- the
+     rows are short enough that a hairline is enough to track them. */
+  .fact-card { padding: 1.15rem 1.35rem; margin-bottom: 1.4rem; }
+  .fact-table, .grade-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .fact-table th, .grade-table th {
+    text-align: left;
+    padding: 0.55rem 1rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .fact-table td, .grade-table td {
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .fact-table .mark-cell { font-weight: 600; }
+  /* The era this very coin belongs to, marked in the series table. */
+  .fact-table .row-current td { background: color-mix(in oklab, var(--metal, var(--accent)) 7%, transparent); }
+  .tag-this { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+  /* The "what people mistake this for" line under a variety. Its own block and
+     its own colour because it contradicts the sentence above it, and a reader
+     skimming a table of varieties is exactly the reader who needs to see the
+     contradiction rather than read past it. */
+  .fact-table .row-caution {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+  /* The test that settles a mint error. Set apart from the sentence above it
+     and NOT muted, because unlike the caution it is the one line in the row
+     the reader is meant to act on. */
+  .fact-table .row-check {
+    display: block;
+    margin-top: 0.45rem;
+    padding-left: 0.7rem;
+    border-left: 2px solid var(--metal, var(--accent));
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* The series cheat sheet: three short lists side by side, each one a
+     different way of checking a coin. Narrower than .tile-grid because the
+     contents are labels rather than sentences, and three columns that fit on
+     one screen are the entire point of a cheat sheet. */
+  .cheat-grid {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    margin-bottom: 1.6rem;
+  }
+  .cheat-card { padding: 1.1rem 1.25rem; }
+  .cheat-card h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.7rem;
+    font-size: 0.95rem;
+  }
+  .cheat-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .cheat-card li { padding: 0.3rem 0; border-top: 1px solid var(--border); }
+  .cheat-card li:first-child { border-top: 0; padding-top: 0; }
+  .cheat-method {
+    margin: 0.8rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+  .cheat-jump { margin: 0.5rem 0 0; font-size: 0.84rem; }
+
   /* The scarcity badge. Always accompanied by its own words -- the colour is
      reinforcement, never the message. */
   .badge {
@@ -609,4 +1037,109 @@
   .badge-common { color: var(--text-muted); }
   .badge-scarce { color: var(--ok); }
   .badge-key { color: var(--bad); }
+
+  /* -------------------------------------------------------------------------
+     THE HOME PAGE
+     -------------------------------------------------------------------------
+     Three things the rest of the site does not need: the hero figure, the
+     finder in the hero, and the strip of reference metal prices under it. */
+
+  /* The hero photograph's surround.
+     In light mode: a radial glow, no plate. The file is a cut-out on a white
+     sweep and the page is white, so anything with an edge -- a card, a border,
+     a drop shadow -- draws the rectangle the cut-out exists to avoid. A radial
+     gradient has no edge, and it stops the coins reading as a sticker pasted
+     onto a blank page.
+     In dark mode: the same wrapper becomes the sweep. The PNG has no alpha
+     channel, so on a near-black page it is a white rectangle whichever way it
+     is styled; a deliberate rounded light panel with the photograph sitting in
+     it is the honest version of the same pixels. Give the file a real alpha
+     channel and the dark rule below can go. */
+  .hero-figure {
+    position: relative;
+    isolation: isolate;
+  }
+  .hero-figure::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -8% -6%;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at 50% 55%,
+      color-mix(in oklab, var(--metal-silver) 22%, transparent) 0%,
+      transparent 68%
+    );
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .hero-figure {
+      background: linear-gradient(180deg, #ffffff 0%, #eef1f5 100%);
+      border-radius: var(--radius-lg);
+      padding: 0.75rem 0.5rem;
+    }
+    :root:not([data-theme='light']) .hero-figure::before { display: none; }
+  }
+
+  /* The finder. Two selects and a button, on one row where there is room and
+     stacked where there is not -- the denomination select is the narrow one
+     because its options are one word. */
+  .finder {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr;
+    align-items: end;
+    max-width: 34rem;
+  }
+  @media (min-width: 30rem) {
+    .finder { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) auto; }
+  }
+  .finder-field { min-width: 0; }
+  .finder .label { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  /* Matches the height of a .field beside it rather than the default button
+     padding, so the row lines up on its baseline. */
+  .finder-go { padding-top: 0.65rem; padding-bottom: 0.65rem; }
+
+  /* The two reference metal prices. A quiet sunken band, not a card: it is a
+     dateline with numbers in it, not a feature. */
+  .spot-strip {
+    background-color: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.35rem;
+  }
+  .spot-figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2.5rem;
+    margin: 0;
+  }
+  .spot-figure dt {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.15rem;
+  }
+  .spot-figure dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 5vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The licence for printing the two figures above. Never removed. */
+  .spot-note {
+    margin: 0.9rem 0 0;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
 }

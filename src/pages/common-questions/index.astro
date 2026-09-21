@@ -1,0 +1,110 @@
+---
+/**
+ * The common-questions hub: /common-questions.
+ *
+ * The questions people ask that are not about one particular coin. A coin
+ * page answers "what is mine worth"; these answer the things a reader has to
+ * know before that number means anything -- what spot price is, what a dealer
+ * will actually pay, how to tell a fake.
+ *
+ * No FAQPage schema here. Each question is marked up on the page that answers
+ * it, once, and the hub links there -- see the house rule. The hub's job is
+ * ItemList: stating the parent -> child relationship that anchor tags only
+ * imply.
+ */
+import Base from '../../layouts/Base.astro';
+import { itemListSchema, webPageSchema } from '../../lib/schema';
+import {
+  QUESTIONS,
+  QUESTIONS_ROOT,
+  QUESTION_CATEGORIES,
+  categoryPath,
+  questionPath,
+  questionsInCategory,
+} from '../../data/questions';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../data/faq-registry';
+
+const path = QUESTIONS_ROOT;
+
+const H1 = 'Common Questions About Coins';
+const DESCRIPTION =
+  'The questions people ask before the value of a coin means anything: what spot price is, what a dealer will pay, how to tell a fake. One page each, answered in the first sentence.';
+---
+<Base
+  title="Common Coin Questions, Answered"
+  description={DESCRIPTION}
+  path={path}
+  crumbs={[{ label: 'Common questions', href: path }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: H1,
+      description: DESCRIPTION,
+      path,
+    }),
+    itemListSchema({
+      name: H1,
+      description: DESCRIPTION,
+      // Topics, not questions: structured data is built from the same object
+      // the visible page is, and what this page now lists is four topics with
+      // their questions inside them. The questions keep their own ItemList
+      // entry on the topic page that holds them.
+      items: QUESTION_CATEGORIES.map((c) => ({ name: c.h1, path: categoryPath(c) })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg">
+        <strong>
+          These are the questions that are not about one coin. What a price
+          quote means, what anyone will actually hand over, and what to check
+          before you believe a coin is what it says it is.
+        </strong>
+      </p>
+      <p>
+        Anything that depends on which coin you are holding is answered in the
+        catalogue instead: <a href="/coin-value">what your coin is worth</a>,
+        and <a href="/melt-value">what the metal in it is worth</a>.
+      </p>
+    </div>
+  </section>
+
+  {QUESTIONS.length === 0 ? (
+    <section class="container-page pb-20">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">Nothing here yet</h2>
+        <p>
+          The first questions are being written. A question gets a page when
+          somebody has an answer worth reading, not when the slug is decided.
+        </p>
+      </div>
+    </section>
+  ) : (
+    /* Grouped by topic, and both orderings are the registry's: the topics in
+       the order of their most-asked question, the questions inside them in
+       the order they are asked. The heading links to the topic's own page --
+       the hub is the only place that page is linked from above, so a topic
+       whose heading is not a link is a page nothing points at. */
+    QUESTION_CATEGORIES.map((category) => (
+      <section class="container-page pb-12">
+        <div class="prose-page">
+          <h2 style="margin-top: 0">
+            <a href={categoryPath(category)}>{category.h1}</a>
+          </h2>
+        </div>
+        <div class="tile-grid" style="margin-top: 1.25rem">
+          {questionsInCategory(category.slug).map((q) => (
+            <a href={questionPath(q)} class="tile">
+              <h3>{q.question}</h3>
+              <p>{q.answer}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))
+  )}
+</Base>

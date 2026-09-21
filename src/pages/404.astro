@@ -11,9 +11,6 @@
  * than sending them back to the home page to start again.
  */
 import Base from '../layouts/Base.astro';
-import { ANSWERS } from '../data/answers';
-
-const answers = ANSWERS.slice(0, 4);
 ---
 <Base
   title="Page not found"
@@ -33,7 +30,7 @@ const answers = ANSWERS.slice(0, 4);
       </p>
       <div class="mt-8 flex flex-wrap gap-3">
         <a href="/" class="btn btn-primary">Back to the home page</a>
-        <a href="/answers" class="btn btn-secondary">Browse the answers</a>
+        <a href="/coin-value" class="btn btn-secondary">Browse coin values</a>
       </div>
     </div>
   </section>
@@ -42,16 +39,19 @@ const answers = ANSWERS.slice(0, 4);
     <div class="card p-6 max-w-2xl">
       <h2 class="text-xl mb-1.5">Looking for one of these?</h2>
       <ul class="space-y-2 text-sm mt-4">
-        {answers.map((a) => (
-          <li>
-            <a href={`/answers/${a.slug}`} class="underline underline-offset-2" style="color: var(--accent)">
-              {a.question}
-            </a>
-          </li>
-        ))}
         <li>
-          <a href="/faq" class="underline underline-offset-2" style="color: var(--accent)">
-            FAQ and troubleshooting
+          <a href="/coin-value" class="underline underline-offset-2" style="color: var(--accent)">
+            Coin values, by metal and denomination
+          </a>
+        </li>
+        <li>
+          <a href="/coin-value/tagged" class="underline underline-offset-2" style="color: var(--accent)">
+            Series, countries and categories
+          </a>
+        </li>
+        <li>
+          <a href="/privacy" class="underline underline-offset-2" style="color: var(--accent)">
+            Privacy
           </a>
         </li>
       </ul>

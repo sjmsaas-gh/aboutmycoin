@@ -1,0 +1,231 @@
+---
+/**
+ * The melt root: /melt-value.
+ *
+ * The twin of /coin-value, and deliberately the same page furniture in the
+ * same order: the same first decision (what is the coin made of), the same
+ * tile grid, the same cross-cutting pills, the same full listing at the
+ * bottom. A reader who has browsed one of the two sections has already
+ * learned this one, and a reader who is in the wrong section fixes it by
+ * changing one segment of the URL.
+ *
+ * What differs is every figure on it. The catalogue's tiles carry a sentence
+ * about what a coin is worth; these carry a number and the weight behind it,
+ * and the whole page is ordered by that number rather than by the registry.
+ *
+ * This page used to list metals and nothing else, on the argument that a hub
+ * listing the catalogue stops working at a thousand coins. That argument is
+ * still true and it is still unhandled -- it is equally true of /coin-value,
+ * which lists every coin here too. When the catalogue outgrows a single grid,
+ * both hubs get the same treatment in the same change; solving it on one of
+ * them only would put the two sections out of step, which is the thing this
+ * page exists to avoid.
+ *
+ * Only populated groups are listed, and the listing, the ItemList schema and
+ * the sitemap all read the same filter.
+ */
+import Base from '../../layouts/Base.astro';
+import TileCard from '../../components/TileCard.astro';
+import { SITE } from '../../lib/site';
+import {
+  itemListSchema,
+  webPageSchema,
+  faqSchema,
+  datasetSchema,
+} from '../../lib/schema';
+import { METAL_LABEL, spotStamp } from '../../lib/spot';
+import {
+  MELT_ROOT,
+  MELT_TAGGED_ROOT,
+  MELT_HUB_H1,
+  MELT_HUB_SEO_TITLE,
+  MELT_HUB_DESCRIPTION,
+  MELT_HUB_QUESTION,
+  MELT_HUB_ANSWER,
+  meltGroups,
+  meltGroupPath,
+  meltGroupH1,
+  meltTags,
+  meltTagPath,
+  meltCoins,
+  metalsIn,
+} from '../../lib/melt';
+import { CARDS_PER_SECTION, groupArtKey, tagArtKey } from '../../lib/card-art';
+import { SECTION_BLURB } from '../../lib/section-copy';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../data/faq-registry';
+
+const path = MELT_ROOT;
+const groups = meltGroups().slice(0, CARDS_PER_SECTION);
+// Still every priced coin, and still not a listing: it is what `metalsIn()`
+// reads to decide which prices this page is entitled to quote.
+const coins = meltCoins();
+// One string, rendered once: the hub's answer is the method and carries no
+// figure, so there is no marked form of it and nothing for the browser to
+// rewrite. Every other answer in the section still comes in the plain/marked
+// pair described on the coin melt page.
+const answer = MELT_HUB_ANSWER;
+
+// The metals actually priced anywhere in the section. A price on this page
+// that no page below uses is a number the site is quoting for no reason.
+const metals = metalsIn(coins);
+
+// Capped at CARDS_PER_SECTION, the same as the catalogue hub and for the same
+// reason: the two sections are a mirror, and a cap on one side only is the
+// mirror breaking. The tag archive at /melt-value/tagged holds the rest.
+const tags = meltTags();
+const seriesTags = tags.filter((t) => t.kind === 'series').slice(0, CARDS_PER_SECTION);
+const countryTags = tags.filter((t) => t.kind === 'country').slice(0, CARDS_PER_SECTION);
+const otherTags = tags
+  .filter((t) => t.kind !== 'series' && t.kind !== 'country')
+  .slice(0, CARDS_PER_SECTION);
+---
+<Base
+  title={MELT_HUB_SEO_TITLE}
+  description={MELT_HUB_DESCRIPTION}
+  path={path}
+  crumbs={[{ label: 'Melt values', href: path }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: MELT_HUB_H1,
+      description: MELT_HUB_DESCRIPTION,
+      path,
+    }),
+    itemListSchema({
+      name: 'Coin melt values by metal',
+      description: MELT_HUB_DESCRIPTION,
+      items: groups.map((g) => ({ name: meltGroupH1(g), path: meltGroupPath(g.slug) })),
+    }),
+    faqSchema([{ q: MELT_HUB_QUESTION, a: answer }]),
+    datasetSchema({
+      name: `${SITE.name} coin melt values`,
+      description:
+        'Precious-metal content and melt value for every coin in the catalogue. Each entry states the metal, the content in troy ounces and the value of that content at a named, dated spot price.',
+      path,
+      variableMeasured: [
+        'Metal',
+        'Metal content (troy ounces)',
+        'Spot price used (USD per troy ounce)',
+        'Melt value (USD)',
+      ],
+      measurementTechnique:
+        'Melt value is the coin’s actual precious-metal weight in troy ounces, taken from published mint specifications, multiplied by a single spot price per metal that is stated and dated on every page. It is the value of the metal, not a price any buyer has offered.',
+      keywords: ['coin melt value', 'silver coin melt value', 'silver content of coins', 'spot price'],
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-8">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{MELT_HUB_H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--metal-silver)"></div>
+      <div class="verdict" style="--metal: var(--metal-silver)">
+        <span class="verdict-label">{MELT_HUB_QUESTION}</span>
+        <p>{answer}</p>
+      </div>
+      <p style="margin-top: 1.3rem">
+        Melt value is what the metal in a coin is worth, which is not the same
+        as what anyone will pay you for it. It is still the right number to
+        start from, because it is the one figure about a coin that can be
+        calculated exactly rather than judged:
+        {' '}<a href="/common-questions/what-is-spot-price">what spot price is</a>,
+        and why every figure in this section is dated. What a coin is worth as
+        a coin is the other half of the answer, and it is in
+        {' '}<a href="/coin-value">the catalogue</a>.
+      </p>
+    </div>
+  </section>
+
+  {groups.length === 0 ? (
+    <section class="container-page pb-20">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">The catalogue is still being built</h2>
+        <p>
+          A melt page appears here for every coin that is added, at the same
+          address as its catalogue entry with <code>/coin-value</code> swapped
+          for <code>/melt-value</code>, and no other edit.
+          <a href="/coin-value">The catalogue</a> is where entries land first.
+        </p>
+      </div>
+    </section>
+  ) : (
+    <>
+      <section class="container-page pb-12">
+        <div class="prose-page" style="margin-bottom: 1.1rem">
+          <h2 style="margin-top: 0">By metal type</h2>
+          <p>{SECTION_BLURB.metal}</p>
+        </div>
+        <div class="tile-grid">
+          {groups.map((g) => (
+            <TileCard
+              href={meltGroupPath(g.slug)}
+              label={g.name}
+              metal={g.slug}
+              artKey={groupArtKey(g.slug)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {metals.length > 0 && (
+        <section class="container-page pb-12">
+          <div class="card fact-card">
+            <p class="figure-label">Prices these figures are worked at</p>
+            <dl class="spec-grid">
+              {metals.map((m) => (
+                <>
+                  <dt>{METAL_LABEL[m]}</dt>
+                  <dd data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</dd>
+                </>
+              ))}
+            </dl>
+          </div>
+        </section>
+      )}
+
+      {seriesTags.length > 0 && (
+        <section class="container-page pb-12">
+          <div class="prose-page" style="margin-bottom: 1.1rem">
+            <h2 style="margin-top: 0">By series</h2>
+            <p>{SECTION_BLURB.series}</p>
+          </div>
+          <div class="tile-grid">
+            {seriesTags.map((t) => (
+              <TileCard href={meltTagPath(t.slug)} label={t.name} artKey={tagArtKey(t.slug)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {countryTags.length > 0 && (
+        <section class="container-page pb-12">
+          <div class="prose-page" style="margin-bottom: 1.1rem">
+            <h2 style="margin-top: 0">By country</h2>
+            <p>{SECTION_BLURB.country}</p>
+          </div>
+          <div class="tile-grid">
+            {countryTags.map((t) => (
+              <TileCard href={meltTagPath(t.slug)} label={t.name} artKey={tagArtKey(t.slug)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {otherTags.length > 0 && (
+        <section class="container-page pb-20">
+          <div class="prose-page" style="margin-bottom: 1.1rem">
+            <h2 style="margin-top: 0">By topic</h2>
+            <p>
+              {SECTION_BLURB.topic}{' '}<a href={MELT_TAGGED_ROOT}>All topics</a>.
+            </p>
+          </div>
+          <div class="tile-grid">
+            {otherTags.map((t) => (
+              <TileCard href={meltTagPath(t.slug)} label={t.name} artKey={tagArtKey(t.slug)} />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  )}
+</Base>

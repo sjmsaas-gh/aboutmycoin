@@ -1,0 +1,103 @@
+---
+/**
+ * One topic: /common-questions/topic/<slug>.
+ *
+ * A view over the registry and nothing else. The H1, the opening answer and
+ * the intro are the category's own copy; the title, the description and the
+ * list are derived from the questions filed under it, so a topic page cannot
+ * describe a question it does not hold.
+ *
+ * No FAQPage schema here, deliberately. Each question is marked up on the
+ * page that answers it, once -- see the house rule -- so what this page
+ * contributes is the parent -> child relationship: CollectionPage over an
+ * ItemList, the same shape the hub uses over the whole section.
+ */
+import Base from '../../../layouts/Base.astro';
+import { itemListSchema, webPageSchema } from '../../../lib/schema';
+import {
+  QUESTIONS_ROOT,
+  QUESTION_CATEGORIES,
+  categoryDescription,
+  categoryPath,
+  categoryTitle,
+  questionHtml,
+  questionPath,
+  questionsInCategory,
+  type QuestionCategory,
+} from '../../../data/questions';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../data/faq-registry';
+
+export function getStaticPaths() {
+  return QUESTION_CATEGORIES.map((c) => ({
+    params: { topic: c.slug },
+    props: { category: c },
+  }));
+}
+
+export interface Props { category: QuestionCategory }
+const { category } = Astro.props;
+
+const path = categoryPath(category);
+const questions = questionsInCategory(category.slug);
+const description = categoryDescription(category);
+const others = QUESTION_CATEGORIES.filter((c) => c.slug !== category.slug);
+---
+<Base
+  title={categoryTitle(category)}
+  description={description}
+  path={path}
+  crumbs={[
+    { label: 'Common questions', href: QUESTIONS_ROOT },
+    { label: category.name, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: category.h1,
+      description,
+      path,
+    }),
+    itemListSchema({
+      name: category.h1,
+      description,
+      items: questions.map((q) => ({ name: q.question, path: questionPath(q) })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{category.h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg"><strong>{category.bluf}</strong></p>
+      {category.intro.map((p) => <p set:html={questionHtml(p)} />)}
+    </div>
+  </section>
+
+  <section class="container-page pb-10">
+    <div class="tile-grid">
+      {questions.map((q) => (
+        <a href={questionPath(q)} class="tile">
+          <h2>{q.question}</h2>
+          <p>{q.answer}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <h2>Other topics</h2>
+      <ul>
+        {others.map((c) => (
+          <li>
+            <a href={categoryPath(c)}>{c.name}</a> &mdash; {c.bluf}
+          </li>
+        ))}
+      </ul>
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        <a href={QUESTIONS_ROOT}>All common questions</a>
+      </p>
+    </div>
+  </section>
+</Base>

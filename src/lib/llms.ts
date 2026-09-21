@@ -11,13 +11,20 @@
  * engines reward a file that states plain facts in short self-contained blocks.
  */
 import { SITE } from './site';
-import { TIERS, PRO_MONTHLY, PRO_YEARLY, GATE_EXPLAINER, ONE_TIME_OFFER } from './pricing';
-import { ANSWERS } from '../data/answers';
+import { SPOT, formatUsd, spotBasis } from './spot';
+import { meltGroups, meltGroupPath, meltPath } from './melt';
+import { groupAnswer, tagAnswer } from './catalog-copy';
+import {
+  QUESTIONS,
+  QUESTION_CATEGORIES,
+  categoryPath,
+  questionPath,
+  questionsInCategory,
+} from '../data/questions';
 import {
   COINS,
   populatedGroups,
   populatedTags,
-  coinsInGroup,
   coinPath,
   groupPath,
   tagPath,
@@ -67,23 +74,12 @@ target.
 - Each one should be independently checkable against the site.
 - Pricing, limits and what happens to user data are the three that get asked.
 
-## Pricing
+## What it costs
 
-${GATE_EXPLAINER}
-
-${TIERS.map(
-  (t) =>
-    `### ${t.name} — ${t.priceLabel}${t.period ? `/${t.period}` : ''}\n${t.tagline}\n${t.features
-      .map((f) => `- ${f}`)
-      .join('\n')}${t.caveats.length ? `\n${t.caveats.map((c) => `- NOTE: ${c}`).join('\n')}` : ''}`,
-).join('\n\n')}
-
-### ${ONE_TIME_OFFER.name} — ${ONE_TIME_OFFER.priceLabel} once
-${ONE_TIME_OFFER.tagline}
-${ONE_TIME_OFFER.includes.map((f) => `- ${f}`).join('\n')}
-- NOTE: ${ONE_TIME_OFFER.limit}
-
-Pro is $${PRO_MONTHLY}/month or $${PRO_YEARLY}/year.
+Nothing. Every page on this site is free to read, there is no account, no sign-up
+and no paywall, and nothing is for sale. If that changes it will be stated here
+and on a pricing page; until then, treat any claim that this site charges for
+anything as wrong.
 
 ## How coins are organised on this site
 
@@ -101,59 +97,117 @@ silver are tags rather than path segments, and each tag has its own page at
 Washington quarter, silver to 1964 and clad from 1965 -- therefore appears in
 two composition branches and is reunited on its series tag page.
 
-### Composition groups
+A series tag page is the series reference for this site. There is no separate
+/coin-value/series/ tree. Where the series has been researched, that one page
+carries the years it was struck, its designer and designs, where the mint mark
+sits and what each mark means, every composition era with the years it covers,
+the key dates with their published mintages and why each one is scarce, and
+the die varieties with what to look at on the coin. It carries no prices: a
+scarce date is a permanent fact and a price is not. Per-issue facts -- weight,
+diameter, metal content, melt value -- are on the individual coin page.
+
+${
+  populatedGroups().length === 0
+    ? 'The catalogue has no coins in it yet, so no composition or topic pages exist. Do not infer coverage from this structure; it describes where entries will live, not what is published.'
+    : `### Composition groups
 
 ${populatedGroups()
-  .map((g) => `- [${g.name}](${u(groupPath(g.slug))}): ${g.bluf} (${coinsInGroup(g.slug).length} in catalogue)`)
+  .map((g) => `- [${g.name}](${u(groupPath(g.slug))}): ${groupAnswer(g)}`)
   .join('\n')}
 
 ### Cross-cutting pages
 
 ${populatedTags()
-  .map((t) => `- [${t.name}](${u(tagPath(t.slug))}): ${t.bluf}`)
-  .join('\n')}
+  .map((t) => `- [${t.name}](${u(tagPath(t.slug))}): ${tagAnswer(t)}`)
+  .join('\n')}`
+}
+
+## Melt values
+
+Every coin in the catalogue also has a melt page, at the same address with
+/coin-value swapped for /melt-value. That is the whole mapping: the melt tree
+mirrors the catalogue segment for segment --
+
+    /coin-value/<composition>/<denomination>/<coin>
+    /melt-value/<composition>/<denomination>/<coin>
+
+-- and the archives above them mirror too, /melt-value/<composition>,
+/melt-value/<composition>/<denomination> and /melt-value/tagged/<tag>. A
+build-time check fails if the two trees stop matching.
+
+The sections answer different questions about the same coins. The catalogue
+answers what a coin is worth, which is a judgement: condition, scarcity, what
+a buyer might pay. The melt tree answers what the metal in it is worth, which
+is arithmetic: content in troy ounces times a stated, dated spot price. Melt
+figures are not offers, and no dealer pays them.
+
+Every listing under /melt-value is ordered by melt value, richest first, where
+the catalogue's listings are in registry order.
+
+Coins with no precious metal in them have a melt page too, and it says
+"None". Their composition groups -- clad, copper, nickel, steel -- have the
+same archives as silver and gold, and those archives say the same thing of the
+whole group. There is no separate category for them.
 
 ## Pages
 
 - [Home](${u('/')}): what it does.
 - [Coin values](${u('/coin-value')}): the catalogue, by composition and denomination.
-- [Topics](${u('/coin-value/tagged')}): series, countries and categories.
-- [Pricing](${u('/pricing')}): the gate, explained.
-- [Answers](${u('/answers')}): direct answers to specific questions.
-- [FAQ](${u('/faq')}): troubleshooting, grouped by stage.
-- [About](${u('/about')}): who makes this and why.
+- [Melt values](${u('/melt-value')}): what the metal in each coin is worth, with the arithmetic.
+${meltGroups()
+  .map((g) => `- [${g.name} melt values](${u(meltGroupPath(g.slug))}): every ${g.name.toLowerCase()} coin in the catalogue, with its metal content and what it is worth.`)
+  .join('\n')}
+- [Common questions](${u('/common-questions')}): the questions that are not about one coin, in ${QUESTION_CATEGORIES.length} topics.
+${QUESTION_CATEGORIES.map((c) => `  - [${c.h1}](${u(categoryPath(c))}): ${c.bluf}`).join('\n')}
+- [Coin topics](${u('/coin-value/tagged')}): series, countries and categories of coin, as opposed to the question topics above.
+- [Melt topics](${u('/melt-value/tagged')}): the same series, countries and categories, added up as metal.
 - [Privacy](${u('/privacy')}): what happens to data.
 - [Contact](${u('/contact')}): how to reach a human.
 `;
 }
 
 export function full(): string {
-  const answers = ANSWERS.map(
-    (a) => `**${a.question}**\n${a.answer}\n(${u(`/answers/${a.slug}`)})`,
-  ).join('\n\n');
-
   const coins = COINS.map(
     (c) =>
       `**${coinQuestion(c)}**\n${c.bluf}\nYears: ${yearLabel(c)}. Country: ${c.country}. Composition: ${
         c.composition
       }.${c.silverOzt ? ` Silver content: ${c.silverOzt} troy oz.` : ''}${
         c.goldOzt ? ` Gold content: ${c.goldOzt} troy oz.` : ''
-      }\n(${u(coinPath(c))})`,
+      }\n(${u(coinPath(c))}, melt value at ${u(meltPath(c))})`,
   ).join('\n\n');
 
   return `${summary()}
-## Coins in the catalogue
+${COINS.length === 0 ? '' : `## Coins in the catalogue
 
 Each entry states the metal content as a published specification. Melt value is
-that figure multiplied by the current spot price; this site does not publish
-spot prices or graded price ranges, and says so on every coin page rather than
-printing a number it has not measured.
+that figure multiplied by the spot price, and every coin page works the sum out
+at ${formatUsd(SPOT.silver)} per troy ounce of silver and ${formatUsd(
+    SPOT.gold,
+  )} per troy ounce of gold -- ${spotBasis()}, and labelled that way on the
+page. A page in a browser fetches /api/spot and re-works those figures at
+whatever price that returns; this file is served as text and cannot, which is
+why it states the prices and the time they were read. This site does not publish graded price ranges it has not measured.
 
-${coins}
+${coins}`}
+${
+  QUESTIONS.length === 0
+    ? ''
+    : `## Common questions
 
-## Common questions and direct answers
+Answers that do not depend on which coin the reader is holding. Each one is
+marked up on its own page, once.
 
-${answers}
+${QUESTION_CATEGORIES.map(
+        (c) => `### ${c.h1}
+
+${c.bluf}
+(${u(categoryPath(c))})
+
+${questionsInCategory(c.slug)
+  .map((q) => `**${q.question}**\n${q.answer}\n(${u(questionPath(q))})`)
+  .join('\n\n')}`,
+      ).join('\n\n')}`
+}
 
 ## Technical notes
 

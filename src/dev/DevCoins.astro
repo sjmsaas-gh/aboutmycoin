@@ -1,0 +1,161 @@
+---
+/**
+ * Every coin in the catalogue, with the pages it created and the fields it is
+ * missing. Development only.
+ *
+ * Two questions this answers that nothing else does:
+ *
+ *   1. What did adding this coin bring into existence? An archive with one
+ *      coin on it is that coin's page in everything but name -- remove the
+ *      coin and the URL 404s -- and knowing which URLs are load-bearing is
+ *      the difference between editing a catalogue and breaking a site.
+ *
+ *   2. What is thin? The type system stops a build without a `bluf`; it has
+ *      nothing to say about an entry with no identification steps, no
+ *      mintage and no series facts, which compiles and renders three empty
+ *      blocks. The field table is that check, and "expected" is a judgement
+ *      about the page rather than a copy of the interface.
+ */
+import DevShell from './DevShell.astro';
+import { COINS, coinFootprint, coinFields, coinGaps, coinQuestions, taxonomyRows } from './inventory';
+import { coinPath, yearLabel } from '../data/coins';
+
+const coins = [...COINS].sort((a, b) => a.name.localeCompare(b.name));
+const taxonomy = taxonomyRows();
+---
+<DevShell
+  title="Coins"
+  lede={`${coins.length} in the catalogue. Each row opens to show every page that coin is responsible for, the FAQ questions it claims, and the fields the format expects but the entry does not have.`}
+>
+  {coins.length === 0 && (
+    <div class="panel">
+      <p style="margin: 0">
+        No coins yet. <a href="/dev/add-a-coin">Adding a coin</a> is the
+        procedure, and the taxonomy below is what is waiting for one.
+      </p>
+    </div>
+  )}
+
+  {coins.length > 0 && (
+    <div class="panel">
+      {coins.map((coin) => {
+        const gaps = coinGaps(coin);
+        const footprint = coinFootprint(coin);
+        const created = footprint.filter((f) => f.state === 'new').length;
+        return (
+          <details>
+            <summary>
+              <span class="path">{coin.slug}</span>
+              <span class="name">{coin.name} · {yearLabel(coin)}</span>
+              <span class="pill">{created} URLs it created</span>
+              <span class={`pill ${gaps.length === 0 ? 'new' : 'warn'}`}>
+                {gaps.length === 0 ? 'complete' : `${gaps.length} missing`}
+              </span>
+            </summary>
+            <div class="detail">
+              <p class="blurb" style="margin-top: 0.4rem">
+                <a href={coinPath(coin)} target="_blank" rel="noreferrer">{coinPath(coin)}</a>
+              </p>
+
+              <h3>Pages it is responsible for</h3>
+              <p class="blurb">
+                <span class="pill new">new</span> means the URL exists because
+                of this coin and would 404 without it.
+              </p>
+              <table>
+                <thead><tr><th>URL</th><th>What</th><th></th><th>Detail</th></tr></thead>
+                <tbody>
+                  {footprint.map((f) => (
+                    <tr>
+                      <td class="mono"><a href={f.path} target="_blank" rel="noreferrer">{f.path}</a></td>
+                      <td>{f.what}</td>
+                      <td><span class={`pill ${f.state === 'new' ? 'new' : ''}`}>{f.state}</span></td>
+                      <td class="muted">{f.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h3>FAQ questions it claims</h3>
+              <p class="blurb">
+                One question, one page, site-wide. src/data/faq-registry.ts
+                throws at build time if any of these collides with another
+                page’s.
+              </p>
+              <table>
+                <thead><tr><th>Question</th><th>Owned by</th></tr></thead>
+                <tbody>
+                  {coinQuestions(coin).map((q) => (
+                    <tr>
+                      <td>{q.question}</td>
+                      <td class="mono">{q.path}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h3>Fields</h3>
+              <p class="blurb">
+                <strong>required</strong> — the build will not pass without it.
+                <strong> expected</strong> — the page is visibly poorer without
+                it. <strong>optional</strong> — absence is a real answer, not a
+                gap. See COIN-ARTICLE-GUIDE.md for how each one is written.
+              </p>
+              <table>
+                <thead><tr><th>Field</th><th>Level</th><th>Value</th><th>Note</th></tr></thead>
+                <tbody>
+                  {coinFields(coin).map((f) => (
+                    <tr>
+                      <td class="mono">{f.field}</td>
+                      <td>
+                        <span class={`pill ${!f.present && f.level !== 'optional' ? 'warn' : ''}`}>
+                          {f.present ? f.level : `${f.level} · missing`}
+                        </span>
+                      </td>
+                      <td>{f.present ? (f.value.length > 90 ? `${f.value.slice(0, 90)}…` : f.value) : <span class="muted">—</span>}</td>
+                      <td class="muted">{f.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        );
+      })}
+    </div>
+  )}
+
+  <h2>The taxonomy, and what is waiting on a coin</h2>
+  <p class="blurb">
+    Every group, denomination, tag and metal that a coin may reference. An
+    entry with no coins is written and unbuilt: it becomes a URL the moment
+    one lands in it, which is the house rule against empty archives doing its
+    job rather than a bug.
+  </p>
+  {taxonomy.map((t) => (
+    <section>
+      <h3>{t.title}</h3>
+      <p class="blurb">{t.blurb}</p>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Slug</th><th>Name</th><th>Kind</th><th>Coins</th><th>Archive</th></tr></thead>
+          <tbody>
+            {t.rows.map((r) => (
+              <tr>
+                <td class="mono">{r.slug}</td>
+                <td>{r.name}</td>
+                <td class="muted">{r.kind}</td>
+                <td>{r.count}</td>
+                <td>
+                  {r.live
+                    ? <a class="mono" href={r.path} target="_blank" rel="noreferrer">{r.path}</a>
+                    : <span class="muted mono">{r.path} <span class="pill">not built</span></span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  ))}
+</DevShell>

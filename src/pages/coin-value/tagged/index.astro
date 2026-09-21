@@ -11,48 +11,31 @@
  * questions and a flat alphabetical list of thirty pills answers none of them.
  */
 import Base from '../../../layouts/Base.astro';
+import TileCard from '../../../components/TileCard.astro';
 import { itemListSchema, webPageSchema } from '../../../lib/schema';
-import { populatedTags, coinsWithTag, tagPath, COINS, latestUpdated, type Tag } from '../../../data/coins';
-import { COIN_VALUE_UPDATED } from '../../../lib/page-dates';
+import { populatedTags, tagPath } from '../../../data/coins';
+import {
+  TAGGED_DESCRIPTION,
+  TAGGED_H1,
+  TAGGED_SEO_TITLE,
+  TAG_KIND_SECTIONS,
+} from '../../../lib/catalog-copy';
+import { tagArtKey } from '../../../lib/card-art';
 
 const path = '/coin-value/tagged';
 const tags = populatedTags();
-const updated = latestUpdated(COINS, COIN_VALUE_UPDATED);
 
-const ORDER: { kind: Tag['kind']; title: string; blurb: string }[] = [
-  {
-    kind: 'series',
-    title: 'By series',
-    blurb:
-      'A series whose composition changed partway through is split across the catalogue by metal. These pages put it back together.',
-  },
-  {
-    kind: 'country',
-    title: 'By country',
-    blurb:
-      'Coins are filed by what they are made of, not by where they were struck, so the country view is assembled from tags.',
-  },
-  {
-    kind: 'composition',
-    title: 'By composition detail',
-    blurb: 'Finer than the top-level metal groups: a specific fineness or construction.',
-  },
-  { kind: 'format', title: 'By format', blurb: 'How the coin was made and sold, rather than what it is.' },
-  {
-    kind: 'theme',
-    title: 'By topic',
-    blurb: 'The categories collectors and dealers actually use in conversation.',
-  },
-];
-
-const sections = ORDER.map((o) => ({ ...o, tags: tags.filter((t) => t.kind === o.kind) })).filter(
-  (s) => s.tags.length > 0,
-);
-const DESCRIPTION =
-  'Every cross-cutting view of the coin catalogue: by series, by country, by composition and by topic. Coins are filed by metal and denomination; these pages cut across that.';
+// The sections, their headings and their blurbs all live in catalog-copy.ts
+// with the rest of the section's copy; this page decides which of them have a
+// populated tag to show.
+const sections = TAG_KIND_SECTIONS.map((o) => ({
+  ...o,
+  tags: tags.filter((t) => t.kind === o.kind),
+})).filter((s) => s.tags.length > 0);
+const DESCRIPTION = TAGGED_DESCRIPTION;
 ---
 <Base
-  title="Coin Topics, Series and Countries"
+  title={TAGGED_SEO_TITLE}
   description={DESCRIPTION}
   path={path}
   crumbs={[
@@ -62,13 +45,12 @@ const DESCRIPTION =
   schemas={[
     webPageSchema({
       type: 'CollectionPage',
-      name: 'Coin topics, series and countries',
+      name: TAGGED_H1,
       description: DESCRIPTION,
       path,
-      dateModified: updated,
     }),
     itemListSchema({
-      name: 'Coin topics, series and countries',
+      name: TAGGED_H1,
       description: DESCRIPTION,
       items: tags.map((t) => ({ name: t.name, path: tagPath(t.slug) })),
     }),
@@ -76,42 +58,46 @@ const DESCRIPTION =
 >
   <section class="container-page pt-8 pb-10">
     <div class="prose-page">
-      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.9rem">Coin Topics, Series and Countries</h1>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{TAGGED_H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
       <p class="text-lg">
         <strong>
-          Coins in this catalogue are filed by what they are made of and what
-          denomination they are. Everything else is a tag, and every tag is a
-          page.
+          Find your coin by its series, the country that struck it, the alloy
+          it is made of or the category the trade files it under.
         </strong>
       </p>
       <p>
-        That split is deliberate. A coin’s metal and denomination are facts
-        that will never be revised, so they are safe to put in a URL that must
-        never change. A coin’s series, its country and whether it counts as
-        a key date are all things we may reclassify, so they live here instead,
-        where a coin can appear on as many pages as it belongs on while still
-        existing at exactly one address.
+        The same labels cut across <a href="/melt-value/tagged">the melt
+        tables</a>, where each one adds up what the metal in it comes to
+        rather than what the coins are worth.
       </p>
     </div>
   </section>
 
-  {sections.map((s) => (
+  {sections.length === 0 ? (
+    <section class="container-page pb-20">
+      <div class="prose-page">
+        <h2 style="margin-top: 0">No topics yet</h2>
+        <p>
+          A topic page appears here as soon as a coin is tagged with it. The
+          tags themselves are already written — series, countries, compositions
+          and the categories the trade uses — and each one is held back until it
+          has something to list, because a topic page with nothing on it is a
+          heading and an empty grid.
+        </p>
+        <p><a href="/coin-value">Back to the catalogue</a>.</p>
+      </div>
+    </section>
+  ) : sections.map((s) => (
     <section class="container-page pb-12">
       <div class="prose-page" style="margin-bottom: 1rem">
         <h2 style="margin-top: 0">{s.title}</h2>
         <p>{s.blurb}</p>
       </div>
       <div class="tile-grid">
-        {s.tags.map((t) => {
-          const n = coinsWithTag(t.slug).length;
-          return (
-            <a href={tagPath(t.slug)} class="tile">
-              <h3>{t.name}</h3>
-              <p>{t.bluf}</p>
-              <p class="tile-meta">{n} {n === 1 ? 'coin' : 'coins'}</p>
-            </a>
-          );
-        })}
+        {s.tags.map((t) => (
+          <TileCard href={tagPath(t.slug)} label={t.name} artKey={tagArtKey(t.slug)} />
+        ))}
       </div>
     </section>
   ))}

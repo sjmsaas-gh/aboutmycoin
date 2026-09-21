@@ -1,0 +1,46 @@
+---
+/**
+ * The /dev workbench. Served by `astro dev`, built by nothing.
+ *
+ * ---------------------------------------------------------------------------
+ * HOW THESE PAGES STAY OUT OF THE BUILD
+ * ---------------------------------------------------------------------------
+ *
+ * `getStaticPaths()` returns an empty array outside dev, and a static build
+ * emits exactly the paths this function returns -- so `npm run build` writes
+ * nothing under /dev, there is no /dev in the sitemap, and there is nothing
+ * to notice on the live site. `tests/build-smoke.test.mjs` fails if a /dev
+ * URL ever appears in `dist/`, because the guard being one line is exactly
+ * why it is worth a check.
+ *
+ * A single rest route rather than four files for the same reason: four files
+ * is four chances to forget the guard. There is one guard, here.
+ *
+ * Nothing under `src/dev/` is imported by a page that ships, which is what
+ * keeps the inspector's weight -- and its habit of reading the whole
+ * catalogue -- out of every real page's build.
+ */
+import DevIndex from '../../dev/DevIndex.astro';
+import DevPages from '../../dev/DevPages.astro';
+import DevCoins from '../../dev/DevCoins.astro';
+import DevAddCoin from '../../dev/DevAddCoin.astro';
+
+export function getStaticPaths() {
+  if (!import.meta.env.DEV) return [];
+  return [
+    { params: { tool: undefined }, props: { tool: 'index' as const } },
+    { params: { tool: 'pages' }, props: { tool: 'pages' as const } },
+    { params: { tool: 'coins' }, props: { tool: 'coins' as const } },
+    { params: { tool: 'add-a-coin' }, props: { tool: 'add-a-coin' as const } },
+  ];
+}
+
+export interface Props {
+  tool: 'index' | 'pages' | 'coins' | 'add-a-coin';
+}
+const { tool } = Astro.props;
+---
+{tool === 'index' && <DevIndex />}
+{tool === 'pages' && <DevPages />}
+{tool === 'coins' && <DevCoins />}
+{tool === 'add-a-coin' && <DevAddCoin />}

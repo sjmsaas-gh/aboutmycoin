@@ -6,6 +6,8 @@ import Footer from '../components/Footer.astro';
 import JsonLd from '../components/JsonLd.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import LazyThirdParty from '../components/LazyThirdParty.astro';
+import SpotLive from '../components/SpotLive.astro';
+import SignupDock from '../components/SignupDock.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 import { SITE } from '../lib/site';
 import { organizationSchema, websiteSchema, breadcrumbSchema, type Crumb } from '../lib/schema';
@@ -16,9 +18,19 @@ interface Props extends SeoProps {
   /** Breadcrumb trail, excluding Home which is prepended automatically. */
   crumbs?: Crumb[];
   bodyClass?: string;
+  /**
+   * Whether the sign-up dock is offered on this page.
+   *
+   * On everywhere, including the home page, which also carries the same box
+   * under the hero: the dock is the one that catches someone who scrolled past
+   * it. The prop exists so a page that must not be interrupted -- a checkout
+   * return, say -- can switch it off without the dock growing a list of paths
+   * to check itself against.
+   */
+  signupDock?: boolean;
 }
 
-const { schemas = [], crumbs = [], bodyClass = '', ...seo } = Astro.props;
+const { schemas = [], crumbs = [], bodyClass = '', signupDock = true, ...seo } = Astro.props;
 const graph = [
   organizationSchema(),
   websiteSchema(),
@@ -31,7 +43,7 @@ const graph = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48 64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
@@ -83,5 +95,11 @@ const graph = [
       <slot />
     </main>
     <Footer />
+    {signupDock && <SignupDock />}
+    {/* Rewrites every figure on the page from /api/spot, which is cached for
+        an hour where this HTML is cached for a day. On every page rather than
+        opted into, because the failure mode of a forgotten flag is a stale
+        price nobody sees is stale. See src/components/SpotLive.astro. */}
+    <SpotLive />
   </body>
 </html>

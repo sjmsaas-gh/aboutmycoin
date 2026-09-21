@@ -97,8 +97,6 @@ settings, and none of them show up until production.
 - `src/lib/pricing.ts` — tiers, prices, and `GATE_EXPLAINER`. Nothing in a
   feature list that is not built.
 - `src/data/answers.ts` — delete the two examples, write real ones.
-- `src/lib/page-dates.ts` — the real date each dated page last changed. Bump
-  one only when that page's text changes.
 - `src/lib/third-parties.ts` — every outside service a visit touches, worded
   for this product. `/privacy` renders it.
 - `KEYWORDS.md` — the keyword map for this niche.

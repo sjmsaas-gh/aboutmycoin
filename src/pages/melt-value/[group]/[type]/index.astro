@@ -1,0 +1,121 @@
+---
+/**
+ * A denomination archive on the melt side: /melt-value/<group>/<type>.
+ *
+ * The twin of /coin-value/<group>/<type>, and the level the flat namespace
+ * used to have nothing at. "What is the melt value of silver quarters" is a
+ * phrase people type, and before this page existed the section answered it
+ * with either a single coin or a table of every silver coin ever struck.
+ *
+ * Generated only for (group, type) pairs that have at least one coin, which
+ * is the anti-thin-content guard for the deepest archive level: nine groups
+ * times eight denominations is seventy-two URLs and only the populated ones
+ * get built.
+ *
+ * The copy is composed from the group, the denomination and the arithmetic
+ * rather than hand-written per pair, for the reason in the header of
+ * src/lib/melt.ts: every sentence here contains a figure, and a figure that
+ * is typed is a figure that drifts from the table under it.
+ */
+import Base from '../../../../layouts/Base.astro';
+import MeltTile from '../../../../components/MeltTile.astro';
+import { SITE } from '../../../../lib/site';
+import { itemListSchema, webPageSchema, faqSchema } from '../../../../lib/schema';
+import {
+  MELT_ROOT,
+  meltPairs,
+  meltPath,
+  meltGroupPath,
+  meltTypePath,
+  meltPairH1,
+  meltPairSeoTitle,
+  meltPairQuestion,
+  meltPairAnswer,
+  meltPairDescription,
+  meltCoinsInGroupType,
+} from '../../../../lib/melt';
+import { typePath, type Group, type CoinType } from '../../../../data/coins';
+import { markedUsd } from '../../../../lib/spot';
+// Side effect: throws if two pages on this site claim one FAQ question.
+import '../../../../data/faq-registry';
+
+export function getStaticPaths() {
+  return meltPairs().map(({ group, type }) => ({
+    params: { group: group.slug, type: type.slug },
+    props: { group, type },
+  }));
+}
+
+export interface Props { group: Group; type: CoinType }
+const { group, type } = Astro.props;
+
+const path = meltTypePath(group.slug, type.slug);
+const coins = meltCoinsInGroupType(group.slug, type.slug);
+const question = meltPairQuestion(group, type);
+// Plain for the FAQPage schema, marked for the reader -- see the coin melt
+// page for the reasoning behind the pair and behind `data-spot-sync`.
+const answer = meltPairAnswer(group, type);
+const answerHtml = meltPairAnswer(group, type, markedUsd);
+const description = meltPairDescription(group, type);
+const plural = type.namePlural.toLowerCase();
+---
+<Base
+  title={meltPairSeoTitle(group, type)}
+  description={description}
+  path={path}
+  crumbs={[
+    { label: 'Melt values', href: MELT_ROOT },
+    { label: group.name, href: meltGroupPath(group.slug) },
+    { label: type.namePlural, href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: meltPairH1(group, type),
+      description,
+      path,
+    }),
+    itemListSchema({
+      name: meltPairH1(group, type),
+      description,
+      items: coins.map((c) => ({ name: `${c.name} melt value`, path: meltPath(c) })),
+    }),
+    faqSchema([{ q: question, a: answer }]),
+  ]}
+>
+  <section class="container-page pt-8 pb-8" style={`--metal: var(--metal-${group.slug})`}>
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{meltPairH1(group, type)}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+      <div class="verdict">
+        <span class="verdict-label">{question}</span>
+        <p data-spot-sync={answer} set:html={answerHtml} />
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page pb-12">
+    <div class="prose-page" style="margin-bottom: 1.1rem">
+      <h2 style="margin-top: 0">{group.name} {plural.toLowerCase()}</h2>
+    </div>
+    <div class="tile-grid">
+      {coins.map((c) => <MeltTile coin={c} showFigure={false} />)}
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <p class="text-sm" style="color: var(--text-muted)">
+        What these are worth as coins rather than as metal — the dates, the
+        mint marks and the condition — is
+        {' '}<a href={typePath(group.slug, type.slug)}>{group.name.toLowerCase()} {plural}</a>.
+        Every {group.name.toLowerCase()} denomination is on
+        {' '}<a href={meltGroupPath(group.slug)}>{group.name.toLowerCase()} melt values</a>.
+      </p>
+      <p class="text-sm" style="color: var(--text-muted)">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+    </div>
+  </section>
+</Base>
