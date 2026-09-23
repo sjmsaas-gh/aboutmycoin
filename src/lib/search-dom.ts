@@ -2,7 +2,8 @@
  * The browser half of the header search: fetch the index once, rank on every
  * keystroke, and navigate.
  *
- * The reasoning for what is in the index is in `search.ts`, which is imported
+ * The reasoning for what is in the index is in `search.ts`; the ranking is in
+ * `search-rank.ts`, which is imported
  * here rather than copied -- the ranking that decides the order is the ranking
  * the tests run, and there is no second scoring rule anywhere. This module
  * does DOM and nothing else.
@@ -46,7 +47,7 @@ import {
   noMatchNote,
   search,
   type SearchEntry,
-} from './search';
+} from './search-rank';
 
 /** Where "browse instead" goes: the catalogue, same as the header's button. */
 const BROWSE_PATH = '/coin-info';

@@ -789,17 +789,21 @@ test('the cheat sheet lists every checkable thing, and links none of them out', 
     const html = read(file);
     const series = tag.series;
 
+    // The heading, not the bare words: the header's search script is inlined
+    // on every page and carries "Cheat sheet" as a result label, so splitting
+    // on the words alone reads from the <head>.
+    const SHEET_HEADING = '>Cheat sheet</h2>';
     const checkable = [
       ...(series.keyDates ?? []),
       ...(series.varieties ?? []),
       ...(series.errors ?? []),
     ];
     if (checkable.length === 0) {
-      assert.ok(!html.includes('Cheat sheet'), `${path} has a cheat sheet with nothing on it`);
+      assert.ok(!html.includes(SHEET_HEADING), `${path} has a cheat sheet with nothing on it`);
       continue;
     }
 
-    const sheet = html.split('Cheat sheet')[1]?.split('The series at a glance')[0];
+    const sheet = html.split(SHEET_HEADING)[1]?.split('The series at a glance')[0];
     assert.ok(sheet, `${path} has ${checkable.length} things to check and no cheat sheet`);
     for (const e of checkable) {
       assert.ok(sheet.includes(e.label), `the cheat sheet on ${path} omits ${e.label}`);
@@ -1905,6 +1909,28 @@ test('the calculator hub and its calculators link to each other', () => {
   // The hub states no figure. A hub that shows a number is a hub competing
   // with the page that owns it.
   assert.ok(!/\$\d/.test(hub.slice(hub.indexOf('<body'))), `${CALCULATORS_ROOT} states a figure`);
+});
+
+test('no client script is carrying the catalogue', () => {
+  // The header's search box once imported its ranking from the module that
+  // BUILDS the index, which imports every registry -- so every page shipped
+  // two megabytes of JavaScript that re-ran the build's validators in the
+  // reader's browser: about ten seconds of blocking time on a phone. Nothing
+  // looked wrong; the page rendered and the box worked. The catalogue reaches
+  // the browser as /search-index.json on the first keystroke and never as
+  // code. The cap is well above any real script here (the largest is ~10 KB)
+  // and far below a bundle holding the coin registry.
+  const CAP = 60_000;
+  const big = readdirSync(join(DIST, '_astro'))
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => [f, readFileSync(join(DIST, '_astro', f)).length])
+    .filter(([, n]) => n > CAP);
+  assert.deepEqual(big, [], `client scripts over ${CAP} bytes: ${big.map(([f, n]) => `${f} (${n})`).join(', ')}`);
+  for (const page of htmlFiles()) {
+    for (const [, body] of read(page).matchAll(/<script type="module"[^>]*>([\s\S]*?)<\/script>/g)) {
+      assert.ok(body.length <= CAP, `${page} inlines a ${body.length}-byte module script`);
+    }
+  }
 });
 
 test('the dev workbench is not in the build', () => {
