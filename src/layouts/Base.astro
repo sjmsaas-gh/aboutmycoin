@@ -7,6 +7,7 @@ import JsonLd from '../components/JsonLd.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import LazyThirdParty from '../components/LazyThirdParty.astro';
 import SpotLive from '../components/SpotLive.astro';
+import RevealMore from '../components/RevealMore.astro';
 import SignupDock from '../components/SignupDock.astro';
 import GoogleAnalytics from '../components/GoogleAnalytics.astro';
 import { SITE } from '../lib/site';
@@ -47,6 +48,7 @@ const graph = [
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="google-site-verification" content="daVUIBcpiZGtJgmUesntx9o0kP8RdU-sUfTdMBGb6BI" />
     <meta name="theme-color" content={SITE.themeColor.light} media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content={SITE.themeColor.dark} media="(prefers-color-scheme: dark)" />
 
@@ -101,5 +103,8 @@ const graph = [
         opted into, because the failure mode of a forgotten flag is a stale
         price nobody sees is stale. See src/components/SpotLive.astro. */}
     <SpotLive />
+    {/* Folds the tail of a long tile grid away behind a button. Every tile is
+        in the HTML either way -- see src/lib/reveal.ts. */}
+    <RevealMore />
   </body>
 </html>

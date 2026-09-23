@@ -1,0 +1,1026 @@
+{
+  "source": {
+    "name": "Numista",
+    "url": "https://numista.com",
+    "note": "Fetched at build time with a research credential and cached here. Nothing under src/ reads it and no page calls it. Refresh with `npm run mintages -- --refresh`."
+  },
+  "series": "morgan-dollar",
+  "types": [
+    {
+      "id": 1492,
+      "title": "1 Dollar \"Morgan Dollar\"",
+      "composition": "Silver (.900) (.100 copper)",
+      "weight": 26.73,
+      "issues": [
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": 750000,
+          "pcgs": null,
+          "comment": "1st reverse"
+        },
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": 500,
+          "pcgs": null,
+          "comment": "1st reverse, Proof"
+        },
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": 9759300,
+          "pcgs": null,
+          "comment": "2nd reverse"
+        },
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": 250,
+          "pcgs": null,
+          "comment": "2nd reverse, Proof"
+        },
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "3rd reverse, mintage included in 2nd reverse"
+        },
+        {
+          "year": 1878,
+          "mark": "",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "7 over 8 tail feathers, mintage included in 2nd reverse"
+        },
+        {
+          "year": 1878,
+          "mark": "CC",
+          "mintage": 2212000,
+          "pcgs": "7080",
+          "comment": ""
+        },
+        {
+          "year": 1878,
+          "mark": "S",
+          "mintage": 9744000,
+          "pcgs": "7082",
+          "comment": ""
+        },
+        {
+          "year": 1879,
+          "mark": "",
+          "mintage": 14806000,
+          "pcgs": "7084",
+          "comment": ""
+        },
+        {
+          "year": 1879,
+          "mark": "",
+          "mintage": 1100,
+          "pcgs": "7314",
+          "comment": "Proof"
+        },
+        {
+          "year": 1879,
+          "mark": "CC",
+          "mintage": 756000,
+          "pcgs": null,
+          "comment": "clear (normal) CC"
+        },
+        {
+          "year": 1879,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Repunched mint mark, CC over CC"
+        },
+        {
+          "year": 1879,
+          "mark": "O",
+          "mintage": 2887000,
+          "pcgs": null,
+          "comment": ""
+        },
+        {
+          "year": 1879,
+          "mark": "S",
+          "mintage": 9110000,
+          "pcgs": null,
+          "comment": "2nd reverse"
+        },
+        {
+          "year": 1879,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "3rd reverse"
+        },
+        {
+          "year": 1880,
+          "mark": "",
+          "mintage": 12600000,
+          "pcgs": null,
+          "comment": ""
+        },
+        {
+          "year": 1880,
+          "mark": "",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Overdate 80/79"
+        },
+        {
+          "year": 1880,
+          "mark": "",
+          "mintage": 1355,
+          "pcgs": "7315",
+          "comment": "Proof"
+        },
+        {
+          "year": 1880,
+          "mark": "CC",
+          "mintage": 495000,
+          "pcgs": null,
+          "comment": "2nd reverse, overdate 8/7"
+        },
+        {
+          "year": 1880,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "2nd reverse, overdate 80/70"
+        },
+        {
+          "year": 1880,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "3rd reverse, overate 8/low 7"
+        },
+        {
+          "year": 1880,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "3rd reverse, overdate 8/7dash, (normal strike)"
+        },
+        {
+          "year": 1880,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "3rd reverse, overdate 8/high 7"
+        },
+        {
+          "year": 1880,
+          "mark": "O",
+          "mintage": 5305000,
+          "pcgs": null,
+          "comment": ""
+        },
+        {
+          "year": 1880,
+          "mark": "O",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Overdate 80/70"
+        },
+        {
+          "year": 1880,
+          "mark": "S",
+          "mintage": 8900000,
+          "pcgs": null,
+          "comment": ""
+        },
+        {
+          "year": 1880,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Overdate 0/9"
+        },
+        {
+          "year": 1880,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "7116",
+          "comment": "Overdate 80/79"
+        },
+        {
+          "year": 1881,
+          "mark": "",
+          "mintage": 9163000,
+          "pcgs": "7124",
+          "comment": ""
+        },
+        {
+          "year": 1881,
+          "mark": "",
+          "mintage": 984,
+          "pcgs": "7316",
+          "comment": "Proof"
+        },
+        {
+          "year": 1881,
+          "mark": "CC",
+          "mintage": 296000,
+          "pcgs": "7126",
+          "comment": ""
+        },
+        {
+          "year": 1881,
+          "mark": "O",
+          "mintage": 5708000,
+          "pcgs": "7128",
+          "comment": ""
+        },
+        {
+          "year": 1881,
+          "mark": "S",
+          "mintage": 12760000,
+          "pcgs": "7130",
+          "comment": ""
+        },
+        {
+          "year": 1882,
+          "mark": "",
+          "mintage": 11100000,
+          "pcgs": "7132",
+          "comment": ""
+        },
+        {
+          "year": 1882,
+          "mark": "",
+          "mintage": 1100,
+          "pcgs": "7317",
+          "comment": "Proof"
+        },
+        {
+          "year": 1882,
+          "mark": "CC",
+          "mintage": 1133000,
+          "pcgs": "7134",
+          "comment": ""
+        },
+        {
+          "year": 1882,
+          "mark": "O",
+          "mintage": 6090000,
+          "pcgs": "7136",
+          "comment": ""
+        },
+        {
+          "year": 1882,
+          "mark": "O",
+          "mintage": null,
+          "pcgs": "7138",
+          "comment": "Repunched mint mark, O over S"
+        },
+        {
+          "year": 1882,
+          "mark": "S",
+          "mintage": 9250000,
+          "pcgs": "7140",
+          "comment": ""
+        },
+        {
+          "year": 1883,
+          "mark": "",
+          "mintage": 12290000,
+          "pcgs": "7142",
+          "comment": ""
+        },
+        {
+          "year": 1883,
+          "mark": "",
+          "mintage": 1039,
+          "pcgs": "7318",
+          "comment": "Proof"
+        },
+        {
+          "year": 1883,
+          "mark": "CC",
+          "mintage": 1204000,
+          "pcgs": "7144",
+          "comment": ""
+        },
+        {
+          "year": 1883,
+          "mark": "O",
+          "mintage": 8725000,
+          "pcgs": "7146",
+          "comment": ""
+        },
+        {
+          "year": 1883,
+          "mark": "S",
+          "mintage": 6250000,
+          "pcgs": "7148",
+          "comment": ""
+        },
+        {
+          "year": 1884,
+          "mark": "",
+          "mintage": 14070000,
+          "pcgs": "7150",
+          "comment": ""
+        },
+        {
+          "year": 1884,
+          "mark": "",
+          "mintage": 875,
+          "pcgs": "7319",
+          "comment": "Proof"
+        },
+        {
+          "year": 1884,
+          "mark": "CC",
+          "mintage": 1136000,
+          "pcgs": "7152",
+          "comment": ""
+        },
+        {
+          "year": 1884,
+          "mark": "O",
+          "mintage": 9730000,
+          "pcgs": "7154",
+          "comment": ""
+        },
+        {
+          "year": 1884,
+          "mark": "S",
+          "mintage": 3200000,
+          "pcgs": "7156",
+          "comment": ""
+        },
+        {
+          "year": 1885,
+          "mark": "",
+          "mintage": 17787000,
+          "pcgs": "7158",
+          "comment": ""
+        },
+        {
+          "year": 1885,
+          "mark": "",
+          "mintage": 930,
+          "pcgs": "7320",
+          "comment": "Proof"
+        },
+        {
+          "year": 1885,
+          "mark": "CC",
+          "mintage": 228000,
+          "pcgs": "7160",
+          "comment": ""
+        },
+        {
+          "year": 1885,
+          "mark": "O",
+          "mintage": 9185000,
+          "pcgs": "7160",
+          "comment": ""
+        },
+        {
+          "year": 1885,
+          "mark": "S",
+          "mintage": 1497000,
+          "pcgs": "7164",
+          "comment": ""
+        },
+        {
+          "year": 1886,
+          "mark": "",
+          "mintage": 19963000,
+          "pcgs": "7166",
+          "comment": ""
+        },
+        {
+          "year": 1886,
+          "mark": "",
+          "mintage": 886,
+          "pcgs": "7321",
+          "comment": "Proof"
+        },
+        {
+          "year": 1886,
+          "mark": "O",
+          "mintage": 10710000,
+          "pcgs": "7168",
+          "comment": ""
+        },
+        {
+          "year": 1886,
+          "mark": "S",
+          "mintage": 750000,
+          "pcgs": "7170",
+          "comment": ""
+        },
+        {
+          "year": 1887,
+          "mark": "",
+          "mintage": 20290710,
+          "pcgs": "7172",
+          "comment": ""
+        },
+        {
+          "year": 1887,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "7174",
+          "comment": "overdate 7/6"
+        },
+        {
+          "year": 1887,
+          "mark": "",
+          "mintage": 710,
+          "pcgs": "7322",
+          "comment": "Proof"
+        },
+        {
+          "year": 1887,
+          "mark": "O",
+          "mintage": 11550000,
+          "pcgs": "7176",
+          "comment": ""
+        },
+        {
+          "year": 1887,
+          "mark": "O",
+          "mintage": null,
+          "pcgs": "7178",
+          "comment": "Overdate 7/6"
+        },
+        {
+          "year": 1887,
+          "mark": "S",
+          "mintage": 1771000,
+          "pcgs": "7180",
+          "comment": ""
+        },
+        {
+          "year": 1888,
+          "mark": "",
+          "mintage": 19183000,
+          "pcgs": "7182",
+          "comment": ""
+        },
+        {
+          "year": 1888,
+          "mark": "",
+          "mintage": 833,
+          "pcgs": "7323",
+          "comment": "Proof"
+        },
+        {
+          "year": 1888,
+          "mark": "O",
+          "mintage": 12150000,
+          "pcgs": "7184",
+          "comment": ""
+        },
+        {
+          "year": 1888,
+          "mark": "O",
+          "mintage": null,
+          "pcgs": "7308",
+          "comment": "Doubled die obverse"
+        },
+        {
+          "year": 1888,
+          "mark": "S",
+          "mintage": 657000,
+          "pcgs": "7186",
+          "comment": ""
+        },
+        {
+          "year": 1889,
+          "mark": "",
+          "mintage": 21726000,
+          "pcgs": "7188",
+          "comment": ""
+        },
+        {
+          "year": 1889,
+          "mark": "",
+          "mintage": 811,
+          "pcgs": "7324",
+          "comment": "Proof"
+        },
+        {
+          "year": 1889,
+          "mark": "CC",
+          "mintage": 350000,
+          "pcgs": "7190",
+          "comment": ""
+        },
+        {
+          "year": 1889,
+          "mark": "O",
+          "mintage": 11875000,
+          "pcgs": "7192",
+          "comment": ""
+        },
+        {
+          "year": 1889,
+          "mark": "S",
+          "mintage": 700000,
+          "pcgs": "7194",
+          "comment": ""
+        },
+        {
+          "year": 1890,
+          "mark": "",
+          "mintage": 16802000,
+          "pcgs": "7196",
+          "comment": ""
+        },
+        {
+          "year": 1890,
+          "mark": "",
+          "mintage": 590,
+          "pcgs": "7325",
+          "comment": "Proof"
+        },
+        {
+          "year": 1890,
+          "mark": "CC",
+          "mintage": 2309041,
+          "pcgs": "7198",
+          "comment": ""
+        },
+        {
+          "year": 1890,
+          "mark": "CC",
+          "mintage": null,
+          "pcgs": "87198",
+          "comment": "tail bar"
+        },
+        {
+          "year": 1890,
+          "mark": "O",
+          "mintage": 10701000,
+          "pcgs": "7200",
+          "comment": ""
+        },
+        {
+          "year": 1890,
+          "mark": "S",
+          "mintage": 8230373,
+          "pcgs": "7202",
+          "comment": ""
+        },
+        {
+          "year": 1891,
+          "mark": "",
+          "mintage": 8693556,
+          "pcgs": "7204",
+          "comment": ""
+        },
+        {
+          "year": 1891,
+          "mark": "",
+          "mintage": 650,
+          "pcgs": "7326",
+          "comment": "Proof"
+        },
+        {
+          "year": 1891,
+          "mark": "CC",
+          "mintage": 1618000,
+          "pcgs": "7206",
+          "comment": ""
+        },
+        {
+          "year": 1891,
+          "mark": "O",
+          "mintage": 7954529,
+          "pcgs": "7208",
+          "comment": ""
+        },
+        {
+          "year": 1891,
+          "mark": "S",
+          "mintage": 5296000,
+          "pcgs": "7210",
+          "comment": ""
+        },
+        {
+          "year": 1892,
+          "mark": "",
+          "mintage": 1036000,
+          "pcgs": "7212",
+          "comment": ""
+        },
+        {
+          "year": 1892,
+          "mark": "",
+          "mintage": 1245,
+          "pcgs": "7327",
+          "comment": "Proof"
+        },
+        {
+          "year": 1892,
+          "mark": "CC",
+          "mintage": 1352000,
+          "pcgs": "7214",
+          "comment": ""
+        },
+        {
+          "year": 1892,
+          "mark": "O",
+          "mintage": 2744000,
+          "pcgs": "7216",
+          "comment": ""
+        },
+        {
+          "year": 1892,
+          "mark": "S",
+          "mintage": 1200000,
+          "pcgs": "7218",
+          "comment": ""
+        },
+        {
+          "year": 1893,
+          "mark": "",
+          "mintage": 378000,
+          "pcgs": "7220",
+          "comment": ""
+        },
+        {
+          "year": 1893,
+          "mark": "",
+          "mintage": 792,
+          "pcgs": "7328",
+          "comment": "Proof"
+        },
+        {
+          "year": 1893,
+          "mark": "CC",
+          "mintage": 677000,
+          "pcgs": "7222",
+          "comment": ""
+        },
+        {
+          "year": 1893,
+          "mark": "O",
+          "mintage": 300000,
+          "pcgs": "7224",
+          "comment": ""
+        },
+        {
+          "year": 1893,
+          "mark": "S",
+          "mintage": 100000,
+          "pcgs": "7226",
+          "comment": ""
+        },
+        {
+          "year": 1894,
+          "mark": "",
+          "mintage": 110000,
+          "pcgs": "7228",
+          "comment": ""
+        },
+        {
+          "year": 1894,
+          "mark": "",
+          "mintage": 972,
+          "pcgs": "7329",
+          "comment": "Proof"
+        },
+        {
+          "year": 1894,
+          "mark": "O",
+          "mintage": 1723000,
+          "pcgs": "7230",
+          "comment": ""
+        },
+        {
+          "year": 1894,
+          "mark": "S",
+          "mintage": 1260000,
+          "pcgs": "7232",
+          "comment": ""
+        },
+        {
+          "year": 1895,
+          "mark": "",
+          "mintage": 880,
+          "pcgs": "7330",
+          "comment": "Proof only"
+        },
+        {
+          "year": 1895,
+          "mark": "O",
+          "mintage": 450000,
+          "pcgs": "7236",
+          "comment": ""
+        },
+        {
+          "year": 1895,
+          "mark": "S",
+          "mintage": 400000,
+          "pcgs": "7238",
+          "comment": ""
+        },
+        {
+          "year": 1896,
+          "mark": "",
+          "mintage": 9967000,
+          "pcgs": "7240",
+          "comment": ""
+        },
+        {
+          "year": 1896,
+          "mark": "",
+          "mintage": 762,
+          "pcgs": "7331",
+          "comment": "Proof"
+        },
+        {
+          "year": 1896,
+          "mark": "O",
+          "mintage": 4900000,
+          "pcgs": "7242",
+          "comment": ""
+        },
+        {
+          "year": 1896,
+          "mark": "S",
+          "mintage": 5000000,
+          "pcgs": "7244",
+          "comment": ""
+        },
+        {
+          "year": 1897,
+          "mark": "",
+          "mintage": 2822000,
+          "pcgs": "7246",
+          "comment": ""
+        },
+        {
+          "year": 1897,
+          "mark": "",
+          "mintage": 731,
+          "pcgs": "7332",
+          "comment": "Proof"
+        },
+        {
+          "year": 1897,
+          "mark": "O",
+          "mintage": 4004000,
+          "pcgs": "7248",
+          "comment": ""
+        },
+        {
+          "year": 1897,
+          "mark": "S",
+          "mintage": 5825000,
+          "pcgs": "7250",
+          "comment": ""
+        },
+        {
+          "year": 1898,
+          "mark": "",
+          "mintage": 5884000,
+          "pcgs": "7252",
+          "comment": ""
+        },
+        {
+          "year": 1898,
+          "mark": "",
+          "mintage": 735,
+          "pcgs": "7333",
+          "comment": "Proof"
+        },
+        {
+          "year": 1898,
+          "mark": "O",
+          "mintage": 4440000,
+          "pcgs": "7254",
+          "comment": ""
+        },
+        {
+          "year": 1898,
+          "mark": "S",
+          "mintage": 4102000,
+          "pcgs": "7256",
+          "comment": ""
+        },
+        {
+          "year": 1899,
+          "mark": "",
+          "mintage": 330000,
+          "pcgs": "7258",
+          "comment": ""
+        },
+        {
+          "year": 1899,
+          "mark": "",
+          "mintage": 846,
+          "pcgs": "7334",
+          "comment": "Proof"
+        },
+        {
+          "year": 1899,
+          "mark": "O",
+          "mintage": 12290000,
+          "pcgs": "7260",
+          "comment": ""
+        },
+        {
+          "year": 1899,
+          "mark": "S",
+          "mintage": 2562000,
+          "pcgs": "7262",
+          "comment": ""
+        },
+        {
+          "year": 1900,
+          "mark": "",
+          "mintage": 8880000,
+          "pcgs": "7264",
+          "comment": ""
+        },
+        {
+          "year": 1900,
+          "mark": "",
+          "mintage": 912,
+          "pcgs": "7335",
+          "comment": "Proof"
+        },
+        {
+          "year": 1900,
+          "mark": "O",
+          "mintage": 12590000,
+          "pcgs": "7266",
+          "comment": ""
+        },
+        {
+          "year": 1900,
+          "mark": "O",
+          "mintage": null,
+          "pcgs": "7268",
+          "comment": "repunched mint mark, O over CC"
+        },
+        {
+          "year": 1900,
+          "mark": "S",
+          "mintage": 3540000,
+          "pcgs": "7270",
+          "comment": ""
+        },
+        {
+          "year": 1901,
+          "mark": "",
+          "mintage": 6962000,
+          "pcgs": "7272",
+          "comment": ""
+        },
+        {
+          "year": 1901,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "7302",
+          "comment": "doubled die reverse"
+        },
+        {
+          "year": 1901,
+          "mark": "",
+          "mintage": 813,
+          "pcgs": "7336",
+          "comment": "Proof"
+        },
+        {
+          "year": 1901,
+          "mark": "O",
+          "mintage": 13320000,
+          "pcgs": "7274",
+          "comment": ""
+        },
+        {
+          "year": 1901,
+          "mark": "S",
+          "mintage": 2284000,
+          "pcgs": "7276",
+          "comment": ""
+        },
+        {
+          "year": 1902,
+          "mark": "",
+          "mintage": 7994000,
+          "pcgs": null,
+          "comment": ""
+        },
+        {
+          "year": 1902,
+          "mark": "",
+          "mintage": 777,
+          "pcgs": "7337",
+          "comment": "Proof"
+        },
+        {
+          "year": 1902,
+          "mark": "O",
+          "mintage": 8636000,
+          "pcgs": "7280",
+          "comment": ""
+        },
+        {
+          "year": 1902,
+          "mark": "S",
+          "mintage": 1530000,
+          "pcgs": "7282",
+          "comment": ""
+        },
+        {
+          "year": 1903,
+          "mark": "",
+          "mintage": 4652000,
+          "pcgs": "7284",
+          "comment": ""
+        },
+        {
+          "year": 1903,
+          "mark": "",
+          "mintage": 755,
+          "pcgs": "7338",
+          "comment": "Proof"
+        },
+        {
+          "year": 1903,
+          "mark": "O",
+          "mintage": 4450000,
+          "pcgs": "7286",
+          "comment": ""
+        },
+        {
+          "year": 1903,
+          "mark": "S",
+          "mintage": 1241000,
+          "pcgs": "7288",
+          "comment": ""
+        },
+        {
+          "year": 1903,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "7306",
+          "comment": "micro \"S\""
+        },
+        {
+          "year": 1904,
+          "mark": "",
+          "mintage": 2788000,
+          "pcgs": "7290",
+          "comment": ""
+        },
+        {
+          "year": 1904,
+          "mark": "",
+          "mintage": 650,
+          "pcgs": "7339",
+          "comment": "Proof"
+        },
+        {
+          "year": 1904,
+          "mark": "O",
+          "mintage": 3720000,
+          "pcgs": "7292",
+          "comment": ""
+        },
+        {
+          "year": 1904,
+          "mark": "S",
+          "mintage": 2304000,
+          "pcgs": "7294",
+          "comment": ""
+        },
+        {
+          "year": 1921,
+          "mark": "",
+          "mintage": 44690000,
+          "pcgs": "7296",
+          "comment": ""
+        },
+        {
+          "year": 1921,
+          "mark": "D",
+          "mintage": 20345000,
+          "pcgs": "7298",
+          "comment": ""
+        },
+        {
+          "year": 1921,
+          "mark": "S",
+          "mintage": 21695000,
+          "pcgs": "7300",
+          "comment": ""
+        }
+      ]
+    }
+  ]
+}

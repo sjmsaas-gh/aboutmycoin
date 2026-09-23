@@ -1,5 +1,5 @@
 /**
- * The melt-value section: a mirror of /coin-value, one question to the left.
+ * The melt-value section: a mirror of /coin-info, one question to the left.
  *
  * Every number on every page under /melt-value is derived here rather than in
  * a template, for the usual reason: the H1, the opening answer, the FAQPage
@@ -17,9 +17,9 @@
  *   /melt-value/<group>/<type>/<coin>            the coin's melt page
  *   /melt-value/tagged/<tag>                     the cross-cutting view
  *
- * Segment for segment, that is `/coin-value` with a different root, and
+ * Segment for segment, that is `/coin-info` with a different root, and
  * `validateMeltPaths()` throws if the two trees ever stop matching. One tree
- * shape, two questions: `/coin-value/silver/quarter/1964-washington-quarter`
+ * shape, two questions: `/coin-info/silver/quarter/1964-washington-quarter`
  * answers "what is this coin worth", the same path under `/melt-value`
  * answers "what is the metal in it worth". A reader who has learned to browse
  * either one has learned to browse both, and a reader who is on the wrong one
@@ -75,11 +75,13 @@
  * the build checks all read it, and nothing else has to change.
  */
 import {
+  COIN_INFO_ROOT,
   COINS,
   GROUPS,
   TYPES,
   TAGS,
   coinPath,
+  coinTitleName,
   coinsInGroup,
   coinsInGroupType,
   coinsWithTag,
@@ -101,7 +103,7 @@ import {
  * side. The limits are on the string that SHIPS -- ` | AboutMyCoin` included --
  * which is the thirteen characters that let five melt pages reach 74.
  */
-import { DESCRIPTION_MAX, TITLE_MAX, fit, titleCase } from './meta';
+import { DESCRIPTION_MAX, TITLE_MAX, article, fit, titleCase } from './meta';
 import {
   SPOT,
   METAL_LABEL,
@@ -139,7 +141,7 @@ export const MELT_PAGE_FOR_EVERY_COIN = true;
 
 
 /* ===========================================================================
-   Paths: /coin-value's tree with a different root
+   Paths: /coin-info's tree with a different root
    =========================================================================== */
 
 export const meltGroupPath = (group: string) => `${MELT_ROOT}/${group}`;
@@ -158,7 +160,7 @@ export const MELT_RESERVED_SEGMENTS = RESERVED_SEGMENTS;
 
 /** The melt page of a coin, given its catalogue path. The one-segment swap. */
 export const meltPathOfCoinPath = (path: string) =>
-  `${MELT_ROOT}${path.slice('/coin-value'.length)}`;
+  `${MELT_ROOT}${path.slice(COIN_INFO_ROOT.length)}`;
 
 /* ===========================================================================
    The sets each page lists
@@ -493,7 +495,23 @@ export const meltGroupAnswer = (group: Group, mark: Mark = plainUsd): string => 
 export const meltGroupDescription = (group: Group): string => {
   const metals = meltGroupMetals(group.slug);
   if (metals.length === 0) {
-    return `${group.name} coins contain no silver, gold or platinum: what each one is actually made of, what it is worth instead, and what to check before assuming it is worth face value.`;
+    /*
+     * Fitted, like every other branch. It was a bare `return` of one sentence
+     * for as long as there was one no-metal group with a short name, and
+     * "Copper and Bronze" ended that: the same sentence came to 179 characters
+     * there, 167 on steel and 166 on clad, over a ceiling of 165. A branch
+     * that returns a string instead of a ladder is a branch that is correct
+     * until the longest subject arrives, which is the thing `fit()` exists
+     * for.
+     */
+    return fit(
+      [
+        `${group.name} coins contain no silver, gold or platinum: what each one is actually made of, what it is worth instead, and what to check before assuming it is worth face value.`,
+        `${group.name} coins contain no silver, gold or platinum: what each one is actually made of, and what it is worth instead.`,
+        `${group.name} coins contain no silver, gold or platinum: what each one is made of, and what it is worth instead.`,
+      ],
+      DESCRIPTION_MAX,
+    );
   }
   const m = metals.join(' and ');
   return fit(
@@ -541,14 +559,46 @@ export const meltPairAnswer = (group: Group, type: CoinType, mark: Mark = plainU
   return `${group.name} ${plural} are worth ${figure}. Each one holds ${content}, worked at ${mark(high.perOunce, { kind: 'price', metal: high.metal })} a troy ounce.`;
 };
 
-export const meltPairDescription = (group: Group, type: CoinType): string =>
-  fit(
+/**
+ * The description, and it promises what THIS page has rather than what the
+ * section has.
+ *
+ * It used to end "and the figure for each issue", on every denomination
+ * archive, and this is the one listing in the melt tree that deliberately
+ * carries no figure per issue: the tiles here are rendered `showFigure={false}`
+ * because the page is a route to the issue rather than a column of figures.
+ * See the note in MeltTile.astro, which is right -- the description was the
+ * half that had not been told.
+ *
+ * And it had no no-metal branch, where `meltPairAnswer()` above it does. So
+ * /melt-value/clad/quarter promised "metal content in troy ounces, what it is
+ * worth at a stated and dated spot price" over a page whose first word is
+ * "Nothing." Three archives said it: clad quarters, copper cents, steel cents.
+ * A description that advertises a figure the page opens by denying is the
+ * mismatch that costs a click and earns a bounce.
+ */
+export const meltPairDescription = (group: Group, type: CoinType): string => {
+  const priced = meltCoinsInGroupType(group.slug, type.slug).filter((c) => meltOf(c));
+  const subject = `${lower(group.name)} ${lower(type.namePlural)}`;
+  if (priced.length === 0) {
+    return fit(
+      [
+        `${titleCase(group.name)} ${lower(type.namePlural)} contain no silver, gold or platinum, so there is no metal value in them: what they are made of, and every issue there is.`,
+        `${titleCase(group.name)} ${lower(type.namePlural)} contain no silver, gold or platinum: what they are made of, and every issue there is.`,
+        `${titleCase(group.name)} ${lower(type.namePlural)} hold no precious metal: what they are made of, and every issue there is.`,
+      ],
+      DESCRIPTION_MAX,
+    );
+  }
+  return fit(
     [
-      `The melt value of ${lower(group.name)} ${lower(type.namePlural)}: metal content in troy ounces, what it is worth at a stated and dated spot price, and the figure for each issue.`,
-      `The melt value of ${lower(group.name)} ${lower(type.namePlural)}: metal content in troy ounces and the figure for each issue, at a stated, dated price.`,
+      `The melt value of ${subject}: how much metal is in one, in troy ounces, what that is worth at a stated and dated spot price, and every issue that carries it.`,
+      `The melt value of ${subject}: the metal in one, in troy ounces, what it is worth at a stated and dated price, and every issue that carries it.`,
+      `The melt value of ${subject}: the metal in one, in troy ounces, at a stated and dated spot price.`,
     ],
     DESCRIPTION_MAX,
   );
+};
 
 /* ------------------------------- Tag archives ----------------------------- */
 
@@ -588,29 +638,73 @@ export const meltTagAnswer = (tag: Tag, mark: Mark = plainUsd): string => {
   return `${cap(tagCoins(tag))} ${tagIsPlural(tag) ? 'hold' : 'holds'} ${spread}, worked at ${mark(high.perOunce, { kind: 'price', metal: high.metal })} a troy ounce${priced.length === coins.length ? '' : `; the rest contain no precious metal at all`}.`;
 };
 
-export const meltTagDescription = (tag: Tag): string =>
-  fit(
+/**
+ * The description, with the same no-metal branch `meltTagAnswer()` above it
+ * has -- and for the third time in this file, which is why it is worth saying
+ * once: every generator in this section comes in a pair, an answer and a
+ * description, and it is the description that keeps being written as though
+ * every subject holds metal.
+ *
+ * /melt-value/tagged/clad-coinage and /melt-value/tagged/wheat-penny promised
+ * "precious-metal content in troy ounces and what it is worth at a stated,
+ * dated spot price" over a page whose answer opens "Nothing." A description
+ * that advertises a figure the page opens by denying costs a click and earns
+ * a bounce, and it is the half of the page a reader sees first.
+ */
+export const meltTagDescription = (tag: Tag): string => {
+  const priced = meltCoinsWithTag(tag.slug).filter((c) => meltOf(c));
+  if (priced.length === 0) {
+    return fit(
+      [
+        `No ${tagCoins(tag)} contain silver, gold or platinum, so there is no metal value in any of them: what they are made of, and every issue there is.`,
+        `No ${tagCoins(tag)} contain silver, gold or platinum: what they are made of, and every issue there is.`,
+        `No ${tagCoins(tag)} hold precious metal: what they are made of, and every issue there is.`,
+      ],
+      DESCRIPTION_MAX,
+    );
+  }
+  return fit(
     [
       `The melt value of ${tagCoins(tag)}: precious-metal content in troy ounces and what it is worth at a stated, dated spot price.`,
       `The melt value of ${tagCoins(tag)}: metal content in troy ounces, at a stated and dated spot price.`,
     ],
     DESCRIPTION_MAX,
   );
+};
 
 /* -------------------------------- Coin pages ------------------------------ */
 
 /** "Melt value of 1964 Washington Quarter" -- the H1. */
 export const meltH1 = (coin: Coin) => `Melt value of ${coin.name}`;
 
-/** The <title>. Keyword-led, and the keyword is the phrase people type. */
+/**
+ * The <title>. Keyword-led, and the keyword is the phrase people type.
+ *
+ * THE BOTTOM TWO RUNGS ARE THE POINT. The ladder used to end at
+ * `${coin.name} Melt Value`, and a ladder whose barest rung is the full name
+ * cannot fit a name that is itself too long -- so twenty-seven pages shipped
+ * over the limit while `fit()` picked the shortest form it had and every
+ * source check passed. Every one was a proof of a two-word series ("1964 Proof
+ * Washington Quarter (No Mint Mark) Melt Value") or one of the four 1878 hubs,
+ * which is to say: the names that carry the most axes, which are exactly the
+ * pages a longer ladder was needed for.
+ *
+ * `coinTitleName()` drops the mint-mark parenthetical and fronts the hub, the
+ * same two edits the catalogue's own title makes. It is a rung rather than the
+ * subject throughout, because the full name is better where it fits and the
+ * H1 keeps it either way.
+ */
 export const meltSeoTitle = (coin: Coin) => {
   const melt = meltOf(coin);
+  const short = coinTitleName(coin);
   return melt
     ? fit(
         [
           `${coin.name} Melt Value: ${melt.metalLabel} Content and Price`,
           `${coin.name} Melt Value: ${melt.metalLabel} Content`,
           `${coin.name} Melt Value`,
+          `${short} Melt Value: ${melt.metalLabel} Content`,
+          `${short} Melt Value`,
         ],
         TITLE_MAX,
       )
@@ -619,6 +713,8 @@ export const meltSeoTitle = (coin: Coin) => {
           `${coin.name} Melt Value: No Silver or Gold Content`,
           `${coin.name} Melt Value: No Silver or Gold`,
           `${coin.name} Melt Value`,
+          `${short} Melt Value: No Silver or Gold`,
+          `${short} Melt Value`,
         ],
         TITLE_MAX,
       );
@@ -632,7 +728,7 @@ export const meltSeoTitle = (coin: Coin) => {
  * neither page competing with the other for the same rich result.
  */
 export const meltQuestion = (coin: Coin) =>
-  `What is the melt value of a ${shortNameOf(coin)}?`;
+  `What is the melt value of ${article(shortNameOf(coin))} ${shortNameOf(coin)}?`;
 
 /**
  * The opening answer, and the FAQPage `acceptedAnswer` with it.
@@ -646,9 +742,9 @@ export const meltQuestion = (coin: Coin) =>
 export const meltAnswer = (coin: Coin, mark: Mark = plainUsd): string => {
   const melt = meltOf(coin);
   if (!melt) {
-    return `A ${shortNameOf(coin)} contains no silver or gold, so it has no melt value. It is ${lower(coin.composition)} and worth its face value of ${coin.faceValue}.`;
+    return `${article(shortNameOf(coin), true)} ${shortNameOf(coin)} contains no silver or gold, so it has no melt value. It is ${lower(coin.composition)} and worth its face value of ${coin.faceValue}.`;
   }
-  return `A ${shortNameOf(coin)} contains ${melt.troyOunces} troy ounces of ${melt.metal}, so its melt value is ${mark(melt.value, { kind: 'value', metal: melt.metal, ozt: melt.troyOunces })} at a ${melt.metal} price of ${mark(melt.perOunce, { kind: 'price', metal: melt.metal })} per troy ounce.`;
+  return `${article(shortNameOf(coin), true)} ${shortNameOf(coin)} contains ${melt.troyOunces} troy ounces of ${melt.metal}, so its melt value is ${mark(melt.value, { kind: 'value', metal: melt.metal, ozt: melt.troyOunces })} at a ${melt.metal} price of ${mark(melt.perOunce, { kind: 'price', metal: melt.metal })} per troy ounce.`;
 };
 
 export const meltDescription = (coin: Coin): string => {
@@ -656,15 +752,15 @@ export const meltDescription = (coin: Coin): string => {
   return melt
     ? fit(
         [
-          `The melt value of a ${shortNameOf(coin)}: ${melt.troyOunces} troy ounces of ${melt.metal}, what that is worth now, what a roll or a hundred of them come to.`,
-          `The melt value of a ${shortNameOf(coin)}: ${melt.troyOunces} troy ounces of ${melt.metal}, and what that is worth now.`,
+          `The melt value of ${article(shortNameOf(coin))} ${shortNameOf(coin)}: ${melt.troyOunces} troy ounces of ${melt.metal}, what that is worth now, what a roll or a hundred of them come to.`,
+          `The melt value of ${article(shortNameOf(coin))} ${shortNameOf(coin)}: ${melt.troyOunces} troy ounces of ${melt.metal}, and what that is worth now.`,
         ],
         DESCRIPTION_MAX,
       )
     : fit(
         [
-          `Whether a ${shortNameOf(coin)} contains any silver or gold, what it is actually made of, and why it is worth its face value of ${coin.faceValue}.`,
-          `Whether a ${shortNameOf(coin)} contains any silver or gold, and what it is worth instead.`,
+          `Whether ${article(shortNameOf(coin))} ${shortNameOf(coin)} contains any silver or gold, what it is actually made of, and why it is worth its face value of ${coin.faceValue}.`,
+          `Whether ${article(shortNameOf(coin))} ${shortNameOf(coin)} contains any silver or gold, and what it is worth instead.`,
         ],
         DESCRIPTION_MAX,
       );
@@ -688,7 +784,7 @@ export const meltCoinLink = (coin: Coin) => coinPath(coin);
    FAQ ownership
    ===========================================================================
 
-   One question per page, and not one of them is a question /coin-value
+   One question per page, and not one of them is a question /coin-info
    claims. The catalogue asks what a coin is worth; this section asks what the
    metal in it is worth. faq-registry.ts throws if those ever normalise onto
    each other.

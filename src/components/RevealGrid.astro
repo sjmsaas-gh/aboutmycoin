@@ -1,0 +1,27 @@
+---
+/**
+ * A tile grid long enough to need asking about.
+ *
+ * Renders every tile it is given -- see `src/lib/reveal.ts` for why the whole
+ * list is always in the HTML -- and marks the grid so `reveal-dom.ts` can fold
+ * the tail away in a browser. A grid shorter than `step` is left alone by the
+ * script, so this is safe to use on a list whose length depends on the coin.
+ *
+ * It is the plain `.tile-grid` with two attributes on it, deliberately: the
+ * card grids on the hubs are capped at nine by `CARDS_PER_SECTION` and need
+ * none of this, and a second grid class would be a second thing to style.
+ */
+import { REVEAL_STEP } from '../lib/reveal';
+
+export interface Props {
+  /** Shown before the first press, and added by each one. */
+  step?: number;
+  /** What the button calls them, plural. */
+  noun?: string;
+  style?: string;
+}
+const { step = REVEAL_STEP, noun = 'coins', style } = Astro.props;
+---
+<div class="tile-grid" data-reveal={String(step)} data-reveal-noun={noun} style={style}>
+  <slot />
+</div>

@@ -26,7 +26,7 @@ import './src/data/faq-registry.ts';
  * hand-kept pattern so the two cannot drift -- setting `written: true` takes
  * the page out of noindex and into the sitemap in one edit.
  */
-import { CHEAT_SHEETS, cheatSheetPath } from './src/data/cheat-sheets.ts';
+import { CHEAT_SHEETS, cheatSheetIndexable, cheatSheetPath } from './src/data/cheat-sheets.ts';
 import { writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,8 +40,12 @@ import { fileURLToPath } from 'node:url';
  */
 const SITE_URL = 'https://aboutmycoin.com';
 
-/** Paths of the cheat sheets that are still stubs, and therefore noindex. */
-const UNWRITTEN_CHEAT_SHEETS = CHEAT_SHEETS.filter((s) => !s.written).map(cheatSheetPath);
+/**
+ * Paths of the cheat sheets that are noindex: not written, or written and not
+ * yet checked against the sources they name. Same predicate the page's own
+ * `noindex` prop uses, so the sitemap and the page cannot disagree.
+ */
+const UNINDEXED_CHEAT_SHEETS = CHEAT_SHEETS.filter((s) => !cheatSheetIndexable(s)).map(cheatSheetPath);
 
 /**
  * Priority is a hint about relative importance within this site only -- it says
@@ -56,15 +60,15 @@ function priorityFor(url) {
   // The catalogue is the site. A coin page is the page a search lands on, and
   // its archive is how the crawler gets to the next one; both outrank the
   // boilerplate by a wide margin.
-  if (/^\/coin-value\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return 0.9;
-  if (p === '/coin-value') return 0.9;
-  if (p.startsWith('/coin-value/tagged/')) return 0.7;
-  if (p.startsWith('/coin-value/')) return 0.8;
+  if (/^\/coin-info\/[^/]+\/[^/]+\/[^/]+$/.test(p)) return 0.9;
+  if (p === '/coin-info') return 0.9;
+  if (p.startsWith('/coin-info/tagged/')) return 0.7;
+  if (p.startsWith('/coin-info/')) return 0.8;
   // The melt pages and the common questions are the two supporting clusters:
   // each one targets a phrase of its own, and each one feeds the catalogue
   // rather than competing with it.
   //
-  // /melt-value mirrors /coin-value segment for segment, so the tests below
+  // /melt-value mirrors /coin-info segment for segment, so the tests below
   // mirror the ones above -- one notch lower at every level, because a melt
   // page answers the narrower question and feeds the catalogue entry beside
   // it. Keep the two blocks in step: a level that exists in one tree and not
@@ -80,47 +84,85 @@ function priorityFor(url) {
   // The cheat sheets sit beside the common questions: a sheet targets a phrase
   // of its own ("wheat penny key dates") and feeds the catalogue rather than
   // competing with it. A stub is noindex and never reaches this function.
-  if (/^\/cheat-sheets\/[^/]+$/.test(p)) return 0.7;
-  if (p === '/melt-value' || p === '/common-questions' || p === '/cheat-sheets') return 0.6;
+  if (/^\/tools\/cheat-sheets\/[^/]+$/.test(p)) return 0.7;
+  // A calculator is a tool with a mechanism on it rather than an answer to a
+  // phrase, so it sits with the sheets rather than with the catalogue.
+  if (/^\/tools\/coin-calculators\/[^/]+$/.test(p)) return 0.7;
+  if (
+    p === '/melt-value' ||
+    p === '/common-questions' ||
+    p === '/tools' ||
+    p === '/tools/cheat-sheets' ||
+    p === '/tools/coin-calculators'
+  ) {
+    return 0.6;
+  }
   return 0.4;
 }
 
 /**
- * Emits `dist/_redirects` so `/foo/` 301s to `/foo` on Cloudflare Pages and
- * Netlify. Vercel ignores this file and uses `"trailingSlash": false` in
- * vercel.json, which does the same thing.
+ * Emits `dist/_redirects`, and deliberately emits NO trailing-slash rules.
  *
- * Note what this is NOT fixing: `/foo/` does not 404 in production. The static
- * build emits `dist/foo/index.html`, so every host already serves the trailing
- * slash form with a 200. The problem is that it serves it as a *second URL for
- * the same page*, which is a duplicate-content split. These rules collapse it.
+ * IT USED TO EMIT ONE RULE PER ROUTE -- 22,638 of them, 2.4 MB -- and that file
+ * could not work on either host it was written for. Three findings, checked
+ * against both vendors' own documentation on 2026-09-23, and each one alone is
+ * fatal to the idea:
  *
- * Every route is written out explicitly rather than using a `/*​/` splat or a
- * `/:seg/` placeholder. Both of those are shorter, and both raise the question
- * of whether they also match `/` -- which would redirect the home page to
- * itself forever. An explicit list generated from the real routes cannot
- * contain the root, so the question cannot arise.
+ *   1. CLOUDFLARE PAGES CAPS `_redirects` AT 2,000 STATIC RULES (2,100 including
+ *      dynamic ones). The file was ten times over. Rules past the cap are
+ *      dropped, so the behaviour would have been "the first two thousand routes
+ *      alphabetically", which is worse than none and invisible from here.
+ *
+ *   2. NETLIFY NORMALISES THE TRAILING SLASH BEFORE REDIRECT RULES RUN. It
+ *      matches `/foo` and `/foo/` to the same rule and serves one form. Every
+ *      one of those rules was a no-op there.
+ *
+ *   3. NEITHER HOST SUPPORTS A SPLAT ANYWHERE BUT THE END OF A PATH, which is
+ *      what a one-line version would need. A rule whose pattern is a splat
+ *      followed by a slash is not valid syntax on Netlify ("you can only use
+ *      asterisks at the end of the path segment"), and Cloudflare allows a
+ *      single splat with the same restriction. (That pattern cannot be written
+ *      out in this comment either: it closes the comment. The line that tried
+ *      held a zero-width space to stop it, which is its own small argument
+ *      against the idea.) A
+ *      trailing splat cannot express "ends with a slash" -- `/coin-info/*`
+ *      matches the slashless form too and would redirect it to itself forever,
+ *      which is the loop the old comment here was worried about and solved by
+ *      enumerating the routes.
+ *
+ * So there is no rule to write. What handles this in production:
+ *
+ *   - VERCEL, the deploy target, does it natively with `"trailingSlash": false`
+ *     in vercel.json. That is the real mechanism and it is one line.
+ *   - NETLIFY normalises before matching, per (2).
+ *   - CLOUDFLARE PAGES enforces its own convention and 308s towards the
+ *     trailing-slash form. It cannot be turned off, and a rule fighting it is a
+ *     redirect loop rather than a fix. If this site is ever moved there, the
+ *     canonical tags and the sitemap have to move with it -- that is a decision
+ *     about `trailingSlash` in this file, not a line in `_redirects`.
+ *
+ * The plugin stays, rather than being deleted with its rules, for two reasons:
+ * it is the guard that fails the build if `public/_redirects` ever appears and
+ * silently overwrites the generated file, and it is where a real redirect would
+ * go if this site ever needed one. It has room for about two thousand.
  */
 function trailingSlashRedirects() {
   return {
     name: 'trailing-slash-redirects',
     hooks: {
-      'astro:build:done': ({ pages, dir }) => {
-        const lines = pages
-          .map((p) => '/' + p.pathname.replace(/\/+$/, ''))
-          // The root has no trailing-slash variant to collapse, and 404 is
-          // never requested by URL.
-          .filter((p) => p !== '/' && p !== '/404')
-          .sort()
-          .map((p) => `${p}/  ${p}  301`);
-
+      'astro:build:done': ({ dir }) => {
         const out = [
           '# GENERATED by astro.config.mjs -- do not edit by hand.',
-          '# Collapses the trailing-slash form of every route onto the canonical,',
-          '# slashless one. Read by Cloudflare Pages and Netlify; Vercel uses the',
-          '# "trailingSlash": false setting in vercel.json instead.',
-          '',
-          ...lines,
+          '#',
+          '# Intentionally empty. Trailing slashes are handled by the host:',
+          '# Vercel by "trailingSlash": false in vercel.json, Netlify by',
+          '# normalising the path before redirect rules run. See the comment',
+          '# over trailingSlashRedirects() in astro.config.mjs for why a rule',
+          '# per route, and a single splat rule, are both wrong here.',
+          '#',
+          '# Cloudflare Pages caps this file at 2,000 static rules. Anything',
+          '# added below is subject to that limit and is silently truncated',
+          '# past it, so a generated rule set does not belong here.',
           '',
         ].join('\n');
 
@@ -134,7 +176,7 @@ function trailingSlashRedirects() {
           );
         }
         writeFileSync(target, out, 'utf8');
-        console.log(`[trailing-slash] wrote ${lines.length} redirects to dist/_redirects`);
+        console.log('[trailing-slash] wrote dist/_redirects (no rules; the host handles it)');
       },
     },
   };
@@ -171,9 +213,17 @@ export default defineConfig({
       // already excludes 404; naming it here covers a future error page too.
       //
       // RENAME: add any page you mark `noindex` in Seo props to this pattern.
+      //
+      // A grade page is left out for the same reason from the other side: its
+      // canonical points up to its coin (see the grade route), and a sitemap
+      // listing a URL whose page names a different canonical is two signals
+      // that disagree. The coin's ladder table is how a crawler reaches the
+      // rungs. `/coin-info/<group>/<type>/<coin>/<grade>` is the only
+      // five-segment path under /coin-info.
       filter: (page) =>
         !/\/(404|500|checkout-complete)\/?$/.test(page) &&
-        !UNWRITTEN_CHEAT_SHEETS.some((p) => page.replace(/\/$/, '').endsWith(p)),
+        !/\/coin-info\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/?$/.test(page) &&
+        !UNINDEXED_CHEAT_SHEETS.some((p) => page.replace(/\/$/, '').endsWith(p)),
       // No `lastmod`, anywhere. What this site states about a coin -- its
       // weight, its metal, which dates are scarce -- was settled long before
       // the page was written, so there is no honest date to give, and the

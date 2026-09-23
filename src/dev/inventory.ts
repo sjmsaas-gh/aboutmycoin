@@ -29,10 +29,14 @@
  */
 import {
   COINS,
+  gradedPairs,
+  gradedValues,
+  gradePath,
+  gradeQuestion,
   GROUPS,
   TYPES,
   TAGS,
-  COIN_VALUE_ROOT,
+  COIN_INFO_ROOT,
   coinPath,
   groupPath,
   typePath,
@@ -82,9 +86,13 @@ import {
   cheatSheetH1,
   cheatSheetPath,
 } from '../data/cheat-sheets';
+import { TOOLS_H1, TOOLS_ROOT } from '../lib/tools';
+import { SILVER_COINS } from '../data/silver-coins';
+import { GOLD_COINS } from '../data/gold-coins';
 import { coinMetal, METAL_LABEL } from '../lib/spot';
 import { groupH1, groupQuestion, tagH1, tagQuestion } from '../lib/catalog-copy';
-import { DISCOVERABLE, HOME_PLACEHOLDER } from '../lib/site';
+import { gradeH1 } from '../lib/grade-copy';
+import { DISCOVERABLE } from '../lib/site';
 
 /* ===========================================================================
    Routes
@@ -115,7 +123,8 @@ export interface RouteSection {
   routes: RouteEntry[];
 }
 
-const COIN_TEMPLATE = 'src/pages/coin-value/[group]/[type]/[coin].astro';
+const COIN_TEMPLATE = 'src/pages/coin-info/[group]/[type]/[coin].astro';
+const GRADE_TEMPLATE = 'src/pages/coin-info/[group]/[type]/[coin]/[grade].astro';
 const MELT_COIN_TEMPLATE = 'src/pages/melt-value/[group]/[type]/[coin].astro';
 
 /** Every URL the site builds today, grouped the way a person would look for one. */
@@ -137,11 +146,11 @@ export function routeSections(): RouteSection[] {
       blurb:
         'Two axes in the path — composition, then denomination — and everything else a tag. Every page here is generated from src/data/, and an archive with no coins in it has no URL.',
       routes: [
-        entry(COIN_VALUE_ROOT, 'The catalogue hub', 'src/pages/coin-value/index.astro', 'static', {
+        entry(COIN_INFO_ROOT, 'The catalogue hub', 'src/pages/coin-info/index.astro', 'static', {
           count: COINS.length,
         }),
         ...populatedGroups().map((g) =>
-          entry(groupPath(g.slug), groupH1(g), 'src/pages/coin-value/[group]/index.astro', 'generated', {
+          entry(groupPath(g.slug), groupH1(g), 'src/pages/coin-info/[group]/index.astro', 'generated', {
             question: groupQuestion(g),
             count: coinsInGroup(g.slug).length,
           }),
@@ -150,7 +159,7 @@ export function routeSections(): RouteSection[] {
           entry(
             typePath(group.slug, type.slug),
             `${group.name} ${type.namePlural}`,
-            'src/pages/coin-value/[group]/[type]/index.astro',
+            'src/pages/coin-info/[group]/[type]/index.astro',
             'generated',
             { count: coinsInGroupType(group.slug, type.slug).length },
           ),
@@ -158,15 +167,24 @@ export function routeSections(): RouteSection[] {
         ...COINS.map((c) =>
           entry(coinPath(c), c.name, COIN_TEMPLATE, 'generated', { question: coinQuestion(c) }),
         ),
+        // One per (coin, grade) with a researched range behind it, which is
+        // four URLs today and nothing at all for every other coin. The gate is
+        // `gradedGrades()` in coins.ts, not a flag: a grade earns a page by
+        // having a price somebody measured and a series with wear points.
+        ...gradedPairs().map(({ coin, grade }) =>
+          entry(gradePath(coin, grade), gradeH1(coin, grade), GRADE_TEMPLATE, 'generated', {
+            question: gradeQuestion(coin, grade),
+          }),
+        ),
         entry(
-          `${COIN_VALUE_ROOT}/tagged`,
+          `${COIN_INFO_ROOT}/tagged`,
           'The topic index',
-          'src/pages/coin-value/tagged/index.astro',
+          'src/pages/coin-info/tagged/index.astro',
           'static',
           { count: populatedTags().length },
         ),
         ...populatedTags().map((t) =>
-          entry(tagPath(t.slug), tagH1(t), 'src/pages/coin-value/tagged/[tag].astro', 'generated', {
+          entry(tagPath(t.slug), tagH1(t), 'src/pages/coin-info/tagged/[tag].astro', 'generated', {
             question: tagQuestion(t),
             count: coinsWithTag(t.slug).length,
           }),
@@ -176,7 +194,7 @@ export function routeSections(): RouteSection[] {
     {
       title: 'Melt values',
       blurb:
-        'The catalogue tree, segment for segment, answering the metal question instead of the coin question. Every archive here has a twin under /coin-value at the same path, and validateMeltPaths() fails the build if the two stop matching.',
+        'The catalogue tree, segment for segment, answering the metal question instead of the coin question. Every archive here has a twin under /coin-info at the same path, and validateMeltPaths() fails the build if the two stop matching.',
       routes: [
         entry(MELT_ROOT, 'The melt hub', 'src/pages/melt-value/index.astro', 'static', {
           count: meltCoins().length,
@@ -238,17 +256,37 @@ export function routeSections(): RouteSection[] {
       ],
     },
     {
-      title: 'Cheat sheets',
+      title: 'Tools',
       blurb:
-        'One per series: which years and mint marks are the scarce ones. Every sheet is a stub today, which means noindex on the page and out of the sitemap \u2014 set `written: true` in src/data/cheat-sheets.ts and both reverse.',
+        'The calculator adds up a handful of coins, which no melt page can: those answer one issue at a time. One cheat sheet per series: which years and mint marks are the scarce ones. Every sheet is a stub today, which means noindex on the page and out of the sitemap \u2014 set `written: true` in src/data/cheat-sheets.ts and both reverse.',
       routes: [
-        entry(CHEAT_SHEETS_ROOT, 'The cheat-sheet index', 'src/pages/cheat-sheets/index.astro', 'static', {
+        entry(TOOLS_ROOT, TOOLS_H1, 'src/pages/tools/index.astro', 'static', {
+          count: 2,
+        }),
+        entry(CHEAT_SHEETS_ROOT, 'The cheat-sheet index', 'src/pages/tools/cheat-sheets/index.astro', 'static', {
           count: CHEAT_SHEETS.length,
         }),
         ...CHEAT_SHEETS.map((s) =>
-          entry(cheatSheetPath(s), cheatSheetH1(s), 'src/pages/cheat-sheets/[slug].astro', 'generated', {
+          entry(cheatSheetPath(s), cheatSheetH1(s), 'src/pages/tools/cheat-sheets/[slug].astro', 'generated', {
             note: s.written ? undefined : 'stub, noindex',
           }),
+        ),
+        entry('/tools/coin-calculators', 'Coin Calculators', 'src/pages/tools/coin-calculators/index.astro', 'static', {
+          count: 2,
+        }),
+        entry(
+          '/tools/coin-calculators/silver-melt-price',
+          'Silver Coin Melt Value Calculator',
+          'src/pages/tools/coin-calculators/silver-melt-price.astro',
+          'static',
+          { note: `${SILVER_COINS.length} silver coins, a box each` },
+        ),
+        entry(
+          '/tools/coin-calculators/gold-melt-price',
+          'Gold Coin Melt Value Calculator',
+          'src/pages/tools/coin-calculators/gold-melt-price.astro',
+          'static',
+          { note: `${GOLD_COINS.length} gold coins, a box each` },
         ),
       ],
     },
@@ -315,7 +353,7 @@ export function parkedRoutes(): ParkedRoute[] {
       unlockedBy: 'The same decision. Nothing is sold, so nothing returns from checkout',
     },
     {
-      path: `${COIN_VALUE_ROOT}/graded/<series>`,
+      path: `${COIN_INFO_ROOT}/graded/<series>`,
       what: `Graded price tables, one per series (${documentedSeries().length} documented series today)`,
       file: 'not written — gradedPath() in src/data/coins.ts reserves the URL',
       unlockedBy: 'GRADED_PAGES_AVAILABLE in src/data/coins.ts, which is false and must stay false until there are sourced prices',
@@ -434,13 +472,13 @@ export function coinFootprint(coin: Coin): FootprintRow[] {
   }
 
   rows.push({
-    path: COIN_VALUE_ROOT,
+    path: COIN_INFO_ROOT,
     what: 'The catalogue hub',
     state: 'shared',
     detail: 'Lists populated groups, and re-dates itself when any coin changes.',
   });
   rows.push({
-    path: `${COIN_VALUE_ROOT}/tagged`,
+    path: `${COIN_INFO_ROOT}/tagged`,
     what: 'The topic index',
     state: 'shared',
     detail: 'Lists populated tags only.',
@@ -522,11 +560,27 @@ export function coinFields(coin: Coin): FieldRow[] {
     row('reverse', 'expected', coin.reverse ?? '', 'Per issue. A long series outlives its own artwork.'),
     row('struckAt', 'expected', list(coin.struckAt), 'The mints that struck THIS issue.'),
     row('mintage', 'expected', num(coin.mintage), 'Only when it is a published figure.'),
+    row(
+      'mintageNote',
+      'optional',
+      coin.mintageNote ?? '',
+      'What the figure counts, when it is a sum across several reverse designs rather than one striking.',
+    ),
     row('commonality', 'required', coin.commonality, 'Drives the verdict line and the badge, which cannot then disagree.'),
+    row(
+      'finish',
+      'optional',
+      coin.finish ? coin.finish.kind : '',
+      'A coin that was never in a till: suppresses the verdict, the badge and the market note, since commonality is about survival.',
+    ),
     row('identify', 'required', list(coin.identify), 'The checklist, and the HowTo schema. An entry with none renders a heading over nothing.'),
-    row('premiumIf', 'expected', list(coin.premiumIf), 'Lowercase noun phrases, no commas inside an item.'),
     row('sections', 'optional', list(coin.sections), 'Depth for the minority still reading. Zero is acceptable; restating a field is not.'),
-    row('values', 'optional', list(coin.values), 'Leave empty unless a source can be named on the page. valueAsOf and sources become required with it.'),
+    row(
+      'graded ladder',
+      'optional',
+      list(gradedValues(coin)),
+      'Not a field on the coin: it lives in data/grades/<slug>.tsv and is imported by `npm run grades`. One rung, one page.',
+    ),
     row('related', 'optional', list(coin.related), 'Sibling slugs, rendered as in-cluster links.'),
     row(
       'series facts',
@@ -584,7 +638,7 @@ export function taxonomyRows(): { title: string; blurb: string; rows: TaxonomyRo
         name: t.namePlural,
         kind: 'type',
         count: COINS.filter((c) => c.type === t.slug).length,
-        path: `${COIN_VALUE_ROOT}/<group>/${t.slug}`,
+        path: `${COIN_INFO_ROOT}/<group>/${t.slug}`,
         live: COINS.some((c) => c.type === t.slug),
       })),
     },
@@ -635,16 +689,10 @@ export interface FlagRow {
 export function flagRows(): FlagRow[] {
   return [
     {
-      name: 'HOME_PLACEHOLDER',
-      value: String(HOME_PLACEHOLDER),
-      where: 'src/lib/site.ts',
-      effect: 'True in every build: / serves a blank holding page. False in dev, which is why you can see the real home page here.',
-    },
-    {
       name: 'DISCOVERABLE',
       value: String(DISCOVERABLE),
       where: 'src/lib/site.ts',
-      effect: 'False: every page ships noindex and robots.txt disallows everything. Flip on launch day, not before.',
+      effect: 'True: pages are indexable, robots.txt allows the crawl and the AI agents, and no X-Robots-Tag is set in the host configs.',
     },
     {
       name: 'GRADED_PAGES_AVAILABLE',

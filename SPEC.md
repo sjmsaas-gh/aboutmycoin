@@ -103,7 +103,7 @@ What that meant in practice, so it is not half-undone later:
 - `webApplicationSchema()` emits one free `Offer`. The paid and `PreOrder`
   offers came out: an Offer with a price claims a thing can be bought, and
   `PreOrder` claims it is coming.
-- The header call to action points at `/coin-value` ("Find your coin"), which
+- The header call to action points at `/coin-info` ("Find your coin"), which
   is the only action a first-time visitor wants anyway.
 - The build check `nothing is offered for sale while nothing is for sale` now
   runs both ways. While both `*_AVAILABLE` flags are false it fails the build
@@ -120,12 +120,12 @@ Settled 2026-09-19. Built and live in `src/data/`. The ambition is a page for
 every coin ever struck; this is the structure chosen to survive getting there.
 
 ```
-/coin-value                                every populated composition group
-/coin-value/<group>                        /coin-value/silver
-/coin-value/<group>/<type>                 /coin-value/silver/quarter
-/coin-value/<group>/<type>/<coin>          /coin-value/silver/quarter/1964-washington-quarter
-/coin-value/tagged                         the topic index
-/coin-value/tagged/<tag>                   /coin-value/tagged/canada
+/coin-info                                every populated composition group
+/coin-info/<group>                        /coin-info/silver
+/coin-info/<group>/<type>                 /coin-info/silver/quarter
+/coin-info/<group>/<type>/<coin>          /coin-info/silver/quarter/1964-washington-quarter
+/coin-info/tagged                         the topic index
+/coin-info/tagged/<tag>                   /coin-info/tagged/canada
 ```
 
 Two sections sit alongside it, added 2026-09-19:
@@ -142,7 +142,7 @@ Two sections sit alongside it, added 2026-09-19:
 ```
 
 **The melt tree is the catalogue tree with one segment changed** (settled
-2026-09-19). Every page under `/coin-value` has a twin under `/melt-value` at
+2026-09-19). Every page under `/coin-info` has a twin under `/melt-value` at
 the same address, and `validateMeltPaths()` throws when they stop matching.
 
 It was a flat namespace, `/melt-value/<coin>`, on the argument that the tree
@@ -255,8 +255,8 @@ on many pages while existing at exactly one address.
 **Why composition first rather than country.** It makes the tree work for
 foreign coins with no second tree. A 1967 Canadian silver dollar is silver and
 it is a dollar, so it files itself beside the Morgan; `canada` is a tag and
-`/coin-value/tagged/canada` assembles the country view for free. A
-`/coin-value/canada/...` tree would need a parallel silver tree the day
+`/coin-info/tagged/canada` assembles the country view for free. A
+`/coin-info/canada/...` tree would need a parallel silver tree the day
 somebody wants "all silver coins", and then every coin has two URLs and a
 canonical problem.
 
@@ -266,8 +266,8 @@ obvious version and it is worth reading twice. A 1964 Washington quarter is
 denomination, different metal, therefore different branch:
 
 ```
-/coin-value/silver/quarter/1964-washington-quarter
-/coin-value/clad/quarter/1965-washington-quarter
+/coin-info/silver/quarter/1964-washington-quarter
+/coin-info/clad/quarter/1965-washington-quarter
 ```
 
 That is correct — for that pair the metal *is* the entire answer — but it

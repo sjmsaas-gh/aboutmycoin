@@ -1,0 +1,2116 @@
+{{Short description|Mintage figures for the America the Beautiful quarter program}}
+{{Main|United States quarter mintage figures|Washington quarter mintage figures}}
+
+{{Multiple image
+| image1 = 2014 ATB Quarter Obv.png
+| image2 = 2010-AZ Unc.jpg
+| width1 = 110
+| width2 = 110
+| footer = Grand Canyon America the Beautiful quarter
+}}
+{{Notability|date=May 2023}}Below are the mintage figures for the [[America the Beautiful quarters]] and [[America the Beautiful silver bullion coins]].
+
+The following [[mint mark]]s indicate which mint the coin was made at (parentheses indicate a lack of a mint mark):
+
+'''P''' = [[Philadelphia Mint]]
+
+'''D''' = [[Denver Mint]]
+
+'''S''' = [[San Francisco Mint]]
+
+'''W''' = [[West Point Mint]]
+
+== 2010 quarters ==
+
+=== Hot Springs (Arkansas) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Hot Springs reverse, 2010 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0">{{Cite web|url=https://www.usacoinbook.com/coins/quarters/america-the-beautiful/|title=America The Beautiful Quarters - Price Charts & Coin Values|website=www.usacoinbook.com|access-date=2019-07-16}}</ref><ref name=":1">{{Cite web|url=https://www.usacoinbook.com/coins/bullion-coins/america-the-beautiful/|title=America The Beautiful Bullion Coins - Price Charts & Coin Values|website=www.usacoinbook.com|access-date=2019-07-16}}</ref>
+! width="60%" |Comments
+|-
+| rowspan="6" |2010
+|P
+|35,600,000
+|
+|-
+|D
+|34,000,000
+|
+|-
+| rowspan="2" |S
+|1,401,903
+|Proof
+|-
+|859,435
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|27,000
+|Silver bullion, uncirculated
+|}
+
+=== Yellowstone (Wyoming) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Yellowstone reverse, 2010 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2010
+|P
+|33,600,000
+|
+|-
+|D
+|34,800,000
+|
+|-
+| rowspan="2" |S
+|1,402,756
+|Proof
+|-
+|859,435
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|27,000
+|Silver bullion, uncirculated
+|}
+
+=== Yosemite (California) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Yosemite reverse, 2010 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2010
+|P
+|35,200,000
+|
+|-
+|D
+|34,800,000
+|
+|-
+| rowspan="2" |S
+|1,400,215
+|Proof
+|-
+|859,435
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|27,000
+|Silver bullion, uncirculated
+|}
+
+=== Grand Canyon (Arizona) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Grand Canyon reverse, 2010 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2010
+|P
+|34,800,000
+|
+|-
+|D
+|35,400,000
+|
+|-
+| rowspan="2" |S
+|1,399,970
+|Proof
+|-
+|859,435
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|26,019
+|Silver bullion, uncirculated
+|}
+
+=== Mount Hood (Oregon) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Mount Hood reverse, 2010 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2010
+|P
+|34,400,000
+|
+|-
+|D
+|34,400,000
+|
+|-
+| rowspan="2" |S
+|1,397,101
+|Proof
+|-
+|859,435
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|26,019
+|Silver bullion, uncirculated
+|}
+
+== 2011 quarters ==
+
+=== Gettysburg (Pennsylvania) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Gettysburg reverse, 2011 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2011
+|P
+|30,400,000
+|
+|-
+|D
+|30,800,000
+|
+|-
+| rowspan="2" |S
+|1,271,553
+|Proof
+|-
+|722,076
+|Silver proof
+|-
+|(P)
+|126,700
+|Silver bullion
+|-
+|P
+|24,625
+|Silver bullion, uncirculated
+|}
+
+=== Glacier (Montana) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Glacier reverse, 2011 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2011
+|P
+|30,400,000
+|
+|-
+|D
+|31,200,000
+|
+|-
+| rowspan="2" |S
+|1,268,452
+|Proof
+|-
+|722,076
+|Silver proof
+|-
+|(P)
+|126,700
+|Silver bullion
+|-
+|P
+|20,856
+|Silver bullion, uncirculated
+|}
+
+=== Olympic (Washington) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Olympic reverse, 2011 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2011
+|P
+|30,400,000
+|
+|-
+|D
+|30,600,000
+|
+|-
+| rowspan="2" |S
+|1,267,361
+|Proof
+|-
+|722,076
+|Silver proof
+|-
+|(P)
+|104,900
+|Silver bullion
+|-
+|P
+|18,398
+|Silver bullion, uncirculated
+|}
+
+=== Vicksburg (Mississippi) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Vicksburg reverse, 2011 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2011
+|P
+|30,800,000
+|
+|-
+|D
+|33,400,000
+|
+|-
+| rowspan="2" |S
+|1,267,691
+|Proof
+|-
+|722,076
+|Silver proof
+|-
+|(P)
+|58,100
+|Silver bullion
+|-
+|P
+|18,594
+|Silver bullion, uncirculated
+|}
+
+=== Chickasaw (Oklahoma) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Chickasaw reverse, 2011 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="6" |2011
+|P
+|73,800,000
+|
+|-
+|D
+|69,400,000
+|
+|-
+| rowspan="2" |S
+|1,266,010
+|Proof
+|-
+|722,076
+|Silver proof
+|-
+|(P)
+|48,700
+|Silver bullion
+|-
+|P
+|16,827
+|Silver bullion, uncirculated
+|}
+
+== 2012 quarters ==
+
+=== El Yunque (Puerto Rico) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+El Yunque reverse, 2012 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2012
+|P
+|25,800,000
+|
+|-
+|D
+|25,000,000
+|
+|-
+| rowspan="3" |S
+|1,679,240
+|Uncirculated
+|-
+|1,010,361
+|Proof
+|-
+|557,891
+|Silver proof
+|-
+|(P)
+|24,000
+|Silver bullion
+|-
+|P
+|17,314
+|Silver bullion, uncirculated
+|}
+
+=== Chaco Culture (New Mexico) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Chaco Culture reverse, 2012 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2012
+|P
+|22,000,000
+|
+|-
+|D
+|22,000,000
+|
+|-
+| rowspan="3" |S
+|1,389,020
+|Uncirculated
+|-
+|960,049
+|Proof
+|-
+|557,891
+|Silver proof
+|-
+|(P)
+|24,400
+|Silver bullion
+|-
+|P
+|17,146
+|Silver bullion, uncirculated
+|}
+
+=== Acadia (Maine) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Acadia reverse, 2012 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2012
+|P
+|24,800,000
+|
+|-
+|D
+|21,606,000
+|
+|-
+| rowspan="3" |S
+|1,409,120
+|Uncirculated
+|-
+|960,409
+|Proof
+|-
+|557,891
+|Silver proof
+|-
+|(P)
+|25,400
+|Silver bullion
+|-
+|P
+|14,978
+|Silver bullion, uncirculated
+|}
+
+=== Hawai'i Volcanoes (Hawaii) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Hawai'i Volcanoes reverse, 2012 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2012
+|P
+|46,200,000
+|
+|-
+|D
+|78,600,000
+|
+|-
+| rowspan="3" |S
+|1,407,520
+|Uncirculated
+|-
+|961,272
+|Proof
+|-
+|557,891
+|Silver proof
+|-
+|(P)
+|20,000
+|Silver bullion
+|-
+|P
+|14,863
+|Silver bullion, uncirculated
+|}
+
+=== Denali (Alaska) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Denali reverse, 2012 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2012
+|P
+|135,400,000
+|
+|-
+|D
+|166,600,000
+|
+|-
+| rowspan="3" |S
+|1,401,920
+|Uncirculated
+|-
+|957,856
+|Proof
+|-
+|557,891
+|Silver proof
+|-
+|(P)
+|20,000
+|Silver bullion
+|-
+|P
+|15,225
+|Silver bullion, uncirculated
+|}
+
+== 2013 quarters ==
+
+=== White Mountain (New Hampshire) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+White Mountain reverse, 2013 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2013
+|P
+|68,800,000
+|
+|-
+|D
+|107,600,000
+|
+|-
+| rowspan="3" |S
+|1,606,900
+|Uncirculated
+|-
+|950,080
+|Proof
+|-
+|579,409
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|20,530
+|Silver bullion, uncirculated
+|}
+
+=== Perry's Victory (Ohio) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Perry's Victory reverse, 2013 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2013
+|P
+|107,800,000
+|
+|-
+|D
+|131,600,000
+|
+|-
+| rowspan="3" |S
+|1,425,860
+|Uncirculated
+|-
+|913,563
+|Proof
+|-
+|579,409
+|Silver proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|17,707
+|Silver bullion, uncirculated
+|}
+
+=== Great Basin (Nevada) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Great Basin reverse, 2013 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2013
+|P
+|122,400,000
+|
+|-
+|D
+|141,400,000
+|
+|-
+| rowspan="3" |S
+|1,316,580
+|Uncirculated
+|-
+|911,525
+|Proof
+|-
+|579,409
+|Silver proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|17,792
+|Silver bullion, uncirculated
+|}
+
+=== Fort McHenry (Maryland) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Fort McHenry reverse, 2013 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2013
+|P
+|120,000,000
+|
+|-
+|D
+|151,400,000
+|
+|-
+| rowspan="3" |S
+|1,314,740
+|Uncirculated
+|-
+|911,451
+|Proof
+|-
+|579,409
+|Silver proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|19,802
+|Silver bullion, uncirculated
+|}
+
+=== Mount Rushmore (South Dakota) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Mount Rushmore reverse, 2013 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2013
+|P
+|231,800,000
+|
+|-
+|D
+|272,400,000
+|
+|-
+| rowspan="3" |S
+|1,373,260
+|Uncirculated
+|-
+|920,695
+|Proof
+|-
+|579,409
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|23,547
+|Silver bullion, uncirculated
+|}
+
+== 2014 quarters ==
+
+=== Great Smoky Mountains (Tennessee) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Great Smoky Mountains reverse, 2014 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2014
+|P
+|73,200,000
+|
+|-
+|D
+|99,400,000
+|
+|-
+| rowspan="3" |S
+|1,360,780
+|Uncirculated
+|-
+|828,186
+|Proof
+|-
+|586,325
+|Silver proof
+|-
+|(P)
+|33,000
+|Silver bullion
+|-
+|P
+|24,710
+|Silver bullion, uncirculated
+|}
+
+=== Shenandoah (Virginia) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Shenandoah reverse, 2014 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2014
+|P
+|112,800,000
+|
+|-
+|D
+|197,800,000
+|
+|-
+| rowspan="3" |S
+|1,239,320
+|Uncirculated
+|-
+|828,186
+|Proof
+|-
+|586,325
+|Silver proof
+|-
+|(P)
+|28,000
+|Silver bullion
+|-
+|P
+|28,451
+|Silver bullion, uncirculated
+|}
+
+=== Arches (Utah) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Arches reverse, 2014 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2014
+|P
+|214,200,000
+|
+|-
+|D
+|251,400,000
+|
+|-
+| rowspan="3" |S
+|1,203,100
+|Uncirculated
+|-
+|828,186
+|Proof
+|-
+|586,325
+|Silver proof
+|-
+|(P)
+|22,000
+|Silver bullion
+|-
+|P
+|28,434
+|Silver bullion, uncirculated
+|}
+
+=== Great Sand Dunes (Colorado) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Great Sand Dunes reverse, 2014 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2014
+|P
+|159,600,000
+|
+|-
+|D
+|171,800,000
+|
+|-
+| rowspan="3" |S
+|1,146,000
+|Uncirculated
+|-
+|828,186
+|Proof
+|-
+|586,325
+|Silver proof
+|-
+|(P)
+|22,000
+|Silver bullion
+|-
+|P
+|24,103
+|Silver bullion, uncirculated
+|}
+
+=== Everglades (Florida) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Everglades reverse, 2014 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2014
+|P
+|157,601,200
+|
+|-
+|D
+|142,400,000
+|
+|-
+| rowspan="3" |S
+|1,139,140
+|Uncirculated
+|-
+|828,186
+|Proof
+|-
+|586,325
+|Silver proof
+|-
+|(P)
+|34,000
+|Silver bullion
+|-
+|P
+|22,732
+|Silver bullion, uncirculated
+|}
+
+== 2015 quarters ==
+
+=== Homestead (Nebraska) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Homestead reverse, 2015 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2015
+|P
+|214,400,000
+|
+|-
+|D
+|248,600,000
+|
+|-
+| rowspan="3" |S
+|1,135,460
+|Uncirculated
+|-
+|831,503
+|Proof
+|-
+|443,630
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|21,286
+|Silver bullion, uncirculated
+|}
+
+=== Kisatchie (Louisiana) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Kisatchie reverse, 2015 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2015
+|P
+|397,200,000
+|
+|-
+|D
+|379,600,000
+|
+|-
+| rowspan="3" |S
+|1,081,560
+|Uncirculated
+|-
+|831,503
+|Proof
+|-
+|443,630
+|Silver proof
+|-
+|(P)
+|42,000
+|Silver bullion
+|-
+|P
+|19,449
+|Silver bullion, uncirculated
+|}
+
+=== Blue Ridge Parkway (North Carolina) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Blue Ridge Parkway reverse, 2015 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2015
+|P
+|325,616,000
+|
+|-
+|D
+|505,200,000
+|
+|-
+| rowspan="3" |S
+|1,049,500
+|Uncirculated
+|-
+|831,503
+|Proof
+|-
+|443,630
+|Silver proof
+|-
+|(P)
+|45,000
+|Silver bullion
+|-
+|P
+|17,461
+|Silver bullion, uncirculated
+|}
+
+=== Bombay Hook (Delaware) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Bombay Hook reverse, 2015 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2015
+|P
+|275,000,000
+|
+|-
+|D
+|206,400,000
+|
+|-
+| rowspan="3" |S
+|923,960
+|Uncirculated
+|-
+|831,503
+|Proof
+|-
+|443,630
+|Silver proof
+|-
+|(P)
+|45,000
+|Silver bullion
+|-
+|P
+|17,309
+|Silver bullion, uncirculated
+|}
+
+=== Saratoga (New York) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Saratoga reverse, 2015 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2015
+|P
+|223,000,000
+|
+|-
+|D
+|215,800,000
+|
+|-
+| rowspan="3" |S
+|888,380
+|Uncirculated
+|-
+|831,503
+|Proof
+|-
+|443,630
+|Silver proof
+|-
+|(P)
+|45,000
+|Silver bullion
+|-
+|P
+|17,563
+|Silver bullion, uncirculated
+|}
+
+== 2016 quarters ==
+
+=== Shawnee (Illinois) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Shawnee reverse, 2016 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2016
+|P
+|155,600,000
+|
+|-
+|D
+|151,800,000
+|
+|-
+| rowspan="3" |S
+|1,029,340
+|Uncirculated
+|-
+|654,516
+|Proof
+|-
+|474,207
+|Silver proof
+|-
+|(P)
+|105,000
+|Silver bullion
+|-
+|P
+|18,781
+|Silver bullion, uncirculated
+|}
+
+=== Cumberland Gap (Kentucky) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Cumberland Gap reverse, 2016 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2016
+|P
+|215,400,000
+|
+|-
+|D
+|223,200,000
+|
+|-
+| rowspan="3" |S
+|975,220
+|Uncirculated
+|-
+|654,516
+|Proof
+|-
+|474,207
+|Silver proof
+|-
+|(P)
+|75,000
+|Silver bullion
+|-
+|P
+|18,713
+|Silver bullion, uncirculated
+|}
+
+=== Harpers Ferry (West Virginia) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Harpers Ferry reverse, 2016 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2016
+|P
+|434,630,000
+|
+|-
+|D
+|424,000,000
+|
+|-
+| rowspan="3" |S
+|976,420
+|Uncirculated
+|-
+|654,516
+|Proof
+|-
+|474,207
+|Silver proof
+|-
+|(P)
+|55,300
+|Silver bullion
+|-
+|P
+|18,896
+|Silver bullion, uncirculated
+|}
+
+=== Theodore Roosevelt (North Dakota) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Theodore Roosevelt reverse, 2016 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage
+! width="60%" |Comments
+|-
+| rowspan="7" |2016
+|P
+|231,600,000
+|
+|-
+|D
+|232,200,000
+|
+|-
+| rowspan="3" |S
+|976,760
+|Uncirculated
+|-
+|654,516
+|Proof
+|-
+|474,207
+|Silver proof
+|-
+|(P)
+|40,000
+|Silver bullion
+|-
+|P
+|18,917
+|Silver bullion, uncirculated
+|}
+
+=== Fort Moultrie (South Carolina) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Fort Moultrie reverse, 2016 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2016
+|P
+|154,400,000
+|
+|-
+|D
+|142,200,000
+|
+|-
+| rowspan="3" |S
+|863,860
+|Uncirculated
+|-
+|654,516
+|Proof
+|-
+|474,207
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|17,882
+|Silver bullion, uncirculated
+|}
+
+== 2017 quarters ==
+
+=== Effigy Mounds (Iowa) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Effigy Mounds reverse, 2017 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2017
+|P
+|271,200,000
+|
+|-
+|D
+|210,800,000
+|
+|-
+| rowspan="4" |S
+|919,620
+|Uncirculated
+|-
+|210,419<ref name="usmint.gov">{{Cite web|url=https://www.usmint.gov/about/production-sales-figures/cumulative-sales?years=2018&2019weeks=&2018weeks=1009&2017weeks=&2016weeks=&2015weeks=|title=Cumulative Sales Figures {{!}} U.S. Mint|website=www.usmint.gov|access-date=2019-11-05}}</ref>
+|Enhanced uncirculated
+|-
+|629,997
+|Proof
+|-
+|466,711
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|17,065
+|Silver bullion, uncirculated
+|}
+
+=== Frederick Douglass (District of Columbia) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Frederick Douglass reverse, 2017 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2017
+|P
+|184,800,000
+|
+|-
+|D
+|185,800,000
+|
+|-
+| rowspan="4" |S
+|910,760
+|Uncirculated
+|-
+|210,419<ref name="usmint.gov"/>
+|Enhanced uncirculated
+|-
+|629,997
+|Proof
+|-
+|466,711
+|Silver proof
+|-
+|(P)
+|20,000
+|Silver bullion
+|-
+|P
+|17,678
+|Silver bullion, uncirculated
+|}
+
+=== Ozark Riverways (Missouri) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Ozark Riverways reverse, 2017 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2017
+|P
+|203,000,000
+|
+|-
+|D
+|200,000,000
+|
+|-
+| rowspan="4" |S
+|878,240
+|Uncirculated
+|-
+|210,419<ref name="usmint.gov"/>
+|Enhanced uncirculated
+|-
+|629,997
+|Proof
+|-
+|466,711
+|Silver proof
+|-
+|(P)
+|20,000
+|Silver bullion
+|-
+|P
+|17,660
+|Silver bullion, uncirculated
+|}
+
+=== Ellis Island (New Jersey) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Ellis Island reverse, 2017 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2017
+|P
+|234,000,000
+|
+|-
+|D
+|254,000,000
+|
+|-
+| rowspan="4" |S
+|901,780
+|Uncirculated
+|-
+|210,419<ref name="usmint.gov"/>
+|Enhanced uncirculated
+|-
+|629,997
+|Proof
+|-
+|466,711
+|Silver proof
+|-
+|(P)
+|40,000
+|Silver bullion
+|-
+|P
+|17,670
+|Silver bullion, uncirculated
+|}
+
+=== George Rogers Clark (Indiana) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+George Rogers Clark reverse, 2017 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2017
+|P
+|196,600,000
+|
+|-
+|D
+|180,800,000
+|
+|-
+| rowspan="4" |S
+|815,540
+|Uncirculated
+|-
+|210,419<ref name="usmint.gov"/>
+|Enhanced uncirculated
+|-
+|629,997
+|Proof
+|-
+|466,711
+|Silver proof
+|-
+|(P)
+|35,000
+|Silver bullion
+|-
+|P
+|14,731
+|Silver bullion, uncirculated
+|}
+
+== 2018 quarters ==
+
+=== Pictured Rocks (Michigan) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Pictured Rocks reverse, 2018 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2018
+|P
+|186,714,000
+|
+|-
+|D
+|182,600,000
+|
+|-
+| rowspan="4" |S
+|946,617
+|Uncirculated
+|-
+|637,779
+|Proof
+|-
+|461,053
+|Silver proof
+|-
+|199,177<ref name="usmint.gov"/>
+|Silver reverse proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|17,598
+|Silver bullion, uncirculated
+|}
+
+=== Apostle Islands (Wisconsin) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Apostle Islands reverse, 2018 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2018
+|P
+|223,200,000
+|
+|-
+|D
+|213,400,000
+|
+|-
+| rowspan="4" |S
+|904,321
+|Uncirculated
+|-
+|603,747
+|Proof
+|-
+|461,053
+|Silver proof
+|-
+|199,177<ref name="usmint.gov"/>
+|Silver reverse proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|16,004
+|Silver bullion, uncirculated
+|}
+
+=== Voyageurs (Minnesota) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Voyageurs reverse, 2018 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2018
+|P
+|237,400,000
+|
+|-
+|D
+|197,800,000
+|
+|-
+| rowspan="4" |S
+|882,666
+|Uncirculated
+|-
+|603,747
+|Proof
+|-
+|461,053
+|Silver proof
+|-
+|199,177<ref name="usmint.gov"/>
+|Silver reverse proof
+|-
+|(P)
+|30,000
+|Silver bullion
+|-
+|P
+|15,596
+|Silver bullion, uncirculated
+|}
+
+=== Cumberland Island (Georgia) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Cumberland Island reverse, 2018 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2018
+|P
+|138,000,000
+|
+|-
+|D
+|151,600,000
+|
+|-
+| rowspan="4" |S
+|896,361
+|Uncirculated
+|-
+|603,747
+|Proof
+|-
+|461,053
+|Silver proof
+|-
+|199,177<ref name="usmint.gov"/>
+|Silver reverse proof
+|-
+|(P)
+|52,500
+|Silver bullion
+|-
+|P
+|14,153
+|Silver bullion, uncirculated
+|}
+
+=== Block Island (Rhode Island) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Block Island reverse, 2018 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2018
+|P
+|159,600,000
+|
+|-
+|D
+|159,600,000
+|
+|-
+| rowspan="4" |S
+|870,361
+|Uncirculated
+|-
+|621,466
+|Proof
+|-
+|461,053
+|Silver proof
+|-
+|199,177<ref name="usmint.gov"/>
+|Silver reverse proof
+|-
+|(P)
+|80,000
+|Silver bullion
+|-
+|P
+|TBA
+|Silver bullion, uncirculated
+|}
+
+== 2019 quarters ==
+
+=== Lowell (Massachusetts) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Lowell reverse, 2019 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref>{{Cite web |title=Cumulative Sales Figures {{!}} U.S. Mint |url=https://www.usmint.gov/about/production-sales-figures/cumulative-sales?years=2020&2022weeks=&2021weeks=&2020weeks=1096&2019weeks=&2018weeks=&2017weeks=&2016weeks=&2015weeks= |access-date=2022-04-30 |website=www.usmint.gov}}</ref>
+! width="60%" |Comments
+|-
+| rowspan="8" |2019
+|P
+|165,800,000
+|
+|-
+|D
+|182,200,000
+|
+|-
+|W
+|2,000,000
+|First time the "W" mint mark was used on a circulating coin.
+|-
+| rowspan="3" |S
+|924,503
+|Uncirculated
+|-
+|784,138
+|Proof
+|-
+|541,220
+|Silver proof (First time the annual set is struck in 99.9% silver) 
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== American Memorial Park (Northern Mariana Islands) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+American Memorial Park reverse, 2019 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceA">{{Cite web |title=Cumulative Sales Figures {{!}} U.S. Mint |url=https://www.usmint.gov/about/production-sales-figures/cumulative-sales?years=2022&2022weeks=1205&2021weeks=&2020weeks=&2019weeks=&2018weeks=&2017weeks=&2016weeks=&2015weeks= |access-date=2022-04-30 |website=www.usmint.gov}}</ref>
+! width="60%" |Comments
+|-
+| rowspan="8" |2019
+|P
+|142,800,000
+|
+|-
+|D
+|182,600,000
+|
+|-
+|W
+|2,000,000
+|
+|-
+| rowspan="3" |S
+|952,795
+|Uncirculated
+|-
+|710,853
+|Proof
+|-
+|541,220
+|Silver proof (First time the annual set is struck in 99.9% silver)
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== War In The Pacific (Guam) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+War In The Pacific reverse, 2019 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceB">{{Cite web|url=https://www.usmint.gov/about/production-sales-figures/circulating-coins-production?program=America+the+Beautiful+Quarters%C2%AE&+50StateQuartersyears=&+WestwardJourneyNickelSeries%E2%84%A2years=&+PresidentialOneDollaryears=&+DistrictofColumbiaandUSTerritoriesQuartersyears=&+AmericatheBeautifulQuarters%C2%AEyears=1023&+CirculatingCoinsyears=|title=Circulating Coins Production {{!}} U.S. Mint|website=www.usmint.gov|access-date=2020-09-16}}</ref><ref name="ReferenceA"/>
+! width="60%" |Comments
+|-
+| rowspan="8" |2019
+|P
+|116,600,000
+|
+|-
+|D
+|114,400,000
+|
+|-
+|W
+|2,000,000
+|
+|-
+| rowspan="3" |S
+|945,719
+|Uncirculated
+|-
+|710,853
+|Proof
+|-
+|541,220
+|Silver proof (First time the annual set is struck in 99.9% silver)
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== San Antonio Missions (Texas) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+San Antonio Missions reverse, 2019 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceB"/><ref name="ReferenceA"/>
+! width="60%" |Comments
+|-
+| rowspan="8" |2019
+|P
+|142,800,000
+|
+|-
+|D
+|129,400,000
+|
+|-
+|W
+|2,000,000
+|
+|-
+| rowspan="3" |S
+|946,974
+|Uncirculated
+|-
+|710,853
+|Proof
+|-
+|541,220
+|Silver proof (First time the annual set is struck in 99.9% silver)
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== River Of No Return (Idaho) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+River Of No Return reverse, 2019 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceB"/><ref name="ReferenceA"/>
+! width="60%" |Comments
+|-
+| rowspan="8" |2019
+|P
+|223,400,000
+|
+|-
+|D
+|251,600,000
+|
+|-
+|W
+|2,000,000
+|
+|-
+| rowspan="3" |S
+|946,859
+|Uncirculated
+|-
+|729,950
+|Proof
+|-
+|541,220
+|Silver proof (First time the annual set is struck in 99.9% silver)
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+== 2020 quarters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ==
+
+=== National Park (American Samoa) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+National Park reverse, 2020 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceC">{{Cite web|url=https://www.usmint.gov/about/production-sales-figures/circulating-coins-production?program=America+the+Beautiful+Quarters%C2%AE&+50StateQuartersyears=&+WestwardJourneyNickelSeries%E2%84%A2years=&+PresidentialOneDollaryears=&+DistrictofColumbiaandUSTerritoriesQuartersyears=&+AmericatheBeautifulQuarters%C2%AEyears=1081&+CirculatingCoinsyears= |title=Circulating Coins Production {{!}} U.S. Mint|website=www.usmint.gov|access-date=2020-09-16}}</ref><ref name="ReferenceD">{{Cite web |title=Cumulative Sales Figures {{!}} U.S. Mint |url=https://www.usmint.gov/about/production-sales-figures/cumulative-sales?years=2022&2022weeks=1205&2021weeks=&2020weeks=&2019weeks=&2018weeks=&2017weeks=&2016weeks=&2015weeks= |access-date=2022-05-01 |website=www.usmint.gov}}</ref>
+! width="60%" |Comments
+|-
+| rowspan="8" |2020
+|P
+|286,000,000
+|
+|-
+|D
+|212,200,000
+|
+|-
+|W
+|2,000,000
+|Obv. Privy mark “V75” inside Rainbow Pool added to 2020 only 
+|-
+| rowspan="3" |S
+|955,145
+|Uncirculated
+|-
+|558,230
+|Proof
+|-
+|427,256
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== Weir Farm (Connecticut) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Weir Farm reverse, 2020 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceC"/><ref name="ReferenceD"/>
+! width="60%" |Comments
+|-
+| rowspan="8" |2020
+|P
+|125,600,000
+|
+|-
+|D
+|155,000,000
+|
+|-
+|W
+|2,000,000
+|Obv. Privy mark “V75” inside Rainbow Pool added to 2020 only
+|-
+| rowspan="3" |S
+|961,229
+|Uncirculated
+|-
+|528,900
+|Proof
+|-
+|427,256
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== Salt River Bay (U.S. Virgin Islands) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Salt River Bay reverse, 2020 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" /><ref name="ReferenceC"/>
+! width="60%" |Comments
+|-
+| rowspan="8" |2020
+|P
+|577,800,000
+|
+|-
+|D
+|515,000,000
+|
+|-
+|W
+|2,000,000
+|Obv. Privy mark “V75” inside Rainbow Pool added to 2020 only
+|-
+| rowspan="3" |S
+|949,947
+|Uncirculated
+|-
+|528,900
+|Proof
+|-
+|427,256
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|
+|}
+
+=== Marsh-Billings-Rockefeller (Vermont) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Marsh-Billings-Rockefeller reverse, 2020 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2020
+|P
+|304,600,000
+|
+|-
+|D
+|345,800,000
+|
+|-
+|W
+|2,000,000
+|Obv. Privy mark “V75” inside Rainbow Pool added to 2020 only
+|-
+| rowspan="3" |S
+|945,449
+|Uncirculated
+|-
+|528,900
+|Proof
+|-
+|427,256
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+=== Tallgrass Prairie (Kansas) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Tallgrass Prairie reverse, 2020 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="8" |2020
+|P
+|101,200,000
+|
+|-
+|D
+|142,400,000
+|
+|-
+|W
+|2,000,000
+|Obv. Privy mark “V75” inside Rainbow Pool added to 2020 only
+|-
+| rowspan="3" |S
+|951,612
+|Uncirculated
+|-
+|545,638
+|Proof
+|-
+|427,256
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+
+== 2021 quarters ==
+
+=== Tuskegee Airmen (Alabama) ===
+{| class="wikitable sortable" style="min-width:65%; text-align:center;"
+|+Tuskegee Airmen reverse, 2021 (Nickel-clad copper unless otherwise noted)
+! width="10%" |Year
+! width="10%" |Mint
+! width="20%" |Mintage<ref name=":0" /><ref name=":1" />
+! width="60%" |Comments
+|-
+| rowspan="7" |2021
+|P
+|160,400,000
+|
+|-
+|D
+|304,000,000
+|
+|-
+| rowspan="3" |S
+|858,572
+|Uncirculated
+|-
+|559,571
+|Proof
+|-
+|350,891
+|Silver proof
+|-
+|(P)
+| rowspan="2" |TBA
+|Silver bullion
+|-
+|P
+|Silver bullion, uncirculated
+|}
+{| class="wikitable sortable"
+|*According to last published US Mint cumulative sales figures. LKS (Last Known Sale) figures are pending.
+|}
+
+== See also ==
+{{Portal|Money|Numismatics|United States}}
+
+* [[United States cent mintage figures]]
+** [[Lincoln cent mintage figures]]
+* [[United States nickel mintage figures]]
+* [[Roosevelt dime mintage figures]]
+* [[United States quarter mintage figures]]
+** [[Washington quarter mintage figures]]
+** [[50 State quarter mintage figures]]
+** [[American Women quarters]]
+* [[United States half dollar mintage figures]]
+**[[Kennedy half dollar mintage figures]]
+* [[American Silver Eagle mintage figures]]
+
+== References ==
+<references />
+
+{{United States circulating coinage}}
+{{Coinage (United States)}}
+
+[[Category:Twenty-five-cent coins of the United States]]

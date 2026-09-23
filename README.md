@@ -53,7 +53,7 @@ contact form and checkout need environment variables, and say so honestly (503,
 | Area | Where |
 |---|---|
 | Site identity, in one place | `src/lib/site.ts` |
-| Pre-launch lockdown (4 mechanisms) | `src/lib/site.ts`, `Seo.astro`, `robots.txt.ts`, host configs |
+| Discoverability switch (`DISCOVERABLE`, now true) | `src/lib/site.ts`, `Seo.astro`, `robots.txt.ts`, host configs |
 | Canonical URLs, OG, Twitter, robots meta | `src/components/Seo.astro` |
 | JSON-LD builders | `src/lib/schema.ts` |
 | Sitemap with per-URL priority, no dates | `astro.config.mjs` |
@@ -292,9 +292,15 @@ curl -s -X POST https://<domain>/api/checkout \
 
 ## Going live
 
-The site ships hidden. `DISCOVERABLE = false` in `src/lib/site.ts` makes four
-mechanisms agree that this site should not be crawled, indexed, cited or trained
-on. To open up:
+**This site is live.** `DISCOVERABLE` is `true`, the `X-Robots-Tag` is out of
+all three host configs, `/llms.txt` serves the real summary, the real home page
+ships in every build and the whole catalogue is crawlable. The steps below are
+kept as the record of what was done, and as the procedure for the next site in
+this family -- they are not a to-do list here.
+
+A starter in this family ships hidden: `DISCOVERABLE = false` in
+`src/lib/site.ts` makes four mechanisms agree that the site should not be
+crawled, indexed, cited or trained on. To open up:
 
 1. Set `DISCOVERABLE = true` in `src/lib/site.ts`.
 2. Delete the `X-Robots-Tag` line from `public/_headers`, `netlify.toml` and

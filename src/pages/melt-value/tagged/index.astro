@@ -2,7 +2,7 @@
 /**
  * The tag index on the melt side: /melt-value/tagged.
  *
- * The twin of /coin-value/tagged, and it exists for the same two reasons: the
+ * The twin of /coin-info/tagged, and it exists for the same two reasons: the
  * reserved `tagged` segment should be a real page rather than the 404 a
  * visitor reaches by deleting the last part of a URL, and the two axes of the
  * structure need explaining to a human in one place.
@@ -96,7 +96,7 @@ const sections = ORDER.map((o) => ({ ...o, tags: tags.filter((t) => t.kind === o
       </p>
       <p>
         The same labels cut across
-        {' '}<a href="/coin-value/tagged">the catalogue</a>, where the question
+        {' '}<a href="/coin-info/tagged">the catalogue</a>, where the question
         is what the coins are worth rather than what is in them.
       </p>
     </div>

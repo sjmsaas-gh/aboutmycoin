@@ -22,6 +22,19 @@ entry created and what it is still missing.
 6. Change nothing else — everything else is derived.
 7. Run `npm run check`, `npm test`, `npm run test:build`.
 8. Look at the pages in `npm run dev`.
+9. Optionally, give it a priced ladder — a page per grade. That is its own
+   procedure and it is three commands:
+
+   ```bash
+   npm run grades:sheet <coin-slug>   # a sheet with every registered rung in it
+   # fill it from the auction archives, and say in the header what you left out
+   npm run grades                     # validates, then writes the generated file
+   ```
+
+   Both files are committed. A rung with fewer than two published figures
+   behind it gets no row and therefore no page, which is the gate rather than a
+   gap: see the header of `data/grades/1932-d-washington-quarter.tsv` for a
+   worked example, and the grade-page rules in `CLAUDE.md`.
 
 ---
 
@@ -36,10 +49,19 @@ is one page. Expanding a thirty-year series into thirty pages that say the same
 thing is the failure a generated catalogue is one careless loop away from, and
 it drags down the pages that deserve to rank.
 
+A mint mark splits a date into two pages only when it passes the same test
+three times over: the mintages differ by enough to be worth stating, the
+identification step genuinely differs, and both phrases are typed. The 1960 to
+1964 Washington quarters are the worked precedent -- the header of
+`coin-catalog.ts` says what the merged pages got wrong and why the split fixes
+it. A mint mark that changes none of those is a row in the spec table, not a
+URL. Do not fan a series out by its mints on the strength of the precedent
+alone.
+
 ## 1. Pick the two axes — these become the URL and can never change
 
 ```
-/coin-value/<group>/<type>/<coin>
+/coin-info/<group>/<type>/<coin>
 ```
 
 - **`group` is the composition of *this issue*.** Not of its series. A 1964
@@ -150,7 +172,7 @@ mechanical ones:
 ## 5. Know what you just created
 
 The two sections mirror each other, so every URL below comes in a pair: the
-same address under `/coin-value` and under `/melt-value`, one asking what the
+same address under `/coin-info` and under `/melt-value`, one asking what the
 coin is worth and one asking what the metal in it is worth.
 
 | URL (and its `/melt-value` twin) | When it is new |
@@ -160,8 +182,8 @@ coin is worth and one asking what the metal in it is worth.
 | `/<group>/<type>` | if it is the first at that composition and denomination |
 | `/tagged/<tag>` | one per tag, if it is the first coin carrying it |
 
-and it re-dates four hubs it does not create: `/coin-value`,
-`/coin-value/tagged`, `/melt-value` and `/melt-value/tagged`.
+and it re-dates four hubs it does not create: `/coin-info`,
+`/coin-info/tagged`, `/melt-value` and `/melt-value/tagged`.
 
 `/dev/coins` shows this per coin, with the load-bearing URLs marked: an
 archive with one coin on it is that coin's page in everything but name, and

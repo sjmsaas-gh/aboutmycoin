@@ -29,8 +29,28 @@ export const SITE = {
    * description. Two or three sentences, BLUF: what it is, who it is for, and
    * the one thing that makes it different. No marketing throat-clearing.
    */
+  /*
+   * REWRITTEN FOR THE INFORMATION-FIRST PIVOT of 2026-09-22, and the reason is
+   * that this string is not copy on a page -- it is the Organization and
+   * WebSite `description` in the JSON-LD of all 21,586 real pages, and the
+   * opening of llms.txt.
+   *
+   * It used to promise "value calculators that turn a coin's date, mint mark
+   * and condition into a realistic price range". The site stopped doing that
+   * on the day of the pivot: most grade pages state no range at all, by
+   * design, and the ones that do state a researched figure with its sources
+   * rather than a computed estimate. A machine-readable claim on every page of
+   * the site that the visible pages refuse to honour is the mismatch the
+   * header of schema.ts exists to warn about, at the widest scope it could
+   * possibly have.
+   *
+   * "Starting with United States issues" rather than "US coins" or "US and
+   * world coins": the first is true today and stays true on the day another
+   * country lands, and the second was never true. A scope sentence that has to
+   * be rewritten to stay honest is one that will not be.
+   */
   description:
-    'AboutMyCoin is a reference database for US and world coins, with value calculators that turn a coin\'s date, mint mark and condition into a realistic price range. It is for collectors and for anyone who has just found a coin and wants to know what it is and what it is worth. Every valuation shows the grade and the market data it was based on, rather than a single number with no working.',
+    'AboutMyCoin is a coin reference database, starting with United States issues: what each coin is, when and where it was struck, how many there are, and what it is made of, with a melt value worked from a stated and dated spot price. It is for collectors and for anyone who has just found a coin and wants to know what it is and what it is worth. Where there is researched market data for a grade, the page states it and names its sources; where there is none, it says so rather than printing a guess.',
   locale: 'en_US',
   /**
    * Twitter/X handle including the @, or an empty string.
@@ -65,7 +85,7 @@ export const SITE = {
    */
   assetOrigin: '',
   /** GA4 measurement ID. Empty string disables analytics entirely. */
-  ga4: '',
+  ga4: 'G-EQ9TML37XH',
   /**
    * Webfonts to preload, as paths under /fonts.
    *
@@ -116,7 +136,7 @@ export const SITE = {
      - `grep -rl noindex dist` should then list only dist/404.html and
        dist/checkout-complete/index.html, which are noindex on purpose.
    =========================================================================== */
-export const DISCOVERABLE = false;
+export const DISCOVERABLE = true;
 
 /**
  * The value for `<meta name="robots">` and `X-Robots-Tag` while locked down.
@@ -126,51 +146,26 @@ export const DISCOVERABLE = false;
 export const NOINDEX_DIRECTIVE =
   'noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate';
 
-/* ===========================================================================
-   HOLDING PAGE  --  REMOVE WHEN THE SITE IS FINISHED
-   ===========================================================================
-
-   While HOME_PLACEHOLDER is true, `/` serves an empty white document: no
-   header, no footer, no copy, no stylesheet, no analytics. The rest of the
-   site is built and deployed exactly as before, so every page can still be
-   reviewed by typing its URL -- this flag hides the front door, it is not a
-   second lockdown. DISCOVERABLE is what keeps the site out of search, and the
-   two are independent on purpose: the domain can go live behind a blank page
-   for weeks before there is anything worth indexing.
-
-   The document is not literally empty. It carries a title, a description, a
-   canonical and one JSON-LD block, because tests/build-smoke.test.mjs requires
-   all four on every page and the exemption would outlive the placeholder. A
-   visitor sees a white page; a crawler that ignores the noindex header sees a
-   site that says it is not published yet, which is true.
-
-   It is OFF in `astro dev` and ON in every build, rather than a hand-flipped
-   constant, because the two audiences want opposite things at the same time:
-   the home page has to be worked on daily while the public must not see it.
-   A constant would have to be flipped back before each deploy, and the day
-   somebody forgets is the day the unfinished site is the front page.
-
-   So: `npm run dev` shows the real home page. `npm run build`, `npm run
-   preview` and every deploy show the holding page. To see the holding page in
-   dev, or the real page in a build, replace the expression below with a
-   literal -- and put it back.
-
-   TO GO LIVE:
-     - Replace the expression below with `false`. That is the whole reversal:
-       the real home page is still in src/pages/index.astro, untouched.
-     - Rebuild and check `dist/index.html` is the real page again.
-   =========================================================================== */
-export const HOME_PLACEHOLDER = !import.meta.env?.DEV;
-
 /**
- * Title and description for the holding page.
+ * The real home page's title and description.
  *
- * Deliberately says nothing about what is being built. A description is
- * required on every page, so this is the shortest true sentence that fills it
- * -- not a teaser, and not a feature list for a product that does not exist
- * yet.
+ * Here rather than inline in `src/pages/index.astro` so that the limits are
+ * measured against the constant by `tests/build-smoke.test.mjs` as well as
+ * against the built page. They are the copy for the most important page on
+ * the site, and the pair they replaced shows what goes unmeasured otherwise:
+ * `SITE.name + SITE.tagline` is 77 characters against a ceiling of 65, and
+ * `SITE.description` is 388 against 165.
+ *
+ * `SITE.description` is not shortened to fix that. It is the Organization and
+ * WebSite description and the opening of llms.txt, none of which has a
+ * ceiling and all of which want the full three sentences. This is the same
+ * site said in what a result list has room for, which is a different job.
+ *
+ * The title leads with the query rather than the brand because `Seo.astro`
+ * appends the brand anyway, and "what is my coin worth" is what the H1 asks.
  */
-export const PLACEHOLDER_COPY = {
-  title: SITE.name,
-  description: `${SITE.domain} is not published yet.`,
+export const HOME_COPY = {
+  title: 'What Is My Coin Worth? Coin Values and Melt Prices',
+  description:
+    'What your coin is, and what the metal in it is worth: the date, the mint, the mintage, and a melt value worked from a stated and dated silver or gold price.',
 } as const;

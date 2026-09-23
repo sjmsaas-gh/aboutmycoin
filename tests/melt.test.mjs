@@ -15,7 +15,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { SPOT, SPOT_AS_OF, formatUsd, markedUsd } from '../src/lib/spot.ts';
+import {
+  GRAMS_PER_TROY_OUNCE,
+  SPOT,
+  SPOT_AS_OF,
+  formatUsd,
+  markedUsd,
+  meltValue,
+} from '../src/lib/spot.ts';
+import { SILVER_COINS } from '../src/data/silver-coins.ts';
+import { GOLD_COINS } from '../src/data/gold-coins.ts';
+import {
+  rowOzt,
+  rowsOzt,
+  rowsSumAttr,
+  validateMeltRows,
+} from '../src/data/melt-rows.ts';
 import {
   COINS,
   GROUPS,
@@ -118,7 +133,7 @@ test('every melt path is its catalogue path with the root swapped', () => {
 
 test('no slug in the taxonomy shadows a reserved segment in either tree', () => {
   // The two trees share a shape, so they share their reserved words: a group
-  // slugged `tagged` would shadow the cross-cutting views under /coin-value
+  // slugged `tagged` would shadow the cross-cutting views under /coin-info
   // and /melt-value at once, and both builds would be clean.
   for (const item of [...GROUPS, ...TYPES, ...TAGS, ...COINS]) {
     assert.ok(
@@ -457,5 +472,126 @@ test('no melt page asks a question its catalogue twin already owns', () => {
       meltTagPath(tag.slug),
       `${meltTagPath(tag.slug)} does not own its own question`,
     );
+  }
+});
+
+
+/* ---------------------------------------------------------------------------
+   The coin lists behind /tools/coin-calculators
+   --------------------------------------------------------------------------- */
+
+/** Both calculators, so no check below can be true of one list only. */
+const LISTS = [
+  ['SILVER_COINS', SILVER_COINS, 'silver'],
+  ['GOLD_COINS', GOLD_COINS, 'gold'],
+];
+
+test('every row derives its metal content from a weight and a fineness', () => {
+  // The rows state grams and fineness, both off the Mint's specifications, and
+  // the troy-ounce figure is arithmetic. That is what lets a page show its
+  // working instead of printing a content figure nobody can trace.
+  for (const [name, rows] of LISTS) {
+    for (const row of rows) {
+      const derived = (row.grams * row.fineness) / GRAMS_PER_TROY_OUNCE;
+      if (row.troyOunces === undefined) {
+        assert.equal(rowOzt(row), derived, `${name}/${row.slug} does not use its own weight`);
+      } else {
+        // A stated content is the bullion case: the Mint states the metal, not
+        // the alloy. It still has to agree with the weight printed beside it.
+        assert.ok(
+          Math.abs(row.troyOunces - derived) / derived < 0.01,
+          `${name}/${row.slug} states ${row.troyOunces} troy oz beside ${row.grams} g at ${row.fineness}`,
+        );
+      }
+      assert.ok(rowOzt(row) > 0, `${name}/${row.slug} has no metal in it`);
+    }
+  }
+});
+
+test('the calculators and the catalogue state the same metal weights', () => {
+  // Two kinds of file, two jobs -- issues and compositions -- and one set of
+  // facts. A reader who works a figure out on a calculator and then reads a
+  // different one on the quarter's own page has caught the site contradicting
+  // itself.
+  for (const [name, rows, metal] of LISTS) {
+    validateMeltRows(rows, name);
+
+    for (const coin of COINS) {
+      const weight = metal === 'silver' ? coin.silverOzt : coin.goldOzt;
+      if (!weight || coin.country !== 'United States') continue;
+      const row = rows.find(
+        (r) =>
+          (r.type === undefined || r.type === coin.type) &&
+          Math.abs(rowOzt(r) - weight) < 0.0005,
+      );
+      assert.ok(row, `${coin.slug} has no matching row in ${name}`);
+    }
+  }
+
+  // And the check really is a check: a row whose weight disagrees with the
+  // catalogue's quarters fails it.
+  const wrong = SILVER_COINS.map((r) =>
+    r.type === 'quarter' && r.fineness === 0.9 ? { ...r, grams: 5.67 } : r,
+  );
+  assert.throws(() => validateMeltRows(wrong, 'SILVER_COINS'), /no row in SILVER_COINS matches it/);
+});
+
+test('the rows are in the order the page renders, and it is validated', () => {
+  // Circulating coins before bullion, then denomination, then the richest
+  // composition first, so a 90% coin sits above the 40% coin it is mistaken
+  // for. Declared, not sorted: a sort would file a weight typed an order of
+  // magnitude wrong into a plausible-looking position.
+  for (const [name, rows] of LISTS) {
+    assert.throws(
+      () => validateMeltRows([...rows].reverse(), name),
+      /is declared after/,
+      `${name} accepts its own rows backwards`,
+    );
+  }
+
+  // A list orders by denomination or by content and not by both, because the
+  // two rank different things and a list that mixed them would order neither.
+  const mixed = GOLD_COINS.map((r, i) => (i === 0 ? { ...r, type: 'dollar' } : r));
+  assert.throws(() => validateMeltRows(mixed, 'GOLD_COINS'), /declare a denomination/);
+});
+
+test('the total a calculator ships is the sum of its rows', () => {
+  // `data-spot-sum` is the contract between the build and spot-dom.ts: the
+  // build writes the total at the quantity the boxes ship at, and the browser
+  // rewrites it from what is typed. If the format or the arithmetic differ, the
+  // total jumps the moment the page becomes interactive.
+  for (const [name, rows, metal] of LISTS) {
+    const [key, ozt] = rowsSumAttr(rows).split('=');
+    assert.equal(key, metal, `${name} sums under the wrong metal`);
+    assert.equal(Number(ozt), rowsOzt(rows));
+    assert.equal(
+      rowsOzt(rows),
+      rows.reduce((t, r) => t + rowOzt(r), 0),
+    );
+    // Shipped at none, which is what the pages render.
+    assert.equal(rowsSumAttr(rows, 0), `${metal}=0`);
+
+    // And the figure a page prints for one row is the site's own melt
+    // arithmetic, not a second copy of it.
+    for (const row of rows) {
+      assert.equal(
+        formatUsd(meltValue(rowOzt(row), metal)),
+        formatUsd(rowOzt(row) * SPOT[metal]),
+        `${name}/${row.slug} does not use meltValue()`,
+      );
+    }
+  }
+});
+
+test('no coin is in two rows of one calculator, and no slug is in both', () => {
+  // A slug is an input id on the page it renders, and it is the stem of the
+  // quantity box the row's own figure reads. Two rows sharing one would be two
+  // figures driven by one box.
+  const seen = new Set();
+  for (const [name, rows] of LISTS) {
+    for (const row of rows) {
+      assert.ok(!seen.has(row.slug), `${name}/${row.slug} is a slug used twice`);
+      seen.add(row.slug);
+    }
   }
 });

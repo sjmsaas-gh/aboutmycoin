@@ -97,6 +97,23 @@ function lockedDown(): string {
  * /api/ is disallowed in every group, not only `*`: a crawler that finds its
  * own named group ignores the `*` one entirely. There is nothing to index
  * there, and a bot fetching GET /api/contact would mint a form token per hit.
+ *
+ * /api/spot is the one exception, and it is `Allow`ed above the `Disallow` so
+ * the longest match wins. It is not there to be indexed -- it is there because
+ * a rendering crawler has to be able to FETCH it.
+ *
+ * Every melt figure on this site is rendered twice: the build bakes in the
+ * reading it had, and `src/lib/spot-dom.ts` replaces it in the browser with
+ * whatever /api/spot returns. Googlebot renders JavaScript, so it sees the
+ * second one -- but only if it is allowed to make that request. Blocked, its
+ * renderer gets nothing, and what lands in the index is the baked-in figure,
+ * as old as the last deploy. Allowing it is the difference between a crawler
+ * indexing today's price and one indexing whenever the site was last built.
+ *
+ * It is safe to allow in a way the other endpoints are not. It is GET-only,
+ * cached for an hour at the edge, and its one side effect -- refreshing the
+ * price -- is behind a clock and a monthly budget that no amount of crawler
+ * traffic can push past roughly one feed call a day.
  */
 function open(): string {
   return [
@@ -104,10 +121,17 @@ function open(): string {
     '',
     'User-agent: *',
     'Allow: /',
+    'Allow: /api/spot',
     'Disallow: /api/',
     '',
     '# AI assistants and answer engines are welcome to read and cite this site.',
-    ...AI_AGENTS.flatMap((ua) => [`User-agent: ${ua}`, 'Allow: /', 'Disallow: /api/', '']),
+    ...AI_AGENTS.flatMap((ua) => [
+      `User-agent: ${ua}`,
+      'Allow: /',
+      'Allow: /api/spot',
+      'Disallow: /api/',
+      '',
+    ]),
     `Sitemap: ${SITE.url}/sitemap-index.xml`,
     '',
     '# Plain-text summaries for language models:',

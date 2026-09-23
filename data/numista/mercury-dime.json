@@ -1,0 +1,704 @@
+{
+  "source": {
+    "name": "Numista",
+    "url": "https://numista.com",
+    "note": "Fetched at build time with a research credential and cached here. Nothing under src/ reads it and no page calls it. Refresh with `npm run mintages -- --refresh`."
+  },
+  "series": "mercury-dime",
+  "types": [
+    {
+      "id": 51,
+      "title": "1 Dime \"Mercury Dime\"",
+      "composition": "Silver (.900)",
+      "weight": 2.5,
+      "issues": [
+        {
+          "year": 1916,
+          "mark": "",
+          "mintage": 22180080,
+          "pcgs": "4904",
+          "comment": ""
+        },
+        {
+          "year": 1916,
+          "mark": "D",
+          "mintage": 264000,
+          "pcgs": "4906",
+          "comment": ""
+        },
+        {
+          "year": 1916,
+          "mark": "S",
+          "mintage": 10450000,
+          "pcgs": "4908",
+          "comment": ""
+        },
+        {
+          "year": 1917,
+          "mark": "",
+          "mintage": 55230000,
+          "pcgs": "4910",
+          "comment": ""
+        },
+        {
+          "year": 1917,
+          "mark": "D",
+          "mintage": 9402000,
+          "pcgs": "4912",
+          "comment": ""
+        },
+        {
+          "year": 1917,
+          "mark": "S",
+          "mintage": 27330000,
+          "pcgs": "4914",
+          "comment": ""
+        },
+        {
+          "year": 1918,
+          "mark": "",
+          "mintage": 26680000,
+          "pcgs": "4916",
+          "comment": ""
+        },
+        {
+          "year": 1918,
+          "mark": "D",
+          "mintage": 22674800,
+          "pcgs": "4918",
+          "comment": ""
+        },
+        {
+          "year": 1918,
+          "mark": "S",
+          "mintage": 19300000,
+          "pcgs": "4920",
+          "comment": ""
+        },
+        {
+          "year": 1919,
+          "mark": "",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Doubled Die Reverse"
+        },
+        {
+          "year": 1919,
+          "mark": "",
+          "mintage": 35740000,
+          "pcgs": "4922",
+          "comment": ""
+        },
+        {
+          "year": 1919,
+          "mark": "D",
+          "mintage": 9939000,
+          "pcgs": "4924",
+          "comment": ""
+        },
+        {
+          "year": 1919,
+          "mark": "S",
+          "mintage": 8850000,
+          "pcgs": "4926",
+          "comment": ""
+        },
+        {
+          "year": 1920,
+          "mark": "",
+          "mintage": 59030000,
+          "pcgs": "4928",
+          "comment": ""
+        },
+        {
+          "year": 1920,
+          "mark": "D",
+          "mintage": 19171000,
+          "pcgs": "4930",
+          "comment": ""
+        },
+        {
+          "year": 1920,
+          "mark": "S",
+          "mintage": 13820000,
+          "pcgs": "4932",
+          "comment": ""
+        },
+        {
+          "year": 1921,
+          "mark": "",
+          "mintage": 1230000,
+          "pcgs": "4934",
+          "comment": ""
+        },
+        {
+          "year": 1921,
+          "mark": "D",
+          "mintage": 1080000,
+          "pcgs": "4936",
+          "comment": ""
+        },
+        {
+          "year": 1923,
+          "mark": "",
+          "mintage": 50130000,
+          "pcgs": "4938",
+          "comment": ""
+        },
+        {
+          "year": 1923,
+          "mark": "S",
+          "mintage": 6440000,
+          "pcgs": "4940",
+          "comment": ""
+        },
+        {
+          "year": 1924,
+          "mark": "",
+          "mintage": 24010000,
+          "pcgs": "4942",
+          "comment": ""
+        },
+        {
+          "year": 1924,
+          "mark": "D",
+          "mintage": 6810000,
+          "pcgs": "4944",
+          "comment": ""
+        },
+        {
+          "year": 1924,
+          "mark": "S",
+          "mintage": 7120000,
+          "pcgs": "4946",
+          "comment": ""
+        },
+        {
+          "year": 1925,
+          "mark": "",
+          "mintage": 25610000,
+          "pcgs": "4948",
+          "comment": ""
+        },
+        {
+          "year": 1925,
+          "mark": "D",
+          "mintage": 5117000,
+          "pcgs": "4950",
+          "comment": ""
+        },
+        {
+          "year": 1925,
+          "mark": "S",
+          "mintage": 5850000,
+          "pcgs": "4952",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "",
+          "mintage": 32160000,
+          "pcgs": "4954",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "D",
+          "mintage": 6828000,
+          "pcgs": "4956",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "S",
+          "mintage": 1520000,
+          "pcgs": "4958",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "",
+          "mintage": 28080000,
+          "pcgs": "4960",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "D",
+          "mintage": 4812000,
+          "pcgs": "4962",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "S",
+          "mintage": 4770000,
+          "pcgs": "4964",
+          "comment": ""
+        },
+        {
+          "year": 1928,
+          "mark": "",
+          "mintage": 19480000,
+          "pcgs": "4966",
+          "comment": ""
+        },
+        {
+          "year": 1928,
+          "mark": "D",
+          "mintage": 4161000,
+          "pcgs": "4968",
+          "comment": ""
+        },
+        {
+          "year": 1928,
+          "mark": "S",
+          "mintage": 7400000,
+          "pcgs": "4970",
+          "comment": "Large \"S\""
+        },
+        {
+          "year": 1928,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "4970501",
+          "comment": "Small \"S\""
+        },
+        {
+          "year": 1929,
+          "mark": "",
+          "mintage": 25970000,
+          "pcgs": "4972",
+          "comment": ""
+        },
+        {
+          "year": 1929,
+          "mark": "D",
+          "mintage": 5034000,
+          "pcgs": "4974",
+          "comment": ""
+        },
+        {
+          "year": 1929,
+          "mark": "S",
+          "mintage": 4730000,
+          "pcgs": "4976",
+          "comment": ""
+        },
+        {
+          "year": 1929,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "4977101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1930,
+          "mark": "",
+          "mintage": 6770000,
+          "pcgs": "4978",
+          "comment": ""
+        },
+        {
+          "year": 1930,
+          "mark": "S",
+          "mintage": 1843000,
+          "pcgs": "4980",
+          "comment": ""
+        },
+        {
+          "year": 1931,
+          "mark": "",
+          "mintage": 3150000,
+          "pcgs": "4982",
+          "comment": ""
+        },
+        {
+          "year": 1931,
+          "mark": "D",
+          "mintage": 1260000,
+          "pcgs": "4984",
+          "comment": ""
+        },
+        {
+          "year": 1931,
+          "mark": "S",
+          "mintage": 1800000,
+          "pcgs": "4986",
+          "comment": ""
+        },
+        {
+          "year": 1931,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "4976101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1934,
+          "mark": "",
+          "mintage": 24080000,
+          "pcgs": "4988",
+          "comment": ""
+        },
+        {
+          "year": 1934,
+          "mark": "D",
+          "mintage": 6772000,
+          "pcgs": "4990",
+          "comment": ""
+        },
+        {
+          "year": 1935,
+          "mark": "",
+          "mintage": 58830000,
+          "pcgs": "4992",
+          "comment": ""
+        },
+        {
+          "year": 1935,
+          "mark": "D",
+          "mintage": 10477000,
+          "pcgs": "4994",
+          "comment": ""
+        },
+        {
+          "year": 1935,
+          "mark": "S",
+          "mintage": 15840000,
+          "pcgs": "4996",
+          "comment": ""
+        },
+        {
+          "year": 1936,
+          "mark": "",
+          "mintage": 87504130,
+          "pcgs": "4998",
+          "comment": ""
+        },
+        {
+          "year": 1936,
+          "mark": "",
+          "mintage": 4130,
+          "pcgs": "5071",
+          "comment": "Proof"
+        },
+        {
+          "year": 1936,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "4999101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1936,
+          "mark": "D",
+          "mintage": 16132000,
+          "pcgs": "5000",
+          "comment": ""
+        },
+        {
+          "year": 1936,
+          "mark": "S",
+          "mintage": 9210000,
+          "pcgs": "5002",
+          "comment": ""
+        },
+        {
+          "year": 1937,
+          "mark": "",
+          "mintage": 56865756,
+          "pcgs": "5004",
+          "comment": ""
+        },
+        {
+          "year": 1937,
+          "mark": "",
+          "mintage": 5756,
+          "pcgs": "5072",
+          "comment": "Proof"
+        },
+        {
+          "year": 1937,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "5004101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1937,
+          "mark": "D",
+          "mintage": 14146000,
+          "pcgs": "5006",
+          "comment": ""
+        },
+        {
+          "year": 1937,
+          "mark": "S",
+          "mintage": 9740000,
+          "pcgs": "5008",
+          "comment": ""
+        },
+        {
+          "year": 1937,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "5008101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1938,
+          "mark": "",
+          "mintage": 22198728,
+          "pcgs": "5010",
+          "comment": ""
+        },
+        {
+          "year": 1938,
+          "mark": "",
+          "mintage": 8728,
+          "pcgs": "5073",
+          "comment": "Proof"
+        },
+        {
+          "year": 1938,
+          "mark": "D",
+          "mintage": 5537000,
+          "pcgs": "5012",
+          "comment": ""
+        },
+        {
+          "year": 1938,
+          "mark": "S",
+          "mintage": 8090000,
+          "pcgs": "5014",
+          "comment": ""
+        },
+        {
+          "year": 1939,
+          "mark": "",
+          "mintage": 67749321,
+          "pcgs": "5016",
+          "comment": ""
+        },
+        {
+          "year": 1939,
+          "mark": "",
+          "mintage": 9321,
+          "pcgs": "5074",
+          "comment": "Proof"
+        },
+        {
+          "year": 1939,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "5016101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1939,
+          "mark": "D",
+          "mintage": 24394000,
+          "pcgs": "5018",
+          "comment": ""
+        },
+        {
+          "year": 1939,
+          "mark": "S",
+          "mintage": 10540000,
+          "pcgs": "5020",
+          "comment": ""
+        },
+        {
+          "year": 1940,
+          "mark": "",
+          "mintage": 65361827,
+          "pcgs": "5022",
+          "comment": ""
+        },
+        {
+          "year": 1940,
+          "mark": "",
+          "mintage": 11827,
+          "pcgs": "5075",
+          "comment": "Proof"
+        },
+        {
+          "year": 1940,
+          "mark": "D",
+          "mintage": 21198000,
+          "pcgs": "5024",
+          "comment": ""
+        },
+        {
+          "year": 1940,
+          "mark": "S",
+          "mintage": 21560000,
+          "pcgs": "5026",
+          "comment": ""
+        },
+        {
+          "year": 1941,
+          "mark": "",
+          "mintage": 175106557,
+          "pcgs": "5028",
+          "comment": ""
+        },
+        {
+          "year": 1941,
+          "mark": "",
+          "mintage": 16557,
+          "pcgs": "5076",
+          "comment": "Proof"
+        },
+        {
+          "year": 1941,
+          "mark": "",
+          "mintage": null,
+          "pcgs": "5029101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1941,
+          "mark": "D",
+          "mintage": 45634000,
+          "pcgs": "5030",
+          "comment": ""
+        },
+        {
+          "year": 1941,
+          "mark": "D",
+          "mintage": null,
+          "pcgs": "5028101",
+          "comment": "Doubled Die Obverse"
+        },
+        {
+          "year": 1941,
+          "mark": "S",
+          "mintage": 43090000,
+          "pcgs": "5033",
+          "comment": "Large \"S\""
+        },
+        {
+          "year": 1941,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "5033501",
+          "comment": "Small \"S\""
+        },
+        {
+          "year": 1942,
+          "mark": "",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Overdate variety 42/41 (see comments)"
+        },
+        {
+          "year": 1942,
+          "mark": "",
+          "mintage": 205432329,
+          "pcgs": "5034",
+          "comment": ""
+        },
+        {
+          "year": 1942,
+          "mark": "",
+          "mintage": 22329,
+          "pcgs": "5077",
+          "comment": "Proof"
+        },
+        {
+          "year": 1942,
+          "mark": "D",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Overdate variety 42/41 (see comments)"
+        },
+        {
+          "year": 1942,
+          "mark": "D",
+          "mintage": 60740000,
+          "pcgs": "5038",
+          "comment": ""
+        },
+        {
+          "year": 1942,
+          "mark": "S",
+          "mintage": 49300000,
+          "pcgs": "5042",
+          "comment": ""
+        },
+        {
+          "year": 1943,
+          "mark": "",
+          "mintage": 191710000,
+          "pcgs": "5044",
+          "comment": ""
+        },
+        {
+          "year": 1943,
+          "mark": "D",
+          "mintage": 71949000,
+          "pcgs": "5046",
+          "comment": ""
+        },
+        {
+          "year": 1943,
+          "mark": "S",
+          "mintage": 60400000,
+          "pcgs": "5048",
+          "comment": ""
+        },
+        {
+          "year": 1944,
+          "mark": "",
+          "mintage": 231410000,
+          "pcgs": "5050",
+          "comment": ""
+        },
+        {
+          "year": 1944,
+          "mark": "D",
+          "mintage": 62224000,
+          "pcgs": "5052",
+          "comment": ""
+        },
+        {
+          "year": 1944,
+          "mark": "S",
+          "mintage": 49490000,
+          "pcgs": "5054",
+          "comment": ""
+        },
+        {
+          "year": 1945,
+          "mark": "",
+          "mintage": 159130000,
+          "pcgs": "5056",
+          "comment": ""
+        },
+        {
+          "year": 1945,
+          "mark": "D",
+          "mintage": 40245000,
+          "pcgs": "5058",
+          "comment": ""
+        },
+        {
+          "year": 1945,
+          "mark": "S",
+          "mintage": 41920000,
+          "pcgs": "5060",
+          "comment": "Larger \"S\"; see comments"
+        },
+        {
+          "year": 1945,
+          "mark": "S",
+          "mintage": null,
+          "pcgs": "5062",
+          "comment": "Very small \"S\"; see comments"
+        }
+      ]
+    }
+  ]
+}

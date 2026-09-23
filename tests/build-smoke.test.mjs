@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { SITE, DISCOVERABLE, NOINDEX_DIRECTIVE } from '../src/lib/site.ts';
+import { SITE, DISCOVERABLE, NOINDEX_DIRECTIVE, HOME_COPY } from '../src/lib/site.ts';
 import { ONE_TIME_AVAILABLE, ONE_TIME, PRO_AVAILABLE } from '../src/lib/pricing.ts';
 import {
   spotBasis,
@@ -22,7 +22,7 @@ import {
 } from '../src/lib/spot.ts';
 import {
   COINS,
-  COIN_VALUE_ROOT,
+  COIN_INFO_ROOT,
   coinPath,
   groupPath,
   tagPath,
@@ -31,19 +31,30 @@ import {
   populatedTags,
   coinBySlug,
   normaliseQuestion,
+  gradedPairs,
+  gradedValue,
+  gradedGrades,
+  gradePath,
+  gradeQuestion,
+  GRADES,
 } from '../src/data/coins.ts';
-import { allSiteFaqQuestions } from '../src/data/faq-registry.ts';
+import { markedUpFaqQuestions } from '../src/data/faq-registry.ts';
 import {
   CHEAT_SHEETS,
   CHEAT_SHEETS_H1,
   CHEAT_SHEETS_ROOT,
   cheatSheetDescription,
   cheatSheetH1,
+  cheatSheetIndexable,
   cheatSheetPath,
   cheatSheetTeaser,
   cheatSheetTitle,
 } from '../src/data/cheat-sheets.ts';
+import { SILVER_COINS } from '../src/data/silver-coins.ts';
+import { GOLD_COINS } from '../src/data/gold-coins.ts';
+import { rowOzt, rowQtyId, rowsSumAttr } from '../src/data/melt-rows.ts';
 import { allArchiveCopy } from '../src/lib/catalog-copy.ts';
+import { allGradeCopy, gradeAnswer, isPriced, LADDER_BASIS } from '../src/lib/grade-copy.ts';
 import {
   DESCRIPTION_MAX,
   DESCRIPTION_MIN,
@@ -88,6 +99,9 @@ import {
 } from '../src/lib/melt.ts';
 
 const DIST = 'dist';
+
+/** The calculators' root. Named once, like every other section's. */
+const CALCULATORS_ROOT = '/tools/coin-calculators';
 const read = (p) => readFileSync(join(DIST, p), 'utf8');
 
 const tests = [];
@@ -114,6 +128,45 @@ const decode = (html) =>
     .replace(/&middot;/g, '\u00b7')
     .replace(/&times;/g, '\u00d7')
     .replace(/&rarr;/g, '\u2192');
+
+/**
+ * A page's visible text, with the entities turned back into characters and the
+ * whitespace collapsed.
+ *
+ * For the checks that compare a JSON-LD string against what the reader can
+ * actually see. It keeps the case, unlike the one inside the British-spelling
+ * check below: a question marked up as "What is the melt value of a 1965
+ * Washington quarter?" has to appear as that, not as something that matches it
+ * once both are lowercased.
+ */
+/**
+ * Every JSON-LD node on a page, flattened, for the checks that read the graph
+ * rather than grep it.
+ *
+ * Parsed rather than matched with a regex, which is not fastidiousness: the
+ * first version of the Product check below used a regex with a lookahead for
+ * the next node, it matched nothing at all on any page, and it therefore
+ * passed on the exact build it had been written to fail. A vacuous check is
+ * worse than no check, because it is counted.
+ */
+const jsonLdNodes = (html) =>
+  [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(
+    ([, raw]) => {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    },
+  );
+
+const renderedText = (html) =>
+  decode(
+    html
+      .slice(Math.max(0, html.indexOf('<body')))
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' '),
+  )
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/\s+/g, ' ');
 
 test('the build exists', () => {
   assert.ok(existsSync(join(DIST, 'index.html')), 'run `npm run build` first');
@@ -166,11 +219,36 @@ test('every title and description fits what a search result shows', () => {
   // check passed. Both halves of the catalogue now fit their generated forms to
   // src/lib/meta.ts; this is the check that proves it of what actually shipped.
   const problems = [];
+
+  /*
+   * THE SKIP IS THE SITEMAP, NOT THE ROBOTS TAG, and that is the whole point.
+   *
+   * It used to skip any page whose HTML said noindex. That is correct
+   * reasoning -- a page that is not in a search result has no result to fit --
+   * and it made the check VACUOUS, because the pre-launch lockdown marks every
+   * page on the site noindex. All 21,588 of them were skipped, the test passed
+   * in under a second, and 31 pages were over the limits underneath it: 27
+   * melt titles and 4 descriptions. A check that switches itself off for the
+   * whole of the period before launch is a check that runs for the first time
+   * on launch day.
+   *
+   * The sitemap says the same thing without the lockdown in it: it is built
+   * from the per-page intent (astro.config.mjs filters out 404, 500,
+   * checkout-complete and the unwritten cheat sheets) and it is written
+   * whether DISCOVERABLE is true or false. A page in the sitemap is a page
+   * this site wants in a result list, so it is a page whose title and
+   * description have to fit one.
+   */
+  const sitemap = existsSync(join(DIST, 'sitemap-0.xml')) ? read('sitemap-0.xml') : '';
+  assert.ok(sitemap.length > 0, 'no sitemap-0.xml to read the indexable pages from');
+  const indexable = (page) => {
+    const url = `${SITE.url}/${page.replace(/index\.html$/, '').replace(/\/$/, '')}`;
+    return sitemap.includes(`<loc>${url}</loc>`);
+  };
+
   for (const page of htmlFiles()) {
+    if (!indexable(page)) continue;
     const html = read(page);
-    // A noindex page is not in a search result, so the limits do not apply --
-    // the holding page at / is deliberately one sentence long.
-    if (html.includes('name="robots"') && /noindex/.test(html)) continue;
     const title = /<title>([^<]+)<\/title>/.exec(html)?.[1] ?? '';
     const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? '';
     if (title.length > RENDERED_TITLE_MAX) {
@@ -183,6 +261,23 @@ test('every title and description fits what a search result shows', () => {
       problems.push(`${page}: description is ${description.length} characters, under ${DESCRIPTION_MIN}`);
     }
   }
+  /*
+   * The home page is measured from HOME_COPY as well as from dist/ above: the
+   * constant is where the strings are written, so a check on it names the
+   * thing to edit rather than the file it landed in. `renderedTitle()` is
+   * applied because the suffix is what ships.
+   */
+  const homeTitle = renderedTitle(HOME_COPY.title);
+  if (homeTitle.length > RENDERED_TITLE_MAX) {
+    problems.push(`HOME_COPY.title is ${homeTitle.length} characters, over ${RENDERED_TITLE_MAX} — "${homeTitle}"`);
+  }
+  if (HOME_COPY.description.length > DESCRIPTION_MAX) {
+    problems.push(`HOME_COPY.description is ${HOME_COPY.description.length} characters, over ${DESCRIPTION_MAX}`);
+  }
+  if (HOME_COPY.description.length < DESCRIPTION_MIN) {
+    problems.push(`HOME_COPY.description is ${HOME_COPY.description.length} characters, under ${DESCRIPTION_MIN}`);
+  }
+
   assert.deepEqual(problems, [], `\n  - ${problems.join('\n  - ')}\n`);
 });
 
@@ -203,6 +298,22 @@ test('the pre-launch lockdown is all-or-nothing', () => {
     assert.equal(headerCount, 0, 'DISCOVERABLE is true but a host config still sends the noindex X-Robots-Tag');
     assert.ok(!read('index.html').includes('noindex'), 'DISCOVERABLE is true but pages say noindex');
     assert.match(read('robots.txt'), /Sitemap:/, 'an open site advertises its sitemap');
+    // Every group that disallows /api/ must allow /api/spot above it. A
+    // rendering crawler that cannot fetch the price endpoint indexes the
+    // baked-in figure instead of the current one, and the longest-match rule
+    // is what makes the narrower Allow win.
+    const groups = read('robots.txt').split(/\n(?=User-agent:)/).filter((g) => g.includes('Disallow: /api/'));
+    assert.ok(groups.length > 0, 'no group disallows /api/ -- has the policy changed?');
+    for (const group of groups) {
+      assert.ok(
+        group.includes('Allow: /api/spot'),
+        `a robots group blocks /api/ without allowing /api/spot:\n${group}`,
+      );
+      assert.ok(
+        group.indexOf('Allow: /api/spot') < group.indexOf('Disallow: /api/'),
+        'Allow: /api/spot must come before Disallow: /api/',
+      );
+    }
   } else {
     assert.equal(headerCount, 3, 'while locked down, all three host configs must send X-Robots-Tag');
     assert.ok(read('index.html').includes(NOINDEX_DIRECTIVE), 'locked down but the home page is indexable');
@@ -249,6 +360,29 @@ test('nothing is offered for sale while nothing is for sale', () => {
   // the missing ones at once, because on launch day this is a checklist.
   const off = sold.filter(([live]) => !live).map(([, flag, claim]) => `${flag} (${claim})`);
   assert.equal(off.length, 0, `the site sells what is switched off:\n       ${off.join('\n       ')}`);
+});
+
+test('every URL in the sitemap is its own canonical', () => {
+  // The other half of the noindex check below. A grade page canonicalises to
+  // its coin, and a sitemap that lists it anyway asks for a URL to be indexed
+  // that the page itself says is not the one to index -- which Search Console
+  // reports as a conflict rather than resolving in the site's favour.
+  if (!DISCOVERABLE) return;
+  const sitemap = existsSync(join(DIST, 'sitemap-0.xml')) ? read('sitemap-0.xml') : '';
+  let pointedElsewhere = 0;
+  for (const page of htmlFiles()) {
+    const html = read(page);
+    const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+    const url = `${SITE.url}/${page.replace(/index\.html$/, '').replace(/\/$/, '')}`.replace(/\/$/, '');
+    const own = url === SITE.url ? `${SITE.url}/` : url;
+    if (!canonical || canonical === own) continue;
+    pointedElsewhere++;
+    assert.ok(
+      !sitemap.includes(`<loc>${own}</loc>`),
+      `${page} canonicalises to ${canonical} but is listed in the sitemap`,
+    );
+  }
+  assert.ok(pointedElsewhere > 0, 'no page canonicalises elsewhere, so this check proves nothing');
 });
 
 test('noindex pages are not in the sitemap', () => {
@@ -367,12 +501,21 @@ test('a printed melt value carries the price it used and the caveat', () => {
 });
 
 test('each FAQ question is marked up on exactly one page', () => {
-  // Google wants a question to carry FAQPage markup once. faq-registry.ts
-  // enforces uniqueness across the catalogue, the melt section and the common
-  // questions; this checks the built HTML, which is where a question could
-  // still be duplicated by a hand-written page.
+  /*
+   * Google wants a question to carry FAQPage markup once. faq-registry.ts
+   * enforces uniqueness across the catalogue, the melt section and the common
+   * questions; this checks the built HTML, which is where a question could
+   * still be duplicated by a hand-written page.
+   *
+   * `markedUpFaqQuestions()` rather than every question the site asks. The
+   * grade pages ask 21,123 questions and mark up none of them since
+   * 2026-09-23, so walking the full list would look for a `Question` node that
+   * is deliberately absent and fail on the count at the bottom. They are still
+   * in the registry, and still unique, which is the half of the job that is
+   * about the reader rather than about the crawler.
+   */
   const owners = new Map();
-  for (const { question, path } of allSiteFaqQuestions()) {
+  for (const { question, path } of markedUpFaqQuestions()) {
     owners.set(normaliseQuestion(question), path);
   }
   const seen = new Map();
@@ -391,6 +534,174 @@ test('each FAQ question is marked up on exactly one page', () => {
     owners.size,
     `${owners.size - seen.size} catalogue FAQ question(s) were registered but never rendered`,
   );
+});
+
+test('every marked-up FAQ question and answer is visible on its own page', () => {
+  /*
+   * Google's FAQ guidance asks for one thing above all: the whole of the
+   * question and the whole of the answer have to be visible to the reader on
+   * the page carrying the markup. Answers are easy -- every page on this site
+   * renders the BLUF the schema quotes. Questions are not, because a question
+   * is a generated string and a heading is a different generated string, and
+   * nothing connected them.
+   *
+   * All 633 melt coin pages failed this. The `verdict-label` read "The short
+   * answer" on the argument that the H1 had already asked the question; the H1
+   * is "Melt value of 1965 Washington Quarter (No Mint Mark)", which asks
+   * nothing, and the marked-up question -- "What is the melt value of a 1965
+   * Washington quarter with no mint mark?" -- appeared nowhere in the
+   * document. Marked up, invisible, on a fifth of the site.
+   *
+   * The answer is probed on its opening rather than whole, because the visible
+   * copy carries `<span>`s the schema's plain form does not and entities the
+   * schema's does not, and the two are already held character-for-character by
+   * the melt tests. What is being checked here is presence, not equality.
+   */
+  const problems = [];
+  for (const page of htmlFiles()) {
+    const html = read(page);
+    const text = renderedText(html);
+    for (const [, rawQ] of html.matchAll(/"@type":"Question","name":"((?:[^"\\]|\\.)*)"/g)) {
+      const q = JSON.parse(`"${rawQ}"`);
+      if (!text.includes(q)) problems.push(`${page}: marks up "${q}" and never shows it`);
+    }
+    for (const [, rawA] of html.matchAll(/"@type":"Answer","text":"((?:[^"\\]|\\.)*)"/g)) {
+      const probe = JSON.parse(`"${rawA}"`).replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (probe && !text.includes(probe)) problems.push(`${page}: answers with "${probe}..." and never shows it`);
+    }
+  }
+  assert.deepEqual(problems.slice(0, 20), [], `\n  - ${problems.slice(0, 20).join('\n  - ')}\n  (${problems.length} total)\n`);
+});
+
+test('a page with no metal in it does not advertise one in its description', () => {
+  /*
+   * The third of the description-versus-page checks, and the one that caught
+   * the most: five archives under /melt-value promised "metal content in troy
+   * ounces, what it is worth at a stated and dated spot price" over a body
+   * whose first word is "Nothing." Three denomination archives (clad quarters,
+   * copper cents, steel cents) and two tag archives (clad coinage, Wheat
+   * pennies).
+   *
+   * Every one of them had a generator whose ANSWER carried a no-metal branch
+   * and whose DESCRIPTION did not -- `meltPairAnswer` against
+   * `meltPairDescription`, `meltTagAnswer` against `meltTagDescription`. That
+   * is the shape of the bug, and it is invisible in the source: both functions
+   * sit in one file within a few lines of each other and only one of them was
+   * ever read next to the page it writes.
+   *
+   * The test is the page, not the generator: a page that renders no figure
+   * worked from a spot price may not promise one, however it came to say so.
+   */
+  const problems = [];
+  for (const page of htmlFiles()) {
+    if (!page.startsWith('melt-value/')) continue;
+    const html = read(page);
+    /*
+     * Any `data-spot` marker at all is enough to pass. The hub carries only a
+     * `stamp` -- "Silver $66.30/ozt, based on spot prices at ..." -- and that
+     * IS a stated, dated spot price, which is all its description claims; the
+     * multiplying out happens on the pages it points at. The pages this is
+     * aimed at carry no marker of any kind, because there is no metal in them
+     * to work a figure from.
+     */
+    if (/data-spot=/.test(html)) continue;
+    const description = decode(/<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? '');
+    if (/troy ounce|spot price|melt value of/i.test(description)) {
+      problems.push(`${page}: states no melt figure and its description promises one — "${description}"`);
+    }
+  }
+  assert.deepEqual(problems, [], `\n  - ${problems.join('\n  - ')}\n`);
+});
+
+test('a Product states no specification its own page does not print', () => {
+  /*
+   * The companion to the Dataset check, and it was found the same way: by
+   * reading the JSON-LD against the rendered text rather than against the
+   * template that wrote it.
+   *
+   * Every grade page carried a Product asserting `material` ("90% silver, 10%
+   * copper"), a `weight` of 6.25 g and a `diameter` of 24.3 mm, on a page that
+   * prints none of the three -- a grade page has no specification table by
+   * design. Twenty thousand URLs making three invisible machine-readable
+   * claims each. The Product now stops at the coin page, which shows all of
+   * them in a table; this is what keeps it there.
+   *
+   * The figures are matched as numbers rather than as formatted strings,
+   * because the page prints "6.25 g" and "24.3 mm" and the schema carries
+   * bare values with a separate unitCode.
+   */
+  const problems = [];
+  for (const page of htmlFiles()) {
+    const html = read(page);
+    if (!html.includes('"@type":"Product"')) continue;
+    const text = renderedText(html);
+    for (const node of jsonLdNodes(html)) {
+      if (node['@type'] !== 'Product') continue;
+      if (node.material && !text.includes(node.material)) {
+        problems.push(`${page}: Product asserts material "${node.material}", which the page does not print`);
+      }
+      const figures = [
+        ['weight', node.weight?.value],
+        ...(node.additionalProperty ?? []).map((prop) => [prop.name, prop.value]),
+      ];
+      for (const [name, value] of figures) {
+        if (value === undefined || value === null) continue;
+        if (!text.includes(String(value))) {
+          problems.push(`${page}: Product asserts ${name} ${value}, which the page does not print`);
+        }
+      }
+    }
+  }
+  assert.ok(
+    problems.length === 0,
+    `\n  - ${problems.slice(0, 15).join('\n  - ')}\n  (${problems.length} total)\n`,
+  );
+});
+
+test('only a page that renders reference data carries a Dataset', () => {
+  /*
+   * schema.ts states the rule -- "variableMeasured must list columns the page
+   * genuinely renders" -- and it was broken in the one way a rule like that
+   * gets broken: not by a wrong label, but by a redesign. /coin-info declared
+   * eight variables and /melt-value four, and both had rendered none of them
+   * since the cards rewrite took the coin list off the hubs. Nine cards, and a
+   * Dataset over them describing the page as it had been two redesigns
+   * earlier.
+   *
+   * What this pins is the LIST, not the labels, and that is deliberate. A
+   * label is a name for a quantity and the page prints the quantity, not the
+   * name: /melt-value/silver renders "0.7734 troy oz silver" for "Metal
+   * content (troy ounces)" and the calculators render "90% silver" for
+   * "Fineness". Matching those as strings would fail every honest page and
+   * pass any page that happened to use the word, which is worse than not
+   * checking. A short allow-list cannot do that: adding a Dataset to a tenth
+   * page means coming here and saying which table on it the variables name.
+   */
+  const ALLOWED = {
+    'melt-value/silver/index.html':
+      'the group archive lists every silver coin with its content in troy ounces and its melt value, over the spot ladder the figures were worked at',
+    'tools/coin-calculators/silver-melt-price/index.html':
+      'a row per composition, each stating grams, fineness, content in troy ounces and the melt value of one',
+    'tools/coin-calculators/gold-melt-price/index.html': 'the same, for gold',
+  };
+  const carrying = htmlFiles().filter((page) => /"@type":"Dataset"/.test(read(page)));
+  assert.deepEqual(
+    carrying.sort(),
+    Object.keys(ALLOWED).sort(),
+    'a page gained or lost a Dataset; say in ALLOWED which table on it the variables name',
+  );
+  for (const page of carrying) {
+    const html = read(page);
+    const vars = [...html.matchAll(/"@type":"Dataset".*?"variableMeasured":\[([^\]]*)\]/gs)]
+      .flatMap(([, block]) => [...block.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map(([, r]) => JSON.parse(`"${r}"`)));
+    assert.ok(vars.length > 0, `${page} declares a Dataset with no variableMeasured`);
+    // The figures the variables name have to be somewhere on the page, and on
+    // these three every one of them is a marked spot figure or a table cell.
+    assert.ok(
+      /<table/.test(html) || /data-spot=/.test(html),
+      `${page} declares a Dataset and renders no table and no computed figure`,
+    );
+  }
 });
 
 test('a series page prints its key dates, its varieties and its mint marks', () => {
@@ -557,7 +868,7 @@ test('the visible breadcrumb trail matches the BreadcrumbList schema', () => {
   }
 });
 
-test('every coin has a melt page, and the two sections link to each other', () => {
+test('every coin has a melt page, and the twins link to each other where there is a figure', () => {
   // The orphan check for the mirrored section, and the check that the links
   // each page is supposed to carry are actually in the HTML. Every half of
   // this is a silent failure: a page nobody links to is a page Google
@@ -575,22 +886,36 @@ test('every coin has a melt page, and the two sections link to each other', () =
       `${parentPath} does not link to ${meltPath(coin)}`,
     );
 
-    // Both ways between the twins. This is the contract the whole mirror
-    // exists for: a reader who landed on the wrong half of the answer has one
-    // link to the other half, on every single page, in both directions.
+    // Upwards on every melt page without exception: a reader who landed on
+    // the metal half of the answer always has one link to the other half.
     assert.ok(
       read(page).includes(`href="${coinPath(coin)}"`),
       `${meltPath(coin)} does not link to ${coinPath(coin)}`,
     );
-    assert.ok(
-      read(`${coinPath(coin).slice(1)}/index.html`).includes(`href="${meltPath(coin)}"`),
-      `${coinPath(coin)} does not link to its melt page`,
-    );
+    // Downwards only for a coin with metal in it. Since 2026-09-23 a coin
+    // with none carries no link to its melt page -- the page is still built,
+    // still reachable from the melt archives and still links back up, but a
+    // coin page does not invite a reader to go and read "None". So the
+    // assertion flips: the link must be there where there is a figure behind
+    // it, and must NOT be there where there is not, because a link that comes
+    // back by accident is exactly what this check is here to catch.
+    const coinHtml = read(`${coinPath(coin).slice(1)}/index.html`);
+    if (meltOf(coin)) {
+      assert.ok(
+        coinHtml.includes(`href="${meltPath(coin)}"`),
+        `${coinPath(coin)} does not link to its melt page`,
+      );
+    } else {
+      assert.ok(
+        !coinHtml.includes(`href="${meltPath(coin)}"`),
+        `${coinPath(coin)} has no precious metal in it but still links to its melt page`,
+      );
+    }
   }
 });
 
 test('the melt tree mirrors the catalogue, segment for segment', () => {
-  // The structural check. /melt-value is /coin-value with one segment
+  // The structural check. /melt-value is /coin-info with one segment
   // changed, at every level, and a reader who edits the URL by hand must land
   // on a page rather than a 404. validateMeltPaths() asserts this over the
   // registries at build time; this asserts it over the HTML that was
@@ -598,8 +923,8 @@ test('the melt tree mirrors the catalogue, segment for segment', () => {
   const built = (path) => existsSync(join(DIST, `${path.slice(1)}/index.html`));
 
   const pairs = [
-    [COIN_VALUE_ROOT, MELT_ROOT],
-    [`${COIN_VALUE_ROOT}/tagged`, MELT_TAGGED_ROOT],
+    [COIN_INFO_ROOT, MELT_ROOT],
+    [`${COIN_INFO_ROOT}/tagged`, MELT_TAGGED_ROOT],
     ...meltGroups().map((g) => [groupPath(g.slug), meltGroupPath(g.slug)]),
     ...meltPairs().map(({ group, type }) => [
       typePath(group.slug, type.slug),
@@ -612,7 +937,7 @@ test('the melt tree mirrors the catalogue, segment for segment', () => {
   for (const [coinSide, meltSide] of pairs) {
     assert.equal(
       meltSide,
-      `${MELT_ROOT}${coinSide.slice(COIN_VALUE_ROOT.length)}`,
+      `${MELT_ROOT}${coinSide.slice(COIN_INFO_ROOT.length)}`,
       `${meltSide} is not ${coinSide} with the root swapped`,
     );
     assert.ok(built(coinSide), `${coinSide} was not built`);
@@ -717,6 +1042,197 @@ test('a melt page prints its figure, its working and its caveat', () => {
       html,
       /id="calc-total"[^>]*data-spot-qty|data-spot-qty[^>]*id="calc-total"/,
       `${meltPath(coin)} has a quantity box that does not drive the headline figure`,
+    );
+  }
+});
+
+test('every grade page was built, and the coin page links to it both ways', () => {
+  // The orphan check for the newest section, and the link that keeps it out of
+  // the doorway-page shape: a grade page is reached from the coin's own ladder,
+  // and it leads back to the coin. It is not in the sitemap, so a grade page
+  // nothing links to is a page nothing reaches at all -- and one with no
+  // way back up is a dead end for the reader who landed on the wrong rung.
+  const pairs = gradedPairs();
+  assert.ok(pairs.length > 0, 'no grade page was built, so this check proves nothing');
+
+  for (const { coin, grade } of pairs) {
+    const path = gradePath(coin, grade);
+    const page = `${path.slice(1)}/index.html`;
+    assert.ok(existsSync(join(DIST, page)), `${path} was not built`);
+
+    const html = read(page);
+    assert.ok(html.includes(`href="${coinPath(coin)}"`), `${path} does not link back to its coin`);
+    assert.ok(
+      read(`${coinPath(coin).slice(1)}/index.html`).includes(`href="${path}"`),
+      `${coinPath(coin)} does not link to ${path}`,
+    );
+  }
+});
+
+test('every grade page ships the copy its generator produced', () => {
+  // The same discipline the archives are held to. A heading typed back into
+  // the .astro file typechecks and passes every unit test; only the built HTML
+  // shows that the template stopped reading src/lib/grade-copy.ts.
+  const problems = [];
+  for (const row of allGradeCopy()) {
+    const file = `${row.path.slice(1)}/index.html`;
+    if (!existsSync(join(DIST, file))) {
+      problems.push(`${row.path} was not built`);
+      continue;
+    }
+    const html = decode(read(file));
+    const expect = (what, text) => {
+      if (text && !html.includes(text)) problems.push(`${row.path} is missing its ${what}: "${text}"`);
+    };
+    expect('H1', row.h1);
+    expect('<title>', row.seoTitle);
+    expect('meta description', row.description);
+    expect('FAQ question', row.question);
+    expect('answer', row.answer);
+    row.paragraphs.forEach((p, i) => expect(`paragraph ${i + 1}`, p));
+    row.headings.forEach((h, i) => expect(`heading ${i + 1}`, h));
+  }
+  assert.deepEqual(problems, [], `\n  - ${problems.join('\n  - ')}\n`);
+});
+
+test('a grade page states a price only where it has one, and still offers nothing', () => {
+  // The three rules this section is closest to breaking. It prints prices, so
+  // it is the page most likely to grow an `offers` block; it prints prices that
+  // MOVE, so it is the page most likely to grow a `dateModified`; and since
+  // 2026-09-22 most of its pages have no price at all, so it is the page most
+  // likely to grow a placeholder where one should go.
+  for (const { coin, grade } of gradedPairs()) {
+    const path = gradePath(coin, grade);
+    const html = decode(read(`${path.slice(1)}/index.html`));
+
+    assert.ok(!html.includes('"offers"'), `${path} claims an offer for a coin`);
+
+    /*
+     * The provenance belongs to the FIGURE, so a page with no figure carries
+     * neither -- and since the owner made this an information catalogue rather
+     * than a price guide, a page with no figure carries no range BLOCK either.
+     *
+     * It printed `TBD to TBD` in the largest type on the page on six and a
+     * half thousand pages, which was honest and was still the wrong shape: a
+     * placeholder for a price, set as the headline, is a price page that has
+     * failed. What replaced it is nothing at all, so the two questions this
+     * asks are the two that are now the rule -- a page that states a range
+     * says where it came from and what it is not, and a page that does not
+     * states no range, no provenance and no placeholder.
+     *
+     * The range block is identified by its own heading id rather than by the
+     * first `figure-big` on the page: on an unpriced silver coin the first one
+     * is the METAL FLOOR, which is real arithmetic and carries a dollar sign,
+     * so a regex that did not tell them apart would pass this test by reading
+     * the wrong figure.
+     *
+     * The phrase is matched against the constant rather than retyped here. A
+     * test with its own copy of a sentence is a second place for it to drift,
+     * and this one is a disclaimer, which is the worst kind to let drift.
+     */
+    const priced = isPriced(gradedValue(coin, grade));
+    const range = /<p class="figure-label" id="range-heading">[\s\S]*?<p class="figure-big"[^>]*>([\s\S]*?)<\/p>/.exec(html)?.[1];
+    if (priced) {
+      assert.ok(html.includes(LADDER_BASIS), `${path} prints a range with no provenance under it`);
+      assert.ok(range !== undefined, `${path} has a researched range and renders no range block`);
+      assert.match(range, /\$/, `${path} has a researched range and does not print it`);
+    } else {
+      assert.ok(
+        !html.includes(LADDER_BASIS),
+        `${path} has no researched range and names a source for it anyway`,
+      );
+      assert.equal(
+        range,
+        undefined,
+        `${path} has no researched range and renders a range block anyway: "${range}"`,
+      );
+    }
+
+    // No placeholder, anywhere, in any form. This is the string the section
+    // used to print in that slot, and the check that it has not come back.
+    assert.ok(!html.includes('TBD'), `${path} still prints a TBD placeholder`);
+
+    assert.ok(html.includes('"@type":"Article"'), `${path} is missing Article schema`);
+
+    /*
+     * The question and its answer are RENDERED, which is what this asserts and
+     * what nothing asserted before 2026-09-23.
+     *
+     * Until that day the only thing tying the visible block to anything
+     * checkable was the FAQPage node, which carried the same two strings and
+     * was itself checked. Taking the markup off would have quietly removed the
+     * site's only guard that the first block on 21,123 pages says anything at
+     * all -- so the guard moves here, where it should always have been: the
+     * words a reader sees, matched against the generator that writes them.
+     */
+    const question = gradeQuestion(coin, grade);
+    assert.ok(
+      html.includes(question),
+      `${path} does not print its question: "${question}"`,
+    );
+    const answer = gradeAnswer(coin, grade);
+    assert.ok(
+      html.includes(answer),
+      `${path} does not print the answer its question promises`,
+    );
+
+    /*
+     * AND NO FAQPage, which is the opposite of what this asserted until
+     * 2026-09-23. The markup came off all 21,123 grade pages on the owner's
+     * decision: Google has not shown FAQ rich results for a site like this one
+     * since 2023, so it bought nothing, and 21,123 FAQPage nodes whose
+     * question is one formula with a coin and a grade substituted in is the
+     * scaled-content shape asserted in machine-readable form.
+     *
+     * The question and the answer still RENDER -- that is checked a few lines
+     * up, against `gradeQuestion()` and `gradeAnswer()`. What is gone is the
+     * claim about what the page is. The coin pages, the melt pages and the
+     * common questions keep theirs.
+     */
+    assert.ok(
+      !html.includes('"@type":"FAQPage"'),
+      `${path} carries FAQPage markup; grade pages render the question and do not mark it up`,
+    );
+
+    /*
+     * AND NO Product, which is the opposite of what this asserted until
+     * 2026-09-22. The node used to be here and it stated `material`, `weight`
+     * and `diameter` -- three facts a grade page deliberately does not render,
+     * because the coin page owns the specification table. The Product stops at
+     * the coin, the same place the melt mirror stops and for the same reason:
+     * grade does not change the object.
+     */
+    assert.ok(
+      !html.includes('"@type":"Product"'),
+      `${path} carries a Product node; the coin page owns it`,
+    );
+  }
+});
+
+test('a grade ladder lists only the grades that exist, and there is no melt page per grade', () => {
+  // Two absences, each of which would be invisible in a clean build.
+  //
+  // A row saying "MS69: none" asserts that a reader might turn one up, which is
+  // the one thing worse than a duplicate page: a fact the site got wrong. And
+  // grade does not change metal content, so the melt mirror stops at the coin
+  // -- a /melt-value/.../g4 would be a second page doing the coin's melt
+  // arithmetic under a heading that implies grade changes it.
+  for (const { coin, grade } of gradedPairs()) {
+    const path = gradePath(coin, grade);
+    const html = decode(read(`${path.slice(1)}/index.html`));
+    const built = gradedGrades(coin).map((g) => g.code);
+
+    for (const g of GRADES) {
+      if (built.includes(g.code)) continue;
+      assert.ok(
+        !html.includes(`>${g.label}<`),
+        `${path} lists ${g.label}, which this coin has no researched price for`,
+      );
+    }
+
+    assert.ok(
+      !existsSync(join(DIST, `${meltPath(coin).slice(1)}/${grade.slug}/index.html`)),
+      `a melt page was built for ${coin.slug} in ${grade.slug}; grade does not change metal content`,
     );
   }
 });
@@ -860,19 +1376,33 @@ test('no page states a metal price without the time it was read', () => {
   // price of a metal is making a claim about what an ounce costs, and the only
   // thing that makes that claim honest on a static page is the timestamp beside
   // it. One phrase, from spotBasis(), so a page cannot word it its own way.
+  /*
+   * MATCHED ON THE MARKER, NOT ON ONE SPELLING OF THE FIGURE.
+   *
+   * It used to look for the literal "$66.30/ozt", which is how `spotStamp()`
+   * writes a price -- so it only ever fired on a page that already carried a
+   * stamp, and every page that printed the price some other way was skipped
+   * rather than failed. The two denomination archives with metal in them say
+   * "$66.30 a troy ounce" in their opening answer and nothing else anywhere,
+   * and they sat there stating a metal price with no minute against it while
+   * this test passed on all 20,081 pages.
+   *
+   * `data-spot` is the honest trigger: it is on every figure the build worked
+   * from a spot price, it is what the browser looks for when it rewrites them,
+   * and a page cannot print such a figure without it -- that is a separate
+   * check below. So "carries a spot-derived figure" and "says when the price
+   * was read" are now the same population.
+   */
   for (const page of htmlFiles()) {
     const html = read(page);
-    for (const metal of ['silver', 'gold']) {
-      const price = `${formatUsd(spotPrice(metal))}/ozt`;
-      if (!html.includes(price)) continue;
-      assert.ok(
-        html.includes(spotBasis()),
-        `${page} prints ${price} without saying when it was read`,
-      );
-      // And never the vendor's name: provenance for a reader is the time, not
-      // who sells the feed.
-      assert.ok(!html.includes('metals.dev'), `${page} names the price feed`);
-    }
+    // Never the vendor's name, anywhere: provenance for a reader is the time,
+    // not who sells the feed.
+    assert.ok(!html.includes('metals.dev'), `${page} names the price feed`);
+    if (!/data-spot="(value|price|sum|ozt|stamp)"/.test(html)) continue;
+    assert.ok(
+      html.includes(spotBasis()),
+      `${page} prints a figure worked from a spot price without saying when it was read`,
+    );
   }
 });
 
@@ -937,14 +1467,36 @@ test('every marked figure says what its own attributes say it should', () => {
   const MARKED = /<(?:span|p|dd|td)\b([^>]*\bdata-spot="[^"]*"[^>]*)>([^<]*)</g;
   const attr = (tag, name) => new RegExp(`\\b${name}="([^"]*)"`).exec(tag)?.[1];
 
+  /**
+   * The quantity every box on a page shipped at, by id.
+   *
+   * A figure that a box multiplies has to be re-derived at the quantity the
+   * BUILD rendered it at, which is the box's `value` attribute -- one on a melt
+   * page, none on the silver melt price calculator, and the same lookup spot-dom.ts
+   * does in the browser. Assuming one here would pass a calculator whose
+   * figures and boxes disagreed the instant the page loaded.
+   */
+  const shippedQuantities = (html) => {
+    const out = new Map();
+    for (const [, tag] of html.matchAll(/<input\b([^>]*)>/g)) {
+      const id = /\bid="([^"]*)"/.exec(tag)?.[1];
+      const value = /\bvalue="([^"]*)"/.exec(tag)?.[1];
+      if (id && value !== undefined && value !== '') out.set(id, Number(value));
+    }
+    return out;
+  };
+
   let checked = 0;
   for (const page of htmlFiles()) {
     const html = read(page);
+    const boxes = shippedQuantities(html);
     for (const [, tag, text] of html.matchAll(MARKED)) {
       const kind = attr(tag, 'data-spot');
       // The ladder is a shape rather than a string, and is rebuilt wholesale
       // rather than rewritten in place.
       if (kind === 'ladder') continue;
+      const qty = /\bdata-spot-qty\b/.test(tag);
+      const box = attr(tag, 'data-spot-qty');
       const expected = spotFigureText(
         {
           kind,
@@ -952,9 +1504,10 @@ test('every marked figure says what its own attributes say it should', () => {
           ozt: attr(tag, 'data-spot-ozt'),
           sum: attr(tag, 'data-spot-sum'),
           suffix: attr(tag, 'data-spot-suffix'),
-          qty: /\bdata-spot-qty\b/.test(tag),
+          qty,
         },
         REFERENCE_SPOT,
+        qty ? (boxes.get(box === undefined ? 'calc-count' : box) ?? 1) : 1,
       );
       assert.ok(
         expected !== undefined,
@@ -1020,7 +1573,7 @@ test('the spot endpoint is not a page, and no page links to it as one', () => {
 });
 
 test('every archive page renders the copy the generator wrote for it', () => {
-  // The templates under /coin-value take every sentence from
+  // The templates under /coin-info take every sentence from
   // src/lib/catalog-copy.ts, and the point of that is one place to change the
   // wording of hundreds of pages. A template that quietly stops reading the
   // module -- a heading typed back in, a description left behind after an edit
@@ -1095,10 +1648,7 @@ test('every built page uses British spellings in its visible text', () => {
 });
 
 test('every cheat sheet was built, and the section links both ways', () => {
-  // The orphan check, and the dead-end check. The hub is the only page above
-  // a sheet, so a sheet it does not link to is a page nothing points at; and
-  // a sheet that does not link back is a page whose only way out is the
-  // breadcrumb.
+  // Orphan and dead-end. The hub is the only page above a sheet.
   const hub = read(`${CHEAT_SHEETS_ROOT.slice(1)}/index.html`);
   assert.ok(hub.includes(`>${CHEAT_SHEETS_H1}<`), `${CHEAT_SHEETS_ROOT} does not print its own H1`);
 
@@ -1106,7 +1656,16 @@ test('every cheat sheet was built, and the section links both ways', () => {
     const path = cheatSheetPath(sheet);
     const file = `${path.slice(1)}/index.html`;
     assert.ok(existsSync(join(DIST, file)), `${path} was not built`);
-    assert.ok(hub.includes(`href="${path}"`), `${CHEAT_SHEETS_ROOT} does not link to ${path}`);
+    // The hub sends a reader only to a sheet that is written AND checked; an
+    // unchecked one is built, noindex and linked from nowhere, so both
+    // directions are asserted -- a hub linking one is the failure too.
+    assert.equal(
+      hub.includes(`href="${path}"`),
+      cheatSheetIndexable(sheet),
+      cheatSheetIndexable(sheet)
+        ? `${CHEAT_SHEETS_ROOT} does not link to ${path}`
+        : `${CHEAT_SHEETS_ROOT} links to ${path}, which is not indexable`,
+    );
 
     const html = read(file);
     assert.ok(
@@ -1123,57 +1682,51 @@ test('every cheat sheet was built, and the section links both ways', () => {
 });
 
 test('a cheat sheet that is not written says so, and is kept out of the index', () => {
-  // The whole concession that lets ten empty URLs exist at all: a stub is
-  // noindex and out of the sitemap, and it admits on its face that it holds
-  // nothing. Take any one of those away and the section is ten thin pages.
-  // Setting `written: true` in the registry reverses all three at once.
+  // The concession that lets ten empty URLs exist: noindex, out of the
+  // sitemap, and it says so on its face. Take one away and the section is ten
+  // thin pages.
   //
-  // The noindex assertion below is the one that is not load-bearing YET: while
-  // DISCOVERABLE is false every page on the site is noindex anyway, so it
-  // passes on a page that never asked for it. Verified by mutation that the
-  // sitemap and the wording both fail when they should; the noindex half
-  // starts proving something the day the lockdown lifts, which is exactly when
-  // it matters.
+  // The noindex assertion is not load-bearing yet -- while DISCOVERABLE is
+  // false every page is noindex anyway. The sitemap and wording halves were
+  // verified by mutation; this one starts proving something at launch.
   const sitemap = existsSync(join(DIST, 'sitemap-0.xml')) ? read('sitemap-0.xml') : '';
   for (const sheet of CHEAT_SHEETS) {
     const path = cheatSheetPath(sheet);
     const html = read(`${path.slice(1)}/index.html`);
-    if (!sheet.written) {
+    assert.equal(
+      html.includes('is not written yet'),
+      !sheet.written,
+      `${path}: the stub wording and the registry's \`written\` flag disagree`,
+    );
+
+    if (!cheatSheetIndexable(sheet)) {
       assert.ok(
         html.includes('name="robots" content="noindex'),
-        `${path} is a stub but is not noindex`,
+        `${path} is not indexable but is not noindex`,
       );
       assert.ok(
         !sitemap.includes(`<loc>${SITE.url}${path}</loc>`),
-        `${path} is a stub but is listed in the sitemap`,
-      );
-      assert.ok(
-        html.includes('is not written yet'),
-        `${path} is a stub and does not say so`,
+        `${path} is not indexable but is listed in the sitemap`,
       );
     } else {
       assert.ok(
-        !html.includes('is not written yet'),
-        `${path} is written but still carries the stub wording`,
-      );
-      assert.ok(
         sitemap === '' || sitemap.includes(`<loc>${SITE.url}${path}</loc>`),
-        `${path} is written but missing from the sitemap`,
+        `${path} is indexable but missing from the sitemap`,
       );
     }
   }
 });
 
 test('a cheat sheet states no price and does not restate the series page', () => {
-  // Which dates are scarce has been settled for a century; what they fetch is
-  // true for a week. Same rule SeriesInfo is under.
-  //
-  // The second half is the one that keeps this section from becoming a second
-  // set of series pages: the run, the designer, the metal eras and where the
-  // mint mark sits belong to /coin-value/tagged/<series>, which exists. A
-  // sheet that grows those rows has become that page. See the header of
-  // src/data/cheat-sheets.ts.
-  const FORBIDDEN = [/\bDesigner\b/, /\bObverse\b/, /\bReverse\b/, /\bMetal eras\b/, /\bEdge\b/];
+  // No price: settled a century ago, true for a week. And no section for the
+  // run, the designer or the metal eras -- those are the series page's, and a
+  // sheet that grows them has become it.
+  // Headings and column headers only: a sheet may name an edge in a caution,
+  // it may not grow a section for one.
+  const FORBIDDEN = [
+    /\bdesigner\b/, /\bobverse\b/, /\breverse\b/, /\bmetal era/,
+    /\bat a glance\b/, /\bmint marks?\b/, /\bcomposition\b/,
+  ];
   for (const sheet of CHEAT_SHEETS) {
     const path = cheatSheetPath(sheet);
     const html = read(`${path.slice(1)}/index.html`);
@@ -1182,25 +1735,176 @@ test('a cheat sheet states no price and does not restate the series page', () =>
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
       .replace(/<[^>]+>/g, ' ');
     assert.ok(!/[$\u00a3\u20ac]\s?\d/.test(text), `${path} states a price`);
-    for (const pattern of FORBIDDEN) {
-      assert.ok(!pattern.test(text), `${path} carries ${pattern}, which belongs on the series page`);
+
+    const headings = [...body.matchAll(/<(h[23]|th)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map((m) =>
+      m[2].replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;|&#\d+;/gi, ' ').trim().toLowerCase(),
+    );
+    for (const heading of headings) {
+      for (const pattern of FORBIDDEN) {
+        assert.ok(
+          !pattern.test(heading),
+          `${path} has a heading "${heading}" matching ${pattern}, which belongs on the series page`,
+        );
+      }
     }
   }
 });
 
+test('a cheat sheet prints its notes, and they stay inside their cap', () => {
+  // The notes are the one place a sheet may state a composition, so the rule
+  // that keeps them from becoming the series page is the cap, and the cap is
+  // only worth anything if the lines really ship. A note silently dropped by
+  // a template change is a sheet that has stopped answering "which of these
+  // are silver", which is the question a jar-sorter asks first.
+  for (const sheet of CHEAT_SHEETS) {
+    const notes = sheet.notes ?? [];
+    if (notes.length === 0) continue;
+    const path = cheatSheetPath(sheet);
+    const html = read(`${path.slice(1)}/index.html`);
+    assert.ok(html.includes('>Notes<'), `${path} has notes but no Notes heading`);
+    assert.ok(notes.length <= 3, `${path} has ${notes.length} notes`);
+    for (const note of notes) {
+      const escaped = note.replace(/&/g, '&#38;').replace(/</g, '&#60;');
+      assert.ok(
+        html.includes(note) || html.includes(escaped),
+        `${path} did not ship the note "${note.slice(0, 40)}..."`,
+      );
+    }
+  }
+});
+
+test('a heading that gives up its margin has it re-homed on the row', () => {
+  // `.heading-row` is a flex row holding an h2 and the print button. The h2
+  // has to drop its bottom margin to share a baseline with the button, so the
+  // row has to carry that margin instead -- and when it did not, the two
+  // error tables sat flush against their own headings. The date table hid it,
+  // because a line of copy follows that heading and supplies its own spacing,
+  // which is why this is worth pinning rather than leaving to the eye.
+  const sheet = CHEAT_SHEETS.find((s) => s.written);
+  const css = read(`${cheatSheetPath(sheet).slice(1)}/index.html`).replace(/\s+/g, '');
+  if (!css.includes('.heading-rowh2{margin-bottom:0')) return;
+  const row = /\.heading-row\{([^}]*)\}/.exec(css);
+  assert.ok(row, 'the h2 gives up its margin but there is no .heading-row rule to carry it');
+  const declared = /margin-bottom:([^;}]+)/.exec(row[1]);
+  assert.ok(
+    declared && !/^0[a-z]*$/.test(declared[1]),
+    '.heading-row h2 zeroes its bottom margin but .heading-row sets none, so a table butts against the heading',
+  );
+});
+
 test('the cheat-sheet hub carries no FAQPage markup', () => {
-  // It answers nothing itself. It is a CollectionPage over an ItemList of the
-  // sheets, the same shape the question topics use, and a hub repeating its
-  // members' Q&A is the one-question-one-page rule's exact failure case.
+  // It answers nothing itself: CollectionPage over an ItemList, the shape the
+  // question topics use.
   const hub = read(`${CHEAT_SHEETS_ROOT.slice(1)}/index.html`);
   assert.ok(!hub.includes('"@type":"FAQPage"'), `${CHEAT_SHEETS_ROOT} carries FAQPage markup`);
   assert.ok(hub.includes('"@type":"ItemList"'), `${CHEAT_SHEETS_ROOT} carries no ItemList`);
-  for (const sheet of CHEAT_SHEETS) {
+  for (const sheet of CHEAT_SHEETS.filter(cheatSheetIndexable)) {
     assert.ok(
       hub.includes(cheatSheetTeaser(sheet)),
       `${CHEAT_SHEETS_ROOT} does not ship the generated teaser for ${sheet.slug}`,
     );
   }
+});
+
+/** The calculators, as the pair of (page, rows) every check below runs over. */
+const CALCULATORS = [
+  { slug: 'silver-melt-price', rows: SILVER_COINS, metal: 'silver' },
+  { slug: 'gold-melt-price', rows: GOLD_COINS, metal: 'gold' },
+];
+
+test('every melt calculator ships a box per coin, and one total over all of them', () => {
+  // The page is a form whose every figure the browser recomputes, so the two
+  // silent failures are a row whose box is not wired to it -- it looks like a
+  // number and never moves -- and a total that is not the rows added up. The
+  // attribute contract is what spot-dom.ts reads, and tests/spot-dom.test.mjs
+  // runs the browser half against this same HTML.
+  for (const { slug, rows, metal } of CALCULATORS) {
+  const page = `tools/coin-calculators/${slug}/index.html`;
+  assert.ok(existsSync(join(DIST, page)), `${CALCULATORS_ROOT}/${slug} was not built`);
+  const html = read(page);
+
+  for (const coin of rows) {
+    const id = rowQtyId(coin);
+    assert.ok(html.includes(`id="${id}"`), `${coin.slug} has no quantity box`);
+    // Shipped empty: a reader has three kinds of coin in a jar, not one of
+    // everything. The total below is worked at the same quantity, and
+    // spot-dom.ts falls back to this attribute when a box is cleared -- so a
+    // box shipped at anything else silently changes all three.
+    assert.match(
+      html,
+      new RegExp(`id="${id}"[^>]*value="0"|value="0"[^>]*id="${id}"`),
+      `${coin.slug}'s box does not ship at none`,
+    );
+    assert.ok(html.includes(`for="${id}"`), `${coin.slug}'s box has no label`);
+    assert.match(
+      html,
+      new RegExp(`data-spot-qty="${id}"[^>]*data-spot-lot="|data-spot-lot="[^"]*"[^>]*data-spot-qty="${id}"`),
+      `${coin.slug}'s figure is not driven by its own box, or is not in the total`,
+    );
+    // The row states the coin's own weight, derived rather than typed.
+    assert.ok(
+      html.includes(`data-spot-ozt="${rowOzt(coin)}"`),
+      `${coin.slug} does not ship its derived silver content`,
+    );
+  }
+
+  // One total, marked as the sum of the lot, carrying the one-of-each figure
+  // the build worked out. The check above that re-derives every marked figure
+  // from its own attributes covers the arithmetic; this covers the wiring.
+  const total = /<p[^>]*id="lot-total"([^>]*)>/.exec(html);
+  assert.ok(total, `${CALCULATORS_ROOT}/${slug} has no total`);
+  assert.match(total[1], /data-spot="sum"/, 'the total is not marked as a sum');
+  assert.match(total[1], /data-spot-lot-total="/, 'the total is not the total of a lot');
+  assert.ok(
+    total[1].includes(`data-spot-sum="${rowsSumAttr(rows, 0)}"`),
+    'the total does not agree with the quantities the boxes shipped at',
+  );
+
+  // Every quantity is zero, so the reference figure -- what ONE of each coin's
+  // silver is worth -- has to be somewhere on the row, or the page is a table
+  // of zeros to a crawler and to a reader with no JavaScript.
+  const eachFigures = [...html.matchAll(/<p class="lot-each"([^>]*)>([^<]*)</g)];
+  assert.equal(
+    eachFigures.length,
+    rows.length,
+    'the melt value of one coin is not a column on every row',
+  );
+  for (const [i, coin] of rows.entries()) {
+    const [, tag, text] = eachFigures[i];
+    assert.equal(
+      text,
+      formatUsd(meltValue(rowOzt(coin), metal)),
+      `${coin.slug} does not state what one of them is worth`,
+    );
+    // It is the melt value of ONE, so the box must not touch it. A figure in
+    // this column that moved with the quantity would be the line total twice.
+    assert.ok(!/data-spot-qty/.test(tag), `${coin.slug}'s per-coin figure is driven by the box`);
+  }
+  assert.match(total[1], /aria-live="polite"/, 'the total changes silently for a screen reader');
+
+  // A jar is not one coin: the page must carry as many boxes as it has rows,
+  // and no stray one.
+  const boxes = [...html.matchAll(/<input[^>]*type="number"/g)].length;
+  assert.equal(boxes, rows.length, 'the number of boxes is not the number of coins');
+  }
+});
+
+test('the calculator hub and its calculators link to each other', () => {
+  const hub = read(`${CALCULATORS_ROOT.slice(1)}/index.html`);
+  for (const { slug } of CALCULATORS) {
+    const page = read(`${CALCULATORS_ROOT.slice(1)}/${slug}/index.html`);
+    assert.ok(
+      hub.includes(`href="${CALCULATORS_ROOT}/${slug}"`),
+      `${CALCULATORS_ROOT} does not link to ${slug}, which it holds`,
+    );
+    assert.ok(
+      page.includes(`href="${CALCULATORS_ROOT}"`),
+      `${CALCULATORS_ROOT}/${slug} does not link back to its hub`,
+    );
+  }
+  // The hub states no figure. A hub that shows a number is a hub competing
+  // with the page that owns it.
+  assert.ok(!/\$\d/.test(hub.slice(hub.indexOf('<body'))), `${CALCULATORS_ROOT} states a figure`);
 });
 
 test('the dev workbench is not in the build', () => {
@@ -1220,11 +1924,45 @@ test('the dev workbench is not in the build', () => {
   }
 });
 
-test('the trailing-slash redirects were generated', () => {
+test('_redirects carries no rule the host would truncate or loop on', () => {
+  /*
+   * THIS USED TO ASSERT THE OPPOSITE -- that rules were generated, one per
+   * route. There were 22,638 of them in a 2.4 MB file, and that file could not
+   * work on either host it was written for:
+   *
+   *   - Cloudflare Pages caps `_redirects` at 2,000 static rules and silently
+   *     drops the rest, so the behaviour would have been the first two
+   *     thousand routes alphabetically.
+   *   - Netlify normalises the trailing slash BEFORE redirect rules run, so
+   *     every rule was a no-op there.
+   *
+   * Vercel, the deploy target, does the job with `"trailingSlash": false` in
+   * vercel.json. The reasoning in full is over `trailingSlashRedirects()` in
+   * astro.config.mjs, including why the one-splat-rule version cannot be
+   * written: neither host allows a splat anywhere but the end of a path.
+   *
+   * What is checked now is that nothing has crept back in over the cap, and
+   * that the root is not redirecting to itself -- the loop the old enumerated
+   * list existed to make impossible, and the one a splat rule would introduce.
+   */
   const redirects = read('_redirects');
-  assert.match(redirects, /301/);
-  // The one rule that must never appear: the root redirecting to itself.
-  assert.ok(!/^\/\s+\/\s+301/m.test(redirects), 'the root must not redirect to itself');
+  const rules = redirects
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+
+  assert.ok(
+    rules.length <= 2000,
+    `dist/_redirects has ${rules.length} rules; Cloudflare Pages caps the file at 2,000 and drops the rest`,
+  );
+  assert.ok(!/^\/\s+\/\s+30[18]/m.test(redirects), 'the root must not redirect to itself');
+  for (const rule of rules) {
+    const [from] = rule.split(/\s+/);
+    assert.ok(
+      !/\*.+/.test(from),
+      `${rule}: neither Netlify nor Cloudflare Pages supports a splat before the end of a path`,
+    );
+  }
 });
 
 test('no font is preloaded that does not exist', () => {

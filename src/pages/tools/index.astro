@@ -1,0 +1,67 @@
+---
+/**
+ * The tools hub: /tools.
+ *
+ * A heading and two cards. This page was deliberately absent until now -- a
+ * hub over two sections the footer already links is a third URL nobody
+ * searched for -- and it is here at the owner's instruction, because the
+ * header has carried a "Coin Tools" link to it since the calculators landed
+ * and that link was a 404 on every page of the site.
+ *
+ * So it stays the smallest thing that answers the click: it holds no
+ * arithmetic, no figure and no list of the sheets or the calculators
+ * underneath. Both of those are hubs in their own right and each states its
+ * own contents; a third recital of them here is this page competing with the
+ * two pages it exists to point at.
+ *
+ * The cards are `TileCard` like every other category listing on the site, so
+ * a way in looks the same here as it does on the home page. Neither key has a
+ * photograph yet and both draw the placeholder -- see src/lib/card-art.ts.
+ */
+import Base from '../../layouts/Base.astro';
+import TileCard from '../../components/TileCard.astro';
+import { itemListSchema, webPageSchema } from '../../lib/schema';
+import { axisArtKey } from '../../lib/card-art';
+import { TOOLS_BLUF, TOOLS_CRUMB, TOOLS_H1, TOOLS_ROOT } from '../../lib/tools';
+import { CHEAT_SHEETS_ROOT } from '../../data/cheat-sheets';
+
+const path = TOOLS_ROOT;
+const h1 = TOOLS_H1;
+const bluf = TOOLS_BLUF;
+
+/** The two sections under /tools, in the order they are useful. */
+const TOOLS = [
+  { href: `${TOOLS_ROOT}/coin-calculators`, label: 'Coin Calculators', artKey: 'coin-calculators' },
+  { href: CHEAT_SHEETS_ROOT, label: 'Coin Cheat Sheets', artKey: 'cheat-sheets' },
+];
+---
+<Base
+  title={h1}
+  description={bluf}
+  path={path}
+  crumbs={[TOOLS_CRUMB]}
+  schemas={[
+    webPageSchema({ type: 'CollectionPage', name: h1, description: bluf, path }),
+    itemListSchema({
+      name: h1,
+      description: bluf,
+      items: TOOLS.map((t) => ({ name: t.label, path: t.href })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg"><strong>{bluf}</strong></p>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="tile-grid">
+      {TOOLS.map((t) => (
+        <TileCard href={t.href} label={t.label} artKey={axisArtKey(t.artKey)} />
+      ))}
+    </div>
+  </section>
+</Base>

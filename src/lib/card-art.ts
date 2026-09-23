@@ -3,7 +3,7 @@
  *
  * Three pages offer the same four ways into the catalogue -- metal, series,
  * country, topic -- and a card for "silver" on the home page has to be the
- * card for "silver" on /coin-value and on /melt-value. That is one fact about
+ * card for "silver" on /coin-info and on /melt-value. That is one fact about
  * a subject, so it lives here rather than in three templates: a photograph
  * arrives once and appears everywhere that subject is offered.
  *
@@ -26,6 +26,17 @@ import ninetyPercentSilver from '../assets/cards/90-percent-silver.webp';
 import junkSilver from '../assets/cards/junk-silver.webp';
 import usCoin from '../assets/cards/us-coin.webp';
 import washingtonQuarter from '../assets/cards/washington-quarter.webp';
+import mercuryDime from '../assets/cards/mercury-dime.webp';
+import morganDollar from '../assets/cards/morgan-dollar.webp';
+import peaceDollar from '../assets/cards/peace-dollar.webp';
+import wheatPenny from '../assets/cards/wheat-penny.webp';
+import clad from '../assets/cards/clad.webp';
+import cladCoinage from '../assets/cards/clad-coinage.webp';
+import keyDate from '../assets/cards/key-date.webp';
+import copper from '../assets/cards/copper.webp';
+import steel from '../assets/cards/steel.webp';
+import coinCalculators from '../assets/cards/coin-calculators.webp';
+import cheatSheets from '../assets/cards/cheat-sheets.webp';
 
 /** A subject that can carry a card, in the form the map is keyed by. */
 export type CardKey = `group/${string}` | `tag/${string}` | `axis/${string}`;
@@ -37,13 +48,24 @@ export const axisArtKey = (slug: string): CardKey => `axis/${slug}`;
 const ART: Partial<Record<CardKey, ImageMetadata>> = {
   'group/silver': silver,
   'group/gold': gold,
+  'group/clad': clad,
+  'group/copper': copper,
+  'group/steel': steel,
   'axis/by-series': bySeries,
   'axis/by-country': byCountry,
   'axis/by-topic': byTopic,
+  'axis/coin-calculators': coinCalculators,
+  'axis/cheat-sheets': cheatSheets,
   'tag/90-percent-silver': ninetyPercentSilver,
   'tag/junk-silver': junkSilver,
   'tag/us-coin': usCoin,
   'tag/washington-quarter': washingtonQuarter,
+  'tag/mercury-dime': mercuryDime,
+  'tag/morgan-dollar': morganDollar,
+  'tag/peace-dollar': peaceDollar,
+  'tag/wheat-penny': wheatPenny,
+  'tag/clad-coinage': cladCoinage,
+  'tag/key-date': keyDate,
 };
 
 /** The picture for a subject, or nothing -- which means the placeholder. */

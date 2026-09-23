@@ -2,7 +2,7 @@
 /**
  * A denomination archive on the melt side: /melt-value/<group>/<type>.
  *
- * The twin of /coin-value/<group>/<type>, and the level the flat namespace
+ * The twin of /coin-info/<group>/<type>, and the level the flat namespace
  * used to have nothing at. "What is the melt value of silver quarters" is a
  * phrase people type, and before this page existed the section answered it
  * with either a single coin or a table of every silver coin ever struck.
@@ -19,6 +19,7 @@
  */
 import Base from '../../../../layouts/Base.astro';
 import MeltTile from '../../../../components/MeltTile.astro';
+import RevealGrid from '../../../../components/RevealGrid.astro';
 import { SITE } from '../../../../lib/site';
 import { itemListSchema, webPageSchema, faqSchema } from '../../../../lib/schema';
 import {
@@ -34,8 +35,8 @@ import {
   meltPairDescription,
   meltCoinsInGroupType,
 } from '../../../../lib/melt';
-import { typePath, type Group, type CoinType } from '../../../../data/coins';
-import { markedUsd } from '../../../../lib/spot';
+import { metalsInCoins, typePath, type Group, type CoinType } from '../../../../data/coins';
+import { markedUsd, spotStamp } from '../../../../lib/spot';
 // Side effect: throws if two pages on this site claim one FAQ question.
 import '../../../../data/faq-registry';
 
@@ -58,6 +59,29 @@ const answer = meltPairAnswer(group, type);
 const answerHtml = meltPairAnswer(group, type, markedUsd);
 const description = meltPairDescription(group, type);
 const plural = type.namePlural.toLowerCase();
+/*
+ * The metals this denomination actually holds, for the provenance line under
+ * the answer. Empty on a clad quarter or a steel cent, where the answer is
+ * "Nothing" and there is no figure to date.
+ *
+ * WHY THE LINE IS HERE AT ALL. The answer above prints "$51.28 of metal each"
+ * and "$66.30 a troy ounce", and every figure on this site worked from a spot
+ * price has to carry the minute that price was read -- the figures are
+ * refreshed on a schedule the site does not control, and the minute is what
+ * tells a reader how much to trust the number.
+ *
+ * This page had no such line. It was missed because the site-wide check keys
+ * on the string "$66.30/ozt", which is the spelling `spotStamp()` uses, and
+ * this page's answer says "$66.30 a troy ounce" instead -- so the guard
+ * skipped it rather than failing it. Two pages, the two denomination archives
+ * that hold metal, were the only ones on the site printing a metal price with
+ * no time against it.
+ *
+ * It is a stamp and not the spot ladder: the ladder belongs to the group
+ * archive one level up, which is a rule, and a second copy of it here would be
+ * the arithmetic restated a level down.
+ */
+const metals = metalsInCoins(coins);
 ---
 <Base
   title={meltPairSeoTitle(group, type)}
@@ -91,6 +115,16 @@ const plural = type.namePlural.toLowerCase();
         <span class="verdict-label">{question}</span>
         <p data-spot-sync={answer} set:html={answerHtml} />
       </div>
+      {metals.length > 0 && (
+        <p class="text-sm" style="color: var(--text-muted); margin-top: 0.75rem">
+          {metals.map((m, i) => (
+            <>
+              {i > 0 && ' '}
+              <span data-spot="stamp" data-spot-metal={m}>{spotStamp(m)}</span>.
+            </>
+          ))}
+        </p>
+      )}
     </div>
   </section>
 
@@ -98,9 +132,9 @@ const plural = type.namePlural.toLowerCase();
     <div class="prose-page" style="margin-bottom: 1.1rem">
       <h2 style="margin-top: 0">{group.name} {plural.toLowerCase()}</h2>
     </div>
-    <div class="tile-grid">
+    <RevealGrid>
       {coins.map((c) => <MeltTile coin={c} showFigure={false} />)}
-    </div>
+    </RevealGrid>
   </section>
 
   <section class="container-page pb-20">

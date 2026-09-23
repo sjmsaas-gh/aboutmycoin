@@ -90,7 +90,7 @@
  */
 import {
   COINS,
-  COIN_VALUE_ROOT,
+  COIN_INFO_ROOT,
   coinPath,
   groupPath,
   populatedGroups,
@@ -240,7 +240,7 @@ export const QUESTION_CATEGORIES: QuestionCategory[] = [
       'Four things set what a coin is worth, and the year stamped on the front is only one of them.',
     intro: [
       'The other three are the mint mark beside it, the condition of the surface and how many people collect the series. A coin struck in the hundreds of millions is common whatever its date, and the questions here are about telling the difference before anybody makes you an offer.',
-      'Every answer stops where the coin starts mattering. For a figure on one particular coin, the [coin value catalogue](/coin-value) has the specifications and the metal content, and the [melt value](/melt-value) pages do the arithmetic.',
+      'Every answer stops where the coin starts mattering. For a figure on one particular coin, the [coin value catalogue](/coin-info) has the specifications and the metal content, and the [melt value](/melt-value) pages do the arithmetic.',
     ],
     primaryKeyword: 'what is my coin worth',
   },
@@ -303,7 +303,7 @@ export const QUESTIONS: Question[] = [
         heading: 'The metal floor',
         paragraphs: [
           'Every coin has a floor, and the floor is what the metal in it would fetch as metal. The sum is one multiplication: the coin’s metal content in troy ounces times the [spot price](/common-questions/what-is-spot-price) of that metal. The working is on the coin’s [melt value](/melt-value) page.',
-          'For United States coinage the floor only matters on silver and gold. A dime, quarter or half dollar dated 1964 or earlier is [90% silver](/coin-value/tagged/90-percent-silver). The same denominations dated 1965 or later are copper-nickel clad, and the metal in them is worth a fraction of what the coin spends for.',
+          'For United States coinage the floor only matters on silver and gold. A dime, quarter or half dollar dated 1964 or earlier is [90% silver](/coin-info/tagged/90-percent-silver). The same denominations dated 1965 or later are copper-nickel clad, and the metal in them is worth a fraction of what the coin spends for.',
         ],
       },
       {
@@ -316,7 +316,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'Condition',
         paragraphs: [
-          'On a common date, condition is the whole of the collector premium: a worn example is worth its metal and an unworn one is worth several times that. On a scarce date, condition multiplies a number that was already large. Either way the question is the same one, and it is answered in [does condition affect a coin’s value](/common-questions/does-condition-affect-coin-value).',
+          'On a common date, condition is the whole of the collector premium: a worn example is worth its metal and an unworn one is worth several times that. On a scarce date, condition multiplies a number that was already large. Either way the question is the same one, and it is answered in [does condition affect a coin’s value](/common-questions/does-condition-affect-coin-info).',
           'Condition is judged on a 70-point scale that the trade agrees on, and the grade a dealer gives your coin is the grade the price guides are keyed to. [What coin grading is](/common-questions/what-is-coin-grading) explains the scale and who issues it.',
         ],
       },
@@ -331,18 +331,18 @@ export const QUESTIONS: Question[] = [
         heading: 'Turning value into an offer',
         paragraphs: [
           'A value is a benchmark and an offer is a transaction, and they are never the same number. Anybody buying has to resell, so they buy below what the coin is worth; the gap is the business. What that means in practice is covered in [how much can I sell my coin for](/common-questions/how-much-can-i-sell-my-coin-for) and [where to sell coins](/common-questions/where-can-i-sell-my-coins).',
-          'Look your coin up in the [coin value catalogue](/coin-value) to get the metal figure and the identification checklist for its series, then judge any offer against that. An offer you cannot explain the gap in is an offer to walk away from.',
+          'Look your coin up in the [coin value catalogue](/coin-info) to get the metal figure and the identification checklist for its series, then judge any offer against that. An offer you cannot explain the gap in is an offer to walk away from.',
         ],
       },
     ],
     related: [
-      'does-condition-affect-coin-value',
+      'does-condition-affect-coin-info',
       'how-much-can-i-sell-my-coin-for',
       'are-old-coins-worth-money',
     ],
   },
   {
-    slug: 'does-condition-affect-coin-value',
+    slug: 'does-condition-affect-coin-info',
     category: 'grading-and-condition',
     question: 'Does condition affect a coin’s value?',
     titleTail: 'Grades Explained',
@@ -361,7 +361,7 @@ export const QUESTIONS: Question[] = [
         heading: 'Why condition moves the price',
         paragraphs: [
           'Coins were struck in the hundreds of millions and spent. What is scarce is not the coin, it is the coin in the state it left the die: a few were set aside in 1964 and the rest went into tills, pockets and coin jars for a decade. Every collector wants the same thing, there is a fixed supply of it, and the price reflects that.',
-          'This is why condition dominates on common dates. A worn [1964 Washington quarter](/coin-value/silver/quarter/1964-washington-quarter) is worth its silver and nothing else, because millions of equally worn ones are available. An unworn one is competing in a much smaller pool.',
+          'This is why condition dominates on common dates. A worn [1964 Washington quarter](/coin-info/silver/quarter/1964-washington-quarter) is worth its silver and nothing else, because millions of equally worn ones are available. An unworn one is competing in a much smaller pool.',
         ],
       },
       {
@@ -381,7 +381,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'Where condition stops mattering',
         paragraphs: [
-          'Condition stops mattering at the metal. A [silver coin](/coin-value/silver) worn nearly smooth is still worth its silver, and that floor does not move with the grade; the melt figure is calculated from the struck weight, and circulation wear takes a fraction of a percent off it.',
+          'Condition stops mattering at the metal. A [silver coin](/coin-info/silver) worn nearly smooth is still worth its silver, and that floor does not move with the grade; the melt figure is calculated from the struck weight, and circulation wear takes a fraction of a percent off it.',
           'Condition also stops mattering once the surface has been altered. A cleaned coin is graded as cleaned whatever detail remains, and it is priced below an honest worn example. That is not an aesthetic judgement but a market one, and it is explained in [does cleaning a coin reduce its value](/common-questions/does-cleaning-a-coin-reduce-value).',
         ],
       },
@@ -433,13 +433,13 @@ export const QUESTIONS: Question[] = [
         heading: 'When it is worth paying for',
         paragraphs: [
           'Grading costs a fee per coin, and it is worth paying when the fee is small against the difference it makes: a coin whose value turns on a judgement call, a coin scarce enough to be worth faking, or a coin heading to an auction where bidders cannot handle it. On a common circulated coin the fee exceeds the coin, and the trade will price it across a counter in seconds for nothing.',
-          '[Should I get my coin graded](/common-questions/should-i-get-my-coin-graded) works through the decision with the numbers in front of you, and [does condition affect a coin’s value](/common-questions/does-condition-affect-coin-value) covers what the grade is measuring before you pay anyone to measure it.',
+          '[Should I get my coin graded](/common-questions/should-i-get-my-coin-graded) works through the decision with the numbers in front of you, and [does condition affect a coin’s value](/common-questions/does-condition-affect-coin-info) covers what the grade is measuring before you pay anyone to measure it.',
         ],
       },
     ],
     related: [
       'should-i-get-my-coin-graded',
-      'does-condition-affect-coin-value',
+      'does-condition-affect-coin-info',
       'how-can-i-tell-if-my-coin-is-fake',
     ],
   },
@@ -471,7 +471,7 @@ export const QUESTIONS: Question[] = [
         heading: 'A troy ounce is not an ounce',
         paragraphs: [
           'Precious metal is weighed in troy ounces. One troy ounce is 31.1035 grams; the ounce on a kitchen scale is 28.3495 grams. A troy ounce is the heavier of the two by about a tenth, so treating one as the other overstates what you have by that much. [What a troy ounce is](/common-questions/what-is-a-troy-ounce) covers the unit and the coin weights that use it.',
-          'Every metal weight in this catalogue is in troy ounces, for exactly this reason. A [1964 Washington quarter](/coin-value/silver/quarter/1964-washington-quarter) holds 0.1808 troy ounces of silver, and that figure multiplied by the spot price is the whole melt calculation.',
+          'Every metal weight in this catalogue is in troy ounces, for exactly this reason. A [1964 Washington quarter](/coin-info/silver/quarter/1964-washington-quarter) holds 0.1808 troy ounces of silver, and that figure multiplied by the spot price is the whole melt calculation.',
         ],
       },
       {
@@ -535,13 +535,13 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'When it does not matter',
         paragraphs: [
-          'Bulk [junk silver](/coin-value/tagged/junk-silver) is bought by weight and sold to a refiner, and the surface has no bearing on the sum. If a coin is worth its metal and nothing more, cleaning it costs nothing but time — and it gains nothing either, because [melt value](/melt-value) is decided by what is in the coin rather than how it looks.',
-          'The risk is not knowing which case you are in. Check the date and mint mark against the [coin value catalogue](/coin-value) before you decide a coin is common, because the coins most often cleaned by their owners are the ones that looked ordinary and were not.',
+          'Bulk [junk silver](/coin-info/tagged/junk-silver) is bought by weight and sold to a refiner, and the surface has no bearing on the sum. If a coin is worth its metal and nothing more, cleaning it costs nothing but time — and it gains nothing either, because [melt value](/melt-value) is decided by what is in the coin rather than how it looks.',
+          'The risk is not knowing which case you are in. Check the date and mint mark against the [coin value catalogue](/coin-info) before you decide a coin is common, because the coins most often cleaned by their owners are the ones that looked ordinary and were not.',
         ],
       },
     ],
     related: [
-      'does-condition-affect-coin-value',
+      'does-condition-affect-coin-info',
       'what-is-coin-grading',
       'how-much-is-my-coin-worth',
     ],
@@ -572,7 +572,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'What an old coin often has',
         paragraphs: [
-          'Metal. Coins made before the middle of the twentieth century were often struck in silver or gold because the metal was the money, and that gives them a floor no modern circulating coin has. A worn Victorian shilling and a worn [silver quarter](/coin-value/silver/quarter) are both worth their silver on any day of the week.',
+          'Metal. Coins made before the middle of the twentieth century were often struck in silver or gold because the metal was the money, and that gives them a floor no modern circulating coin has. A worn Victorian shilling and a worn [silver quarter](/coin-info/silver/quarter) are both worth their silver on any day of the week.',
           'That floor is worth checking first, because it is the part of the answer that can be calculated rather than judged. The [melt value](/melt-value) pages here give it for every coin in the catalogue, sorted so the richest coins come first.',
         ],
       },
@@ -586,7 +586,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'Sorting an inherited box',
         paragraphs: [
-          'Sort by metal before you sort by date. Pull out anything silver or gold using the test in [how can I tell if a coin is silver](/common-questions/how-can-i-tell-if-a-coin-is-silver), because that pile has a floor under it and the rest does not. Then check dates and mint marks in the remainder against the [coin value catalogue](/coin-value).',
+          'Sort by metal before you sort by date. Pull out anything silver or gold using the test in [how can I tell if a coin is silver](/common-questions/how-can-i-tell-if-a-coin-is-silver), because that pile has a floor under it and the rest does not. Then check dates and mint marks in the remainder against the [coin value catalogue](/coin-info).',
           'Do not clean anything, and do not sort by how good a coin looks. The two mistakes cost the same accumulation twice: once when the good coins are polished, and again when they are sold as scrap because nobody read the dates.',
         ],
       },
@@ -617,7 +617,7 @@ export const QUESTIONS: Question[] = [
         heading: 'Reading the date',
         paragraphs: [
           'United States dimes, quarters and half dollars struck in 1964 and earlier are 90% silver. From 1965 they are copper-nickel clad, with one exception: half dollars from 1965 to 1970 are 40% silver. Silver dollars dated 1935 and earlier are 90% silver, and the dollar coins struck from 1971 are not, apart from collector issues sold by the mint.',
-          'Cents and five-cent pieces are not silver in any ordinary year. The one exception is the five-cent piece of 1942 to 1945, which was struck in an alloy containing 35% silver and carries a large mint mark above the building on the reverse. The full list of dates is on the [90% silver coins](/coin-value/tagged/90-percent-silver) page.',
+          'Cents and five-cent pieces are not silver in any ordinary year. The one exception is the five-cent piece of 1942 to 1945, which was struck in an alloy containing 35% silver and carries a large mint mark above the building on the reverse. The full list of dates is on the [90% silver coins](/coin-info/tagged/90-percent-silver) page.',
         ],
       },
       {
@@ -631,7 +631,7 @@ export const QUESTIONS: Question[] = [
         heading: 'The weight test',
         paragraphs: [
           'Silver is denser than the copper-nickel that replaced it, and the mint struck the silver coins heavier. A silver dime weighs 2.50 g against 2.27 g for a clad one; a silver quarter 6.25 g against 5.67 g; a silver half 12.50 g against 11.34 g. A kitchen scale reading to a tenth of a gram separates them without argument.',
-          'Weight is also how you catch a counterfeit, because faking the weight and the diameter and the metal at once is hard. Compare against the specifications on the coin’s own page in the [coin value catalogue](/coin-value), and see [how can I tell if my coin is fake](/common-questions/how-can-i-tell-if-my-coin-is-fake) for what else to measure.',
+          'Weight is also how you catch a counterfeit, because faking the weight and the diameter and the metal at once is hard. Compare against the specifications on the coin’s own page in the [coin value catalogue](/coin-info), and see [how can I tell if my coin is fake](/common-questions/how-can-i-tell-if-my-coin-is-fake) for what else to measure.',
         ],
       },
       {
@@ -689,7 +689,7 @@ export const QUESTIONS: Question[] = [
         heading: 'What to do with it',
         paragraphs: [
           'Write down the date and the mint mark together, in that order, because that pair is how every mintage table and every price guide is indexed. A quarter is not a 1964 quarter for pricing purposes; it is a 1964 or a 1964-D, and the tables treat them separately.',
-          'Then look the pair up. The [Washington quarter](/coin-value/tagged/washington-quarter) pages here list the years and what each is made of, and [how much is my coin worth](/common-questions/how-much-is-my-coin-worth) covers what to check after the date and the mark.',
+          'Then look the pair up. The [Washington quarter](/coin-info/tagged/washington-quarter) pages here list the years and what each is made of, and [how much is my coin worth](/common-questions/how-much-is-my-coin-worth) covers what to check after the date and the mark.',
         ],
       },
     ],
@@ -725,7 +725,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'Coins valued for metal',
         paragraphs: [
-          'Here the arithmetic is close to fixed. The buyer is reselling to a refiner or to another stacker at a known price, so the offer sits a predictable step below [melt value](/melt-value), and the step narrows as the quantity rises. A jar of [junk silver](/coin-value/tagged/junk-silver) is priced in one multiplication and settled in minutes.',
+          'Here the arithmetic is close to fixed. The buyer is reselling to a refiner or to another stacker at a known price, so the offer sits a predictable step below [melt value](/melt-value), and the step narrows as the quantity rises. A jar of [junk silver](/coin-info/tagged/junk-silver) is priced in one multiplication and settled in minutes.',
           'The step moves with the metal market, so no fixed figure holds for long. Work out the melt figure first, ask two buyers, and let the difference between their answers tell you what the going rate is this week.',
         ],
       },
@@ -740,7 +740,7 @@ export const QUESTIONS: Question[] = [
         heading: 'Getting a number you can trust',
         paragraphs: [
           'Get more than one offer, in the same week, on the same coin, and do not tell the second buyer what the first said. Two independent numbers on one coin tell you more about the market than any published guide, because they are what somebody will actually pay rather than what somebody else paid for a different example.',
-          'Then decide where to sell, which is a separate question with a different answer for metal and for collectables: [where can I sell my coins](/common-questions/where-can-i-sell-my-coins). Start from the coin’s own page in the [coin value catalogue](/coin-value) so you arrive knowing the floor.',
+          'Then decide where to sell, which is a separate question with a different answer for metal and for collectables: [where can I sell my coins](/common-questions/where-can-i-sell-my-coins). Start from the coin’s own page in the [coin value catalogue](/coin-info) so you arrive knowing the floor.',
         ],
       },
     ],
@@ -791,7 +791,7 @@ export const QUESTIONS: Question[] = [
         heading: 'What to have ready',
         paragraphs: [
           'The date and mint mark of every coin worth more than its metal, the melt figure for everything that is not, and photographs of both sides under a single light source. Coins in inert holders, handled by the edge. Nothing cleaned, for the reason in [does cleaning a coin reduce its value](/common-questions/does-cleaning-a-coin-reduce-value).',
-          'And a number in your head before the first conversation. [How much can I sell my coin for](/common-questions/how-much-can-i-sell-my-coin-for) covers what a realistic offer looks like, and the [coin value catalogue](/coin-value) is where to get the floor for each coin you are taking.',
+          'And a number in your head before the first conversation. [How much can I sell my coin for](/common-questions/how-much-can-i-sell-my-coin-for) covers what a realistic offer looks like, and the [coin value catalogue](/coin-info) is where to get the floor for each coin you are taking.',
         ],
       },
     ],
@@ -828,14 +828,14 @@ export const QUESTIONS: Question[] = [
         heading: 'When a coin sells above spot',
         paragraphs: [
           'Often, in fact. Anything with a collector premium is priced by date and grade rather than by weight, and it leaves the metal behind entirely. Bullion coins sold by a government mint carry a premium of their own, because buyers pay for a known weight and purity in a recognised form.',
-          'This is the reason the first question is never what your silver weighs. It is whether the coin is worth more than its silver, which is what the date and mint mark decide and what the [coin value catalogue](/coin-value) is for.',
+          'This is the reason the first question is never what your silver weighs. It is whether the coin is worth more than its silver, which is what the date and mint mark decide and what the [coin value catalogue](/coin-info) is for.',
         ],
       },
       {
         heading: 'How to get close to spot',
         paragraphs: [
           'Quantity, sorting and form. A hundred ounces in one transaction is worth more per ounce than five, because the buyer’s costs are mostly per visit rather than per coin. Sorting by denomination and composition removes work from their side, and a pile of one thing beats a box of everything.',
-          'Form matters as much: recognised coins in known weights need less verification than scrap or unfamiliar pieces, and they are priced accordingly. A bag of [90% silver US coins](/coin-value/tagged/90-percent-silver) is the easiest thing in the shop to price, and the quote reflects that.',
+          'Form matters as much: recognised coins in known weights need less verification than scrap or unfamiliar pieces, and they are priced accordingly. A bag of [90% silver US coins](/coin-info/tagged/90-percent-silver) is the easiest thing in the shop to price, and the quote reflects that.',
         ],
       },
       {
@@ -879,7 +879,7 @@ export const QUESTIONS: Question[] = [
         heading: 'Why it matters on a coin',
         paragraphs: [
           'Spot prices are quoted per troy ounce, so a metal weight has to be in troy ounces before the multiplication means anything. Weigh a coin on a kitchen scale, read grams, and divide by 31.1035 — not by 28.3495, which inflates the answer by a tenth before you have started.',
-          'Worked through: a [1964 Washington quarter](/coin-value/silver/quarter/1964-washington-quarter) weighs 6.25 grams and is 90% silver, so it holds 5.625 grams of silver, which is 0.1808 troy ounces. That figure times the [spot price](/common-questions/what-is-spot-price) of silver is the coin’s melt value, and it is how every figure in the [melt value](/melt-value) section is produced.',
+          'Worked through: a [1964 Washington quarter](/coin-info/silver/quarter/1964-washington-quarter) weighs 6.25 grams and is 90% silver, so it holds 5.625 grams of silver, which is 0.1808 troy ounces. That figure times the [spot price](/common-questions/what-is-spot-price) of silver is the coin’s melt value, and it is how every figure in the [melt value](/melt-value) section is produced.',
         ],
       },
       {
@@ -893,7 +893,7 @@ export const QUESTIONS: Question[] = [
         heading: 'A shorthand worth memorising',
         paragraphs: [
           'One dollar of face value in United States 90% silver dimes, quarters or half dollars contains about 0.715 troy ounces of silver once circulation wear is allowed for. Four quarters, ten dimes or two halves — the mix does not matter, because the denominations were struck to the same weight per dollar.',
-          'That single number prices a jar of [junk silver](/coin-value/tagged/junk-silver) in one multiplication, which is why the trade uses it in preference to counting coins.',
+          'That single number prices a jar of [junk silver](/coin-info/tagged/junk-silver) in one multiplication, which is why the trade uses it in preference to counting coins.',
         ],
       },
     ],
@@ -923,7 +923,7 @@ export const QUESTIONS: Question[] = [
         heading: 'Weight and diameter first',
         paragraphs: [
           'Every coin was struck to a published specification, and a counterfeiter has to match the design, the diameter, the thickness and the density at once with metal that costs less than the original. Most do not try. A scale reading to a hundredth of a gram and a pair of callipers settle the majority of cases in under a minute.',
-          'Compare against the specifications on the coin’s own page in the [coin value catalogue](/coin-value), not against another coin in your pocket. A fake that is 5% light is obvious against a published figure and invisible in the hand.',
+          'Compare against the specifications on the coin’s own page in the [coin value catalogue](/coin-info), not against another coin in your pocket. A fake that is 5% light is obvious against a published figure and invisible in the hand.',
         ],
       },
       {
@@ -1009,7 +1009,7 @@ export const QUESTIONS: Question[] = [
     ],
     related: [
       'what-is-coin-grading',
-      'does-condition-affect-coin-value',
+      'does-condition-affect-coin-info',
       'how-much-can-i-sell-my-coin-for',
     ],
   },
@@ -1053,7 +1053,7 @@ export const QUESTIONS: Question[] = [
       {
         heading: 'If you think yours is genuine',
         paragraphs: [
-          'Weigh it, measure it, and compare it against the specifications for that issue in the [coin value catalogue](/coin-value) before going any further, because a wrong-metal error is proved by the scale and nothing else. Then check whether the variety is documented for that series and year, rather than searching for a coin that looks like yours.',
+          'Weigh it, measure it, and compare it against the specifications for that issue in the [coin value catalogue](/coin-info) before going any further, because a wrong-metal error is proved by the scale and nothing else. Then check whether the variety is documented for that series and year, rather than searching for a coin that looks like yours.',
           'Errors that survive those two steps are worth authenticating, for the reason in [should I get my coin graded](/common-questions/should-i-get-my-coin-graded): an error is only worth what a buyer can be convinced of, and on errors the convincing is what the holder is for.',
         ],
       },
@@ -1218,8 +1218,8 @@ export const sitePaths = (): Set<string> =>
     ...QUESTION_CATEGORIES.map(categoryPath),
     CHEAT_SHEETS_ROOT,
     ...CHEAT_SHEETS.map(cheatSheetPath),
-    COIN_VALUE_ROOT,
-    `${COIN_VALUE_ROOT}/tagged`,
+    COIN_INFO_ROOT,
+    `${COIN_INFO_ROOT}/tagged`,
     ...populatedGroups().map((g) => groupPath(g.slug)),
     ...populatedPairs().map(({ group, type }) => typePath(group.slug, type.slug)),
     ...populatedTags().map((t) => tagPath(t.slug)),

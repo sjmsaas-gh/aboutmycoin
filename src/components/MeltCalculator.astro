@@ -1,0 +1,319 @@
+---
+/**
+ * The calculator itself: a total, a run of rows, and a quantity box on each.
+ *
+ * A component rather than two near-identical pages, because the silver list and
+ * the gold list differ in their rows and their copy and in nothing else -- and
+ * the markup here is a contract with `src/lib/spot-dom.ts` that must not exist
+ * in two places. Every attribute below is read by that module; see its header
+ * for what each one means.
+ *
+ * THERE IS NO ARITHMETIC HERE AND NO SCRIPT. The rows come from a registry over
+ * `src/data/melt-rows.ts`, every figure is `meltValue()` and `formatUsd()` from
+ * `src/lib/spot.ts`, and the boxes are wired by spot-dom.ts, which Base.astro
+ * loads on every page. A quantity and a spot price move the same figures
+ * through the same functions, so they cannot round differently.
+ *
+ * The total is not a figure of its own kind: it is `data-spot="sum"` over the
+ * lot the rows declare, and spot-dom.ts adds the rows up and writes the answer
+ * into the total's own attributes before rendering it. That is what keeps the
+ * total inside the check in tests/build-smoke.test.mjs that re-derives every
+ * marked figure on the site from its attributes.
+ *
+ * Every box ships at `defaultQuantity`, which is none: a reader has three kinds
+ * of coin in a drawer, not one of everything. That makes the total and every
+ * line figure zero at rest, so the melt value of ONE of each coin is a column
+ * of its own -- true whatever is typed, and what a reader without JavaScript
+ * and a crawler read the page for. The build works the figures at that same
+ * default, and spot-dom.ts falls back to the box's `value` attribute when a
+ * reader clears it, so the three cannot disagree.
+ */
+import { formatOzt, formatUsd, meltValue, spotPrice, type Metal } from '../lib/spot';
+import { rowOzt, rowQtyId, rowWorking, rowsOzt, rowsSumAttr, type MeltRow } from '../data/melt-rows';
+
+export interface Props {
+  rows: MeltRow[];
+  /** Every row is this metal; the working line names it once. */
+  metal: Metal;
+  /** Ties the rows to their total. One per page, and the page names it. */
+  lot: string;
+  /** What every box ships at. Zero everywhere so far; see the note above. */
+  defaultQuantity?: number;
+}
+const { rows, metal, lot, defaultQuantity = 0 } = Astro.props;
+
+const totalOzt = rowsOzt(rows, defaultQuantity);
+const total = meltValue(totalOzt, metal) ?? 0;
+const perOunce = spotPrice(metal);
+---
+  {/* The total and the rows are one block in the reading order: the figure is
+      at the top because it is the answer, and it stays in view on a phone
+      while the boxes below it are filled in. A total that scrolls away is a
+      total the reader has to hunt for after every keystroke. */}
+  <section class="figure-block lot-total not-prose" aria-labelledby="total-heading">
+    <p class="figure-label" id="total-heading">Total melt value</p>
+    {/* aria-live so the figure is announced as it changes; a screen reader
+        otherwise hears nothing happen when a quantity is typed. */}
+    <p
+      class="figure-big"
+      id="lot-total"
+      aria-live="polite"
+      data-spot="sum"
+      data-spot-lot-total={lot}
+      data-spot-sum={rowsSumAttr(rows, defaultQuantity)}
+    >{formatUsd(total)}</p>
+
+    <p class="figure-working">
+      <span
+        data-spot="ozt"
+        data-spot-lot-total={lot}
+        data-spot-ozt={totalOzt}
+        data-spot-suffix={` troy oz ${metal}`}
+      >{formatOzt(totalOzt)} troy oz {metal}</span>
+      {' '}&times;{' '}<span
+        data-spot="price"
+        data-spot-metal={metal}
+      >{formatUsd(perOunce)}</span> per troy ounce
+    </p>
+    {/* No dateline in this block, deliberately. Every other figure on the
+        site carries `spotStamp()` beside it, because on those pages the
+        provenance is nowhere else; here the sentence directly above the
+        figure already states the price and the minute it was read, and a
+        second copy two lines under it is the same phrase twice on one
+        screen. The licence for printing the figure is still on the page --
+        which is what tests/build-smoke.test.mjs checks -- it is just stated
+        once. Do not add it back without taking it out of the opening. */}
+  </section>
+
+  {/* The column heads. They label the three figures on every row, so a
+      reader can tell the melt value of one coin from the melt value of the
+      lot without either being annotated nine times over. Taken out of the
+      flow below 30rem, where the row stacks and the heads would label the
+      wrong things -- out of the flow rather than `display: none`, so a screen
+      reader still reads them. The widths match the row's, and that is the
+      contract between the two. */}
+  <div class="lot-head not-prose" aria-hidden="true">
+    <span class="lot-coin">Coin or bar</span>
+    <span class="lot-each">Melt value</span>
+    <span class="lot-qty-head">How many</span>
+    <span class="lot-value">Your total</span>
+  </div>
+
+  <ul class="lot-list not-prose">
+    {rows.map((coin) => {
+      const ozt = rowOzt(coin);
+      const qtyId = rowQtyId(coin);
+      return (
+        <li class="lot-row">
+          <div class="lot-coin">
+            <label class="lot-name" for={qtyId}>{coin.name}</label>
+            <p class="lot-spec">
+              {coin.dated} &middot; {rowWorking(coin)} &middot;{' '}
+              <span
+                data-spot="ozt"
+                data-spot-ozt={ozt}
+                data-spot-suffix=" troy oz"
+              >{formatOzt(ozt)} troy oz</span>
+            </p>
+          </div>
+
+          {/* What one of them is worth at the current price: its own column,
+              before the box, because it is the figure the reader is checking
+              the coin against and it is true whatever they type. No
+              `data-spot-qty`, so nothing in the box moves it -- and it is the
+              figure the page still states when every box reads none. */}
+          <p
+            class="lot-each"
+            data-spot="value"
+            data-spot-metal={metal}
+            data-spot-ozt={ozt}
+          >{formatUsd(meltValue(ozt, metal)!)}</p>
+          <input
+            id={qtyId}
+            class="calc-input lot-qty"
+            type="number"
+            min="0"
+            max="1000000"
+            step="1"
+            value={defaultQuantity}
+            inputmode="numeric"
+            autocomplete="off"
+          />
+          <p
+            class="lot-value"
+            data-spot="value"
+            data-spot-metal={metal}
+            data-spot-ozt={ozt}
+            data-spot-qty={qtyId}
+            data-spot-lot={lot}
+          >{formatUsd(meltValue(ozt, metal)! * defaultQuantity)}</p>
+        </li>
+      );
+    })}
+  </ul>
+
+<style is:global>
+  /* The total stays in view while the boxes under it are filled in. Sticky
+     rather than fixed, so it scrolls with the page above and below the run of
+     rows rather than sitting over the footer.
+
+     `top` is `--header-h`, not 0: the navigation bar is itself sticky at the
+     top of every page, and a block pinned to 0 slides underneath it and is
+     gone. That variable is in Header.astro for exactly this. The z-index sits
+     above the rows and below the bar's 50 and the signup dock's 60, so the
+     order of the three layered things on the site is fixed here rather than
+     discovered. */
+  .lot-total {
+    position: sticky;
+    /* Clear of the bar rather than flush against it: the two are different
+       things and a pinned block touching the navigation reads as part of it.
+       The gap is a strip the rows scroll through, which is what says this block
+       is pinned over the page rather than fixed furniture. */
+    top: calc(var(--header-h) + 0.65rem);
+    z-index: 5;
+    margin-top: 1.25rem;
+    /* Smaller than a figure block that sits still. This one is on screen the
+       whole time the boxes below are being filled in, so it is sized to be read
+       at a glance while taking as little of a phone as it can: the headline
+       figure drops from the 4.25rem a melt page gives it to about half that,
+       and the padding and the two supporting lines come down with it. */
+    padding: 0.8rem 1.1rem 0.85rem;
+    box-shadow: var(--shadow-sm);
+    /* Opaque, and stated here rather than inherited. `.figure-block` sets
+       `background: var(--surface)`, and nothing on this site defines
+       `--surface` -- which resolves to transparent, which is invisible on every
+       other figure block on the site because none of them is pinned. This one
+       is, so the rows scrolled straight through it.
+
+       `--bg-raised` rather than a literal white: it is white in light mode and
+       neutral-900 in dark, so the block stays opaque in both. A hard-coded
+       #ffffff would be a white slab with white text on it after dark. */
+    background: var(--bg-raised);
+  }
+  .lot-total .figure-label {
+    margin-bottom: 0.1rem;
+    font-size: 0.7rem;
+  }
+  .lot-total .figure-big {
+    font-size: clamp(1.9rem, 7vw, 2.5rem);
+    letter-spacing: -0.02em;
+  }
+  .lot-total .figure-working {
+    margin-top: 0.15rem;
+    font-size: 0.85rem;
+  }
+
+  /* A row is a coin, a box and a figure. Flex rather than a table: at three
+     columns a table leaves the coin's name a thumb wide on a phone, and the
+     name is the part being looked for. Here the name takes the width it needs
+     and the box and the figure stay on its right, dropping under it only when
+     there is genuinely no room. */
+  .lot-list {
+    margin: 0 0 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+  .lot-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.9rem;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .lot-row:first-child { border-top: 0; }
+  .lot-coin { flex: 1 1 11rem; min-width: 0; }
+  .lot-name {
+    display: block;
+    font-weight: 650;
+    /* The label is the box's hit target as well as its name, and a coin name
+       wrapping mid-phrase on a narrow screen is harder to scan than one that
+       wraps at a space. */
+    cursor: pointer;
+  }
+  .lot-spec {
+    margin: 0.15rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Narrower than the melt page's single box, which sits alone on its own row;
+     five digits is a jar. Still 1.25rem of type, which is what keeps iOS from
+     zooming the page when the box is tapped. */
+  /* The three numeric columns, as geometry only: width and alignment, shared by
+     the cells and by the heads above them, because a column of figures that
+     does not line up with its own heading is a column a reader has to count
+     across. Type is set separately below -- on the rows and on the head -- and
+     that separation is the point: when the size and the weight lived here, the
+     heads inherited the FIGURES' type and "Melt value" came out at 1.15rem and
+     650 weight, twice the size of "Coin" beside it and wide enough to wrap. */
+  .lot-each,
+  .lot-qty,
+  .lot-qty-head,
+  .lot-value {
+    flex: 0 0 auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .lot-each { width: 5.5rem; }
+  .lot-qty,
+  .lot-qty-head { width: 5rem; }
+  .lot-value { width: 6rem; }
+
+  /* The figures themselves. The line total is the answer and carries the
+     weight; what one coin is worth is the reference beside it and is quieter,
+     so the eye lands on the column that moves. */
+  .lot-row .lot-each {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+  }
+  .lot-row .lot-value {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 650;
+  }
+
+  .lot-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem 0.9rem;
+    margin-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-strong);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  /* One size and one weight for every head, set on the children so nothing a
+     column rule says about its figures can reach up here. */
+  .lot-head > * {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .lot-head .lot-coin { text-align: left; }
+
+  /* On a phone four columns leave the coin's name a thumb wide, and the name is
+     what is being looked for. The name takes the full width and the three
+     figures share the line under it, in the same order, so the row reads as
+     "silver quarter -- worth this much each -- I have this many -- that comes
+     to this". The heads are taken out of the flow because they would sit over
+     the wrong things. */
+  @media (max-width: 30rem) {
+    .lot-head {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .lot-coin { flex: 1 1 100%; }
+    .lot-each { flex: 1 1 auto; text-align: left; }
+    .lot-value { flex: 1 1 auto; }
+  }
+</style>

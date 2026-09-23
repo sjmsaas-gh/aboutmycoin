@@ -2,7 +2,7 @@
 /**
  * A composition archive on the melt side: /melt-value/<group>.
  *
- * The twin of /coin-value/<group>, segment for segment, and the page that
+ * The twin of /coin-info/<group>, segment for segment, and the page that
  * used to be /melt-value/<metal>. It answers "how much is the silver in a
  * coin worth" where the catalogue's archive answers "what are silver coins
  * worth": same coins, two questions, and the house rule is that a question is
@@ -23,6 +23,7 @@
  */
 import Base from '../../../layouts/Base.astro';
 import MeltTile from '../../../components/MeltTile.astro';
+import RevealGrid from '../../../components/RevealGrid.astro';
 import { SITE } from '../../../lib/site';
 import {
   itemListSchema,
@@ -189,9 +190,9 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug) && built.has(t.slug));
     <div class="prose-page" style="margin-bottom: 1.1rem">
       <h2 style="margin-top: 0">{group.name} coins</h2>
     </div>
-    <div class="tile-grid">
+    <RevealGrid>
       {coins.map((c) => <MeltTile coin={c} />)}
-    </div>
+    </RevealGrid>
   </section>
 
   {/* The ladder lives here and nowhere below. While the price is typed in by
@@ -263,8 +264,9 @@ const tags = TAGS.filter((t) => tagSlugs.has(t.slug) && built.has(t.slug));
         It is the metal, not the coin. A scarce date, a mint mark or an
         uncirculated strike can be worth a large multiple of the figures above,
         and none of that is arithmetic —
-        {' '}<a href={groupPath(group.slug)}>{group.name.toLowerCase()} coin values</a> is
-        the same set of coins with that side of the answer on it.
+        {' '}the catalogue page for <a href={groupPath(group.slug)}>{group.name.toLowerCase()}
+        coins</a> carries the dates, the mintages and the identification for the
+        same set of coins.
       </p>
       <p class="text-sm" style="color: var(--text-muted)">
         Not an appraisal. {SITE.name} estimates from published specifications

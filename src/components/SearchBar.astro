@@ -1,0 +1,60 @@
+---
+/**
+ * The header's search box: a text field, and a list the browser fills in.
+ *
+ * What it can find and how a query is ranked is `src/lib/search.ts`; the
+ * wiring is `src/lib/search-dom.ts` and the markup contract is written out in
+ * that module's header. This file is the markup and nothing else -- there is
+ * no index in the page, no options in the HTML and no data attribute carrying
+ * a list, because the index is eighty kilobytes and belongs in a file fetched
+ * on the first keystroke rather than on every page of the site.
+ *
+ * It ships empty and hidden. The suggestions exist only where a script is
+ * running, which is why `Header.astro` carries the one `<noscript>` rule that
+ * hides the whole control -- see the reasoning in `search-dom.ts`.
+ *
+ * The component is rendered twice, once in the bar and once inside the mobile
+ * menu, so every id it writes is derived from `id`. Two elements sharing one
+ * id is the failure that makes a label point at the wrong field and a
+ * combobox announce the wrong list.
+ */
+interface Props {
+  /** Unique on the page: the bar's box and the mobile menu's are two fields. */
+  id: string;
+  /** Tailwind classes for where this copy of the box sits. */
+  class?: string;
+}
+
+const { id, class: className = '' } = Astro.props;
+const listId = `${id}-results`;
+
+/**
+ * The label is the full truth and the placeholder is the short form of it: a
+ * reader sees "Search coins" in a box 14rem wide, and a screen reader hears
+ * what the box actually searches. Neither says "search our site", which tells
+ * somebody holding a coin nothing they wanted to know.
+ */
+const label = 'Search coins, questions and tools';
+const placeholder = 'Search coins';
+---
+<div class={`search ${className}`} data-search>
+  <label class="sr-only" for={id}>{label}</label>
+  <input
+    id={id}
+    class="field search-input"
+    type="search"
+    name="q"
+    placeholder={placeholder}
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false"
+    role="combobox"
+    aria-expanded="false"
+    aria-controls={listId}
+    aria-autocomplete="list"
+    data-search-box
+  />
+  {/* Shipped empty: there is nothing for the build to put in it. */}
+  <ul id={listId} class="search-results card" role="listbox" aria-label="Search suggestions" hidden data-search-results></ul>
+</div>

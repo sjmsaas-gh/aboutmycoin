@@ -1057,7 +1057,7 @@ test('the price is the only thing on the site cached in hours rather than days',
   assert.equal(ruleFor('/api/subscribe'), 'no-store');
   assert.equal(ruleFor('/api/stripe-webhook'), 'no-store');
 
-  const html = ruleFor('/coin-value/silver/quarter/1964-washington-quarter');
+  const html = ruleFor('/coin-info/silver/quarter/1964-washington-quarter');
   const edge = Number(/s-maxage=(\d+)/.exec(html)?.[1]);
   assert.ok(
     edge > SPOT_MAX_AGE_SECONDS,

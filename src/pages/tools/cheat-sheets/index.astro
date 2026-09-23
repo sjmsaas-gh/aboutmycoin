@@ -1,0 +1,86 @@
+---
+/**
+ * The cheat-sheet hub: /tools/cheat-sheets.
+ *
+ * A lookup table. The reader has already identified the coin in their hand
+ * and is looking that name up, which is why the list is alphabetical rather
+ * than ordered by how often each series is asked about -- see the registry.
+ *
+ * No FAQPage schema. This page answers nothing itself; it is a CollectionPage
+ * over an ItemList of the sheets, the same shape the questions hub uses.
+ *
+ * IT LISTS THE INDEXABLE SHEETS ONLY, and that is the house rule rather than a
+ * preference: "an empty tool is noindex, out of the sitemap and linked from
+ * nowhere". The first two were true and the third was not -- the hub listed
+ * all ten, and the five that are noindex were each advertised with a teaser
+ * promising "the dates to set aside, ranked scarcest first", which is the one
+ * section an unchecked sheet has not earned the right to show. A card that
+ * promises a table the page behind it cannot stand behind is worse than no
+ * card, because the reader clicks it.
+ *
+ * `cheatSheetIndexable()` is the single predicate, so the list, the schema,
+ * the sitemap and the `<meta name="robots">` on each sheet cannot disagree,
+ * and a sheet that becomes checked reappears here with no change to this file.
+ */
+import Base from '../../../layouts/Base.astro';
+import { itemListSchema, webPageSchema } from '../../../lib/schema';
+import { TOOLS_CRUMB } from '../../../lib/tools';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_BLUF,
+  CHEAT_SHEETS_DESCRIPTION,
+  CHEAT_SHEETS_H1,
+  CHEAT_SHEETS_ROOT,
+  CHEAT_SHEETS_TITLE,
+  cheatSheetH1,
+  cheatSheetIndexable,
+  cheatSheetPath,
+  cheatSheetTeaser,
+} from '../../../data/cheat-sheets';
+
+const path = CHEAT_SHEETS_ROOT;
+/** The sheets a reader is allowed to be sent to. See the note above. */
+const sheets = CHEAT_SHEETS.filter(cheatSheetIndexable);
+---
+<Base
+  title={CHEAT_SHEETS_TITLE}
+  description={CHEAT_SHEETS_DESCRIPTION}
+  path={path}
+  crumbs={[TOOLS_CRUMB, { label: 'Cheat sheets', href: path }]}
+  schemas={[
+    webPageSchema({
+      type: 'CollectionPage',
+      name: CHEAT_SHEETS_H1,
+      description: CHEAT_SHEETS_DESCRIPTION,
+      path,
+    }),
+    itemListSchema({
+      name: CHEAT_SHEETS_H1,
+      description: CHEAT_SHEETS_DESCRIPTION,
+      items: sheets.map((s) => ({ name: cheatSheetH1(s), path: cheatSheetPath(s) })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{CHEAT_SHEETS_H1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg"><strong>{CHEAT_SHEETS_BLUF}</strong></p>
+      <p>
+        Also see the <a href="/coin-info">coin info</a> and{' '}
+        <a href="/melt-value">coin melt</a> sections.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-20">
+    <div class="tile-grid">
+      {sheets.map((s) => (
+        <a href={cheatSheetPath(s)} class="tile">
+          <h2>{cheatSheetH1(s)}</h2>
+          <p>{cheatSheetTeaser(s)}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

@@ -4,7 +4,7 @@
  *
  * The same address as the coin's catalogue entry with one segment changed,
  * which is the whole contract between the two sections: a reader on the wrong
- * one of the pair edits `/coin-value` to `/melt-value` and lands on the other
+ * one of the pair edits `/coin-info` to `/melt-value` and lands on the other
  * half of the answer. `validateMeltPaths()` throws if that ever stops being
  * true.
  *
@@ -146,10 +146,23 @@ const meltingProhibited =
       <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{meltH1(coin)}</h1>
       <div class="reeded" aria-hidden="true"></div>
 
-      {/* The label is "The short answer" rather than the question, because the
-          H1 has just asked it in as many words. */}
+      {/*
+          THE LABEL IS THE QUESTION, and it is the same string the FAQPage
+          `acceptedAnswer` above is attached to -- exactly as the coin page
+          does it one section over.
+
+          It read "The short answer" for as long as nobody checked, on the
+          argument that the H1 had just asked the question in as many words.
+          The H1 does not: it is "Melt value of 1965 Washington Quarter (No
+          Mint Mark)", a statement of subject, and the marked-up question is
+          "What is the melt value of a 1965 Washington quarter with no mint
+          mark?". So all 633 melt pages shipped FAQPage markup whose question
+          appeared nowhere on the page, which is the one thing Google's FAQ
+          guidance asks for -- the whole question and the whole answer visible
+          to the reader. The answer always was; the question never was.
+      */}
       <div class="verdict">
-        <span class="verdict-label">The short answer</span>
+        <span class="verdict-label">{question}</span>
         <p data-spot-sync={answer} set:html={answerHtml} />
       </div>
     </div>

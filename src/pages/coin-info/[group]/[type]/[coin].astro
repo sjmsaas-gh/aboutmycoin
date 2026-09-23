@@ -1,0 +1,614 @@
+---
+/**
+ * One coin: /coin-info/<group>/<type>/<coin>.
+ *
+ * The page the whole site exists for. Nothing here is typed twice -- the H1,
+ * the opening answer, the FAQPage `acceptedAnswer`, the HowTo steps, the
+ * Product properties and the breadcrumb trail are all read off the same `Coin`
+ * object, so they cannot drift apart.
+ *
+ * ---------------------------------------------------------------------------
+ * THE PAGE FORMAT, AND WHY IT IS IN THIS ORDER
+ * ---------------------------------------------------------------------------
+ *
+ * The reader arrives from search with one coin in hand and two questions, in
+ * this order: what is it worth, and is mine special. Everything else is
+ * reference material they will read only if the first two answers hold them.
+ * So:
+ *
+ *   1. Answer      the BLUF, in the words the FAQPage schema carries. Two
+ *                  sentences: what it is made of, and what that is worth.
+ *   2. Melt        the big number, its working, its dateline, and the one
+ *                  sentence saying what the number is not.
+ *   3. Coin info   the specification, including both faces and the mints that
+ *                  struck this issue. Facts in rows, no prose.
+ *   4. Premium     "is it worth more than melt" -- answered in three words,
+ *                  then in a single paragraph.
+ *   5. Series      the run it belongs to: years, designer, metal changes.
+ *   6. Siblings    the rest of the series -- other dates, and the other mint
+ *                  marks of this date -- plus the series archive.
+ *   7. Depth       whatever `sections` the entry carries, for the minority
+ *                  who are still reading.
+ *
+ * Facts over paragraphs throughout. A coin page is a reference page, and the
+ * failure mode of the earlier draft was an essay wrapped round four numbers.
+ * Where a fact fits in a row, it goes in a row.
+ *
+ * Two blocks are wired but dark: the siblings block renders its tiles only
+ * once a sibling issue is in the catalogue, and the graded block renders only when
+ * `GRADED_PAGES_AVAILABLE` is true. Both would otherwise be a heading over a
+ * link to a page that is not built, which in a static site is a 404.
+ *
+ * Schema emitted, and why each one:
+ *
+ *   Article   the editorial content, with real dates.
+ *   FAQPage   one question, the one this page owns. Uniqueness across the
+ *             whole catalogue is enforced in coins.ts, because Google wants a
+ *             question marked up on exactly one page.
+ *             (No HowTo. The identification checklist it described was cut
+ *             from the visible page, and schema without matching visible
+ *             content is exactly the mismatch Google issues manual actions
+ *             for. `Coin.identify` is still populated and currently unrendered.)
+ *   Product   the coin as an object -- alloy, weight, diameter, metal content,
+ *             country, production date. Deliberately without `offers`; see the
+ *             note on coinProductSchema.
+ */
+import Base from '../../../../layouts/Base.astro';
+import { SITE } from '../../../../lib/site';
+import CoinTile from '../../../../components/CoinTile.astro';
+import RevealGrid from '../../../../components/RevealGrid.astro';
+import { CARDS_PER_SECTION } from '../../../../lib/card-art';
+import {
+  coinMetal,
+  meltValue,
+  formatUsd,
+  spotPrice,
+  spotStamp,
+  meltBaselineNote,
+  METAL_LABEL,
+} from '../../../../lib/spot';
+import { meltPath } from '../../../../lib/melt';
+import { tagAnswer } from '../../../../lib/catalog-copy';
+import { rangeCell, ladderHasFigures, LADDER_BASIS, LADDER_GAP_NOTE } from '../../../../lib/grade-copy';
+import {
+  articleSchema,
+  faqSchema,
+  coinProductSchema,
+} from '../../../../lib/schema';
+import {
+  COINS,
+  coinBySlug,
+  coinPath,
+  groupPath,
+  typePath,
+  tagPath,
+  groupBySlug,
+  typeBySlug,
+  tagBySlug,
+  seriesForCoin,
+  otherYearsInSeries,
+  GRADED_PAGES_AVAILABLE,
+  gradedPath,
+  gradedGrades,
+  gradedValue,
+  gradePath,
+  runLabel,
+  yearLabel,
+  coinQuestion,
+  PREMIUM_VERDICT,
+  MARKET_TRUTH,
+  MARKET_NOTE,
+  type Coin,
+} from '../../../../data/coins';
+
+export function getStaticPaths() {
+  return COINS.map((coin) => ({
+    params: { group: coin.group, type: coin.type, coin: coin.slug },
+    props: { coin },
+  }));
+}
+
+export interface Props { coin: Coin }
+const { coin } = Astro.props;
+
+// Non-null: validateTaxonomy() throws at build time on an unknown group, type
+// or tag, so by the time this renders every lookup has resolved.
+const group = groupBySlug(coin.group)!;
+const type = typeBySlug(coin.type)!;
+const tags = coin.tags.map(tagBySlug).filter(Boolean) as NonNullable<ReturnType<typeof tagBySlug>>[];
+const related = (coin.related ?? []).map(coinBySlug).filter(Boolean) as Coin[];
+
+// The series tag, when somebody has researched it. Undefined renders nothing
+// rather than a table of blanks.
+const seriesTag = seriesForCoin(coin);
+const series = seriesTag?.series;
+
+const path = coinPath(coin);
+const question = coinQuestion(coin);
+const years = yearLabel(coin);
+const shortName = coin.shortName ?? coin.name;
+
+// The melt arithmetic, resolved once so the big figure, the working beneath it
+// and the caveat are all the same numbers. Undefined for a coin with no
+// precious metal in it, which is the signal to render no melt block at all.
+const metal = coinMetal(coin);
+const melt = metal && {
+  ...metal,
+  perOunce: spotPrice(metal.metal),
+  value: meltValue(metal.troyOunces, metal.metal)!,
+  stamp: spotStamp(metal.metal),
+  note: meltBaselineNote(metal.metal),
+};
+
+// Every grade this coin can be given, each of which has a page. Priced or not:
+// since 2026-09-22 a rung with no researched figure is still a page, and it
+// states no range rather than a placeholder.
+// Empty for every coin whose values have not been researched, which is the
+// signal to render no ladder at all rather than a heading over an empty table.
+const grades = gradedGrades(coin);
+
+// Whether the ladder table carries a value column at all. On a coin with no
+// researched figure anywhere -- 185 of the 444 with a ladder -- the table is a
+// list of the grades the coin can be given and nothing else, which is a way
+// into the grade pages rather than a column of placeholders.
+const showValues = ladderHasFigures(coin);
+
+// The rest of the series. Empty until there is a second issue, which is the
+// signal to render no siblings block at all.
+//
+// The heading is derived rather than fixed because "Other years" stopped being
+// true the day the Philadelphia and Denver quarters became separate pages: a
+// sibling sharing this coin's year is a different mint mark, not a different
+// year, and a heading over a 1960-D tile that says "Other years" is a heading
+// the reader can catch out. Read off the tiles it sits over, so it cannot
+// disagree with them.
+//
+// Capped at CARDS_PER_SECTION, for the reason that constant exists: eighty-two
+// tiles under one issue is the series archive re-rendered on every page of the
+// series, and the link underneath already goes there. The newest nine are the
+// ones kept, because a reader arriving on a 1950 quarter with a jar beside them
+// is likelier to hold a coin from the decades still in circulation than another
+// 1950. Popularity is the ordering this wants and the site does not measure it
+// yet; when it does, the slice is the one place to change.
+const otherYears = otherYearsInSeries(coin).slice(-CARDS_PER_SECTION);
+const siblingsHeading = otherYears.some((c) => c.years.from === coin.years.from)
+  ? 'Other dates and mint marks'
+  : 'Other years';
+
+const badge =
+  coin.commonality === 'key-date'
+    ? 'badge-key'
+    : coin.commonality === 'scarce'
+      ? 'badge-scarce'
+      : 'badge-common';
+const badgeLabel = {
+  'very-common': 'Very common',
+  common: 'Common',
+  scarce: 'Scarce',
+  'key-date': 'Key date',
+}[coin.commonality];
+
+/** The spec rows, built once so the visible table and the Product properties agree. */
+const specs: { label: string; value: string }[] = [
+  { label: 'Year', value: years },
+  { label: 'Composition', value: coin.composition },
+  ...(coin.weightGrams ? [{ label: 'Weight', value: `${coin.weightGrams} g` }] : []),
+  ...(coin.diameterMm ? [{ label: 'Diameter', value: `${coin.diameterMm} mm` }] : []),
+  ...(coin.silverOzt ? [{ label: 'Silver content', value: `${coin.silverOzt} troy oz` }] : []),
+  ...(coin.goldOzt ? [{ label: 'Gold content', value: `${coin.goldOzt} troy oz` }] : []),
+  { label: 'Face value', value: coin.faceValue },
+  { label: 'Denomination', value: type.name },
+  ...(coin.mintMark ? [{ label: 'Mint mark', value: coin.mintMark }] : []),
+  ...(coin.struckAt && coin.struckAt.length > 0
+    ? [{
+        label: 'Minted at',
+        value: coin.struckAt
+          .map((m) => `${m.city} (${m.mark === '' ? 'no mark' : m.mark})`)
+          .join(', '),
+      }]
+    : []),
+  { label: 'Country', value: coin.country },
+  ...(coin.obverse ? [{ label: 'Obverse', value: coin.obverse }] : []),
+  ...(coin.reverse ? [{ label: 'Reverse', value: coin.reverse }] : []),
+  // Mintage is deliberately absent: it leads the "is it worth more than melt"
+  // block, where it is doing work, and printing it twice on one page is noise.
+  ...(series?.edge ? [{ label: 'Edge', value: series.edge }] : []),
+];
+
+/** Series facts that are one short value each, so they share a grid. */
+const seriesFacts: { label: string; value: string }[] = series
+  ? [
+      { label: 'Struck', value: runLabel(series.years) },
+      ...(series.designer ? [{ label: 'Designer', value: series.designer }] : []),
+      ...(series.keyDates && series.keyDates.length > 0
+        ? [{ label: 'Key dates', value: series.keyDates.map((k) => k.label).join(', ') }]
+        : []),
+    ]
+  : [];
+
+/*
+ * Which era of the timeline this coin belongs to.
+ *
+ * By the DATE, not by the group. The metal eras split on a reverse or an
+ * obverse change as well as on an alloy change, and the group stays the same
+ * across such a split -- the Washington quarter has three clad eras -- so
+ * matching on the group marked all three "this coin" on a 1969-D page. The
+ * group still has to agree, because a silver proof of a clad date takes its
+ * composition from `finishCompositions` and no row of the timeline describes
+ * it: then nothing is marked, which is the honest answer.
+ */
+const currentEra = series?.compositions.find(
+  (c) =>
+    c.group === coin.group &&
+    coin.years.from >= c.years.from &&
+    coin.years.from <= (c.years.to ?? Infinity),
+);
+
+/*
+ * The sentence over the timeline is one sentence for every coin.
+ *
+ * It is about the SERIES -- the metal changed partway through the run -- and
+ * that is true on every page the table renders on, so it says nothing about
+ * the coin the reader is holding and needs no branch. The place that knows
+ * which coin this is is the marked row, and where no row is this coin, no row
+ * is marked and the sentence still reads correctly.
+ */
+const TIMELINE_NOTE =
+  'The metal changed mid-series, so the date decides the metal and the metal decides most of the value.';
+---
+<Base
+  title={coin.seoTitle}
+  description={coin.description}
+  path={path}
+  type="article"
+  crumbs={[
+    { label: 'Coin info', href: '/coin-info' },
+    { label: group.name, href: groupPath(group.slug) },
+    { label: type.namePlural, href: typePath(group.slug, type.slug) },
+    { label: shortName, href: path },
+  ]}
+  schemas={[
+    articleSchema({
+      headline: coin.name,
+      description: coin.description,
+      path,
+    }),
+    faqSchema([{ q: question, a: coin.bluf }]),
+    coinProductSchema({
+      name: coin.name,
+      description: coin.description,
+      path,
+      material: coin.composition,
+      country: coin.country,
+      productionDate: coin.years.to ? `${coin.years.from}/${coin.years.to}` : String(coin.years.from),
+      weightGrams: coin.weightGrams,
+      diameterMm: coin.diameterMm,
+      metalContent: metal && { metal: METAL_LABEL[metal.metal], troyOunces: metal.troyOunces },
+      category: `${group.name} ${type.namePlural.toLowerCase()}`,
+    }),
+  ]}
+>
+  <article class="container-page pt-8 pb-20" style={`--metal: var(--metal-${group.slug})`}>
+    <div class="prose-page">
+      <p class="tile-meta" style="margin: 0 0 0.4rem">
+        <span class="metal-dot" aria-hidden="true"></span>
+        {' '}{group.name} &middot; {type.name} &middot; {coin.country} &middot; {years}
+      </p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{coin.name}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+
+      {/* BLUF. The complete answer, before anything else, in exactly the words
+          the FAQPage schema carries. A model that quotes only this has quoted
+          something true and self-contained. */}
+      <div class="verdict">
+        <span class="verdict-label">{question}</span>
+        <p>{coin.bluf}</p>
+      </div>
+    </div>
+
+    {melt && (
+      /* The big number, with its working directly under it so the reader can
+         redo the sum against today's spot price rather than trusting a figure
+         that was true on the day of the build. One sentence beneath, no more:
+         anything longer gets skipped, and a reader who skips it is a reader
+         who thinks the figure is an offer. */
+      <section class="figure-block not-prose" aria-labelledby="melt-heading">
+        <p class="figure-label" id="melt-heading">{METAL_LABEL[melt.metal]} melt value</p>
+        {/* Marked for src/lib/spot-dom.ts, which replaces these three with
+            whatever /api/spot answers. What is rendered here is the reference
+            price -- the figure a crawler indexes and the figure a reader
+            without JavaScript keeps -- and the stamp beneath says which price
+            and which day, on both sides. No quantity input on this page: the
+            melt page owns that, and this one links to it. */}
+        <p
+          class="figure-big"
+          data-spot="value"
+          data-spot-metal={melt.metal}
+          data-spot-ozt={melt.troyOunces}
+        >{formatUsd(melt.value)}</p>
+        <p class="figure-working">
+          {melt.troyOunces} troy oz {melt.metal}
+          {' '}&times;{' '}<span
+            data-spot="price"
+            data-spot-metal={melt.metal}
+          >{formatUsd(melt.perOunce)}</span> per troy ounce
+        </p>
+        <p class="figure-stamp" data-spot="stamp" data-spot-metal={melt.metal}>{melt.stamp}</p>
+        <p class="figure-note">{melt.note}</p>
+        {/* The metal is a question of its own -- how much silver, at what
+            price, for how many of them -- and it is a different search by a
+            different person. This link is how the two pages stay distinct
+            instead of the coin page growing a melt calculator inside it. */}
+        <p class="figure-link">
+          <a href={meltPath(coin)}>Melt value of {coin.name} &rarr;</a>
+        </p>
+      </section>
+    )}
+
+    {/* A coin with no precious metal in it gets NO link to its melt page, at
+        the owner's instruction of 2026-09-23. The melt page is still built and
+        still answers "is there any silver in a 1965 quarter" for somebody who
+        types that, and it still links back up here -- but an invitation to go
+        and read a page whose whole content is "None" is the coin page spending
+        its one link out on an answer it has already given. So the mirror is
+        one-way for the coins with nothing to weigh, and both ways for the ones
+        with a figure, where the link leads to arithmetic this page does not
+        do. */}
+
+    <div class="prose-page">
+      <h2>Coin info</h2>
+    </div>
+
+    <div class="card fact-card">
+      <dl class="spec-grid">
+        {specs.map((s) => (
+          <>
+            <dt>{s.label}</dt>
+            <dd>{s.value}</dd>
+          </>
+        ))}
+      </dl>
+    </div>
+
+    <div class="prose-page">
+      {/* The second question, answered in three words and then in one
+          paragraph. The verdict is derived from `commonality`, so the
+          headline, the badge and the archive filters cannot disagree. */}
+      {/* The heading and the verdict under it are both about melt, so both
+          belong to a coin that HAS a melt value. On a clad coin there is no
+          melt figure to be worth more than, and the question asked over a page
+          that has just said there is no metal in the coin answers itself --
+          owner's instruction of 2026-09-21. The badge and the mintage stay:
+          how common the coin is is the same fact either way, and it is the
+          fact the reader came for. */}
+      {melt && <h2>Is it worth more than melt?</h2>}
+      {/* A coin that was never in a till gets no verdict, no badge and no
+          market note, and a sentence of its own instead. `commonality` is a
+          statement about SURVIVAL, and survival is only a question for a coin
+          that circulated: every proof was bought by somebody who wanted it and
+          put it in a drawer, so the thresholds would print "Scarce" over a coin
+          that is merely cheap, on ninety pages. See `Coin.finish`. */}
+      {coin.finish ? (
+        <>
+          <p class="not-prose stat-line">
+            {coin.mintage && (
+              <span class="stat-figure">Mintage: {coin.mintage.toLocaleString('en-US')}</span>
+            )}
+          </p>
+          <p>{coin.finish.note}</p>
+        </>
+      ) : (
+        <>
+          {melt && <p class="answer-line">{PREMIUM_VERDICT[coin.commonality]}</p>}
+          <p class="not-prose stat-line">
+            <span class={`badge ${badge}`}>{badgeLabel}</span>
+            {coin.mintage && (
+              <span class="stat-figure">Mintage: {coin.mintage.toLocaleString('en-US')}</span>
+            )}
+          </p>
+        </>
+      )}
+
+      {/* What the mintage counts, when it is not one striking of one design.
+          From 1999 a mint struck five or six reverses a year and a page belongs
+          to the year and the mint mark, so the figure above is a sum -- and on
+          the 2019-W page the sum is ten million while the number that makes
+          anybody look for one is two. */}
+      {coin.mintageNote && <p>{coin.mintageNote}</p>}
+
+      {/* Where the working ran out. Either the published figures disagree and
+          this page took the highest, or some of the year's designs have no
+          published figure at all and there is no total. Saying so is the same
+          instinct as refusing to print a price the site cannot support, pointed
+          at the one number a coin page has to print. */}
+      {coin.mintageCaveat && <p class="figure-stamp">{coin.mintageCaveat}</p>}
+
+      {/* No `else`. A coin with no priced rows renders nothing here at all.
+          There used to be a line saying the site had no market-data source it
+          would stand behind; it was cut at the owner's instruction. It was an
+          apology for the catalogue in the middle of the answer, and it is the
+          same failure as counting the catalogue on an archive page -- it told
+          a reader holding a quarter about this website's supply chain rather
+          than about their coin. The metal figure above is exact and carries
+          the block, and the pull quote below says what it is not. Nothing is
+          claimed that is not built, so nothing has to be withdrawn. */}
+      {grades.length > 0 && (
+        /* The ladder, and the way into the grade pages. Every row links,
+           because the table is now every grade this coin can be GIVEN rather
+           than every grade it has a figure for, and each of those is a page.
+           A row with no figure beside it still links to somewhere worth
+           going: what the grade looks like on this coin, how it is spelled on
+           a slab, and the sold-comps search that answers the price this site
+           has not. The value column itself only appears where this ladder has
+           figures -- see `ladderHasFigures()`. */
+        <div class="card table-scroll" style="padding: 0.4rem 0; margin-bottom: 0.6rem">
+          <table class="grade-table">
+            <thead>
+              <tr>
+                <th style="text-align: left">Grade</th>
+                {showValues && <th style="text-align: right">Value range (USD)</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {grades.map((g) => {
+                const v = gradedValue(coin, g)!;
+                return (
+                  <tr>
+                    <td><a href={gradePath(coin, g)}>{g.label}</a></td>
+                    {showValues && <td style="text-align: right">{rangeCell(v)}</td>}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {showValues && (
+            <Fragment>
+              <p class="figure-stamp" style="padding: 0 1rem">{LADDER_GAP_NOTE}</p>
+              <p class="figure-stamp" style="padding: 0 1rem">{LADDER_BASIS}</p>
+            </Fragment>
+          )}
+        </div>
+      )}
+
+      {/* The one thing every figure above leaves out. Melt is arithmetic and a
+          graded range is a record of past sales; neither is a buyer. The
+          quotation is fixed and the note under it is derived from
+          `commonality`, so the block says something different about a key date
+          than about a coin anyone can buy for small change -- a pull quote
+          that reads the same under four different verdicts is a slogan. */}
+      {/* The market note is derived from `commonality` and so is suppressed on
+          a coin that was never in circulation, for the same reason the verdict
+          is: "anyone filling a set can buy one from any dealer for small
+          change" is true of a common date and beside the point for a proof,
+          whose buyer is a collector by definition. The quotation still holds --
+          it is the one thing true of every coin on this site. */}
+      <aside class="pull-quote not-prose">
+        <blockquote>{MARKET_TRUTH}</blockquote>
+        {!coin.finish && <p>{MARKET_NOTE[coin.commonality](Boolean(melt))}</p>}
+      </aside>
+    </div>
+
+    {series && seriesTag && (
+      <>
+        <div class="prose-page">
+          <h2>The {seriesTag.name} series</h2>
+          <p>{tagAnswer(seriesTag)}</p>
+        </div>
+
+        <div class="card fact-card">
+          <dl class="spec-grid">
+            {seriesFacts.map((f) => (
+              <>
+                <dt>{f.label}</dt>
+                <dd>{f.value}</dd>
+              </>
+            ))}
+          </dl>
+        </div>
+
+        {series.compositions.length > 1 && (
+          <>
+            <div class="prose-page">
+              <p>{TIMELINE_NOTE}</p>
+            </div>
+            <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+              <table class="fact-table">
+                <thead>
+                  <tr><th>Years</th><th>Composition</th><th>Filed under</th></tr>
+                </thead>
+                <tbody>
+                  {series.compositions.map((c) => {
+                    const g = groupBySlug(c.group);
+                    return (
+                      <tr class={c === currentEra ? 'row-current' : undefined}>
+                        <td>{runLabel(c.years)}</td>
+                        <td>{c.composition}</td>
+                        <td>
+                          {g ? <a href={groupPath(g.slug)}>{g.name}</a> : c.group}
+                          {c === currentEra && <span class="tag-this"> &larr; this coin</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </>
+    )}
+
+    {/* The rest of the series. The tiles appear as sibling issues are added to
+        the catalogue; the link to the series archive is always real, which is
+        what keeps this block from promising a page that is not built. */}
+    {seriesTag && (
+      <section style="margin-top: 2rem">
+        <div class="prose-page">
+          <h2 style="margin-top: 0">{siblingsHeading}</h2>
+        </div>
+        {otherYears.length > 0 && (
+          <RevealGrid style="margin-bottom: 1.1rem">
+            {otherYears.map((c) => <CoinTile coin={c} showGroup groupName={groupBySlug(c.group)?.name} />)}
+          </RevealGrid>
+        )}
+        <div class="prose-page">
+          <p>
+            <a href={tagPath(seriesTag.slug)}>
+              Every {seriesTag.name} date and what it is worth &rarr;
+            </a>
+          </p>
+        </div>
+      </section>
+    )}
+
+    {/* Graded coins. Rendered only once the per-grade pages exist -- a heading
+        over a link to a page that is not built is both a 404 and a claim the
+        site cannot keep. Flip GRADED_PAGES_AVAILABLE with the route. */}
+    {GRADED_PAGES_AVAILABLE && seriesTag && (
+      <section class="prose-page" style="margin-top: 2rem">
+        <h2 style="margin-top: 0">Graded {seriesTag.name}s</h2>
+        <p>
+          What each grade is worth, and where the jumps are.
+          {' '}<a href={gradedPath(seriesTag.slug)}>Graded {seriesTag.name} values &rarr;</a>
+        </p>
+      </section>
+    )}
+
+    <div class="prose-page">
+      {(coin.sections ?? []).map((s) => (
+        <section>
+          <h2>{s.heading}</h2>
+          {s.paragraphs.map((p) => <p>{p}</p>)}
+          {s.steps && (
+            <ol>
+              {s.steps.map((st) => <li><strong>{st.name}.</strong> {st.text}</li>)}
+            </ol>
+          )}
+        </section>
+      ))}
+
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+
+      {tags.length > 0 && (
+        <div class="pill-row not-prose" style="margin-top: 1.1rem">
+          {tags.map((t) => <a href={tagPath(t.slug)} class="pill">{t.name}</a>)}
+        </div>
+      )}
+
+    </div>
+
+    {related.length > 0 && (
+      <section style="margin-top: 2.5rem">
+        <div class="prose-page" style="margin-bottom: 1.1rem">
+          <h2 style="margin-top: 0">Related coins</h2>
+        </div>
+        <div class="tile-grid">
+          {related.map((r) => <CoinTile coin={r} showGroup groupName={groupBySlug(r.group)?.name} />)}
+        </div>
+      </section>
+    )}
+  </article>
+</Base>

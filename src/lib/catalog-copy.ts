@@ -1,5 +1,5 @@
 /**
- * Every sentence on a /coin-value archive page, generated from the catalogue.
+ * Every sentence on a /coin-info archive page, generated from the catalogue.
  *
  * ---------------------------------------------------------------------------
  * WHY THIS EXISTS
@@ -30,12 +30,15 @@
  * declares by hand wins over its generated form, field by field, so a page
  * that has earned real writing gets it without opting out of the rest:
  *
- *     groupH1(g)           g.h1 ?? "Silver Coin Values"
+ *     groupH1(g)           g.h1 ?? "Silver Coins"
  *     groupAnswer(g)       g.bluf ?? the generated answer
  *
- * Nothing is generated for a coin page: a coin's answer states its composition
- * and its metal weight, which is a researched fact per issue and the one thing
- * on this site that must never be assembled from a pattern.
+ * A coin page's copy IS generated, in `coin-copy.ts`, and has been since the
+ * Washington quarter went from eleven issues to eighty-three -- see the header
+ * of that module for the argument. What stays hand-written there is `sections`,
+ * the one fact true of that coin and of no other, which a generator cannot
+ * know. This module still owns the coin page's FAQ question and the checks
+ * that no two coin pages share a title, a description or a question.
  *
  * `validateCatalogCopy()` throws when an override is character-for-character
  * what the generator would have produced, because that is retyped copy: a
@@ -97,6 +100,7 @@ import {
   DESCRIPTION_MAX,
   DESCRIPTION_MIN,
   TITLE_MAX,
+  article,
   fit,
   renderedTitle,
   titleBudget,
@@ -264,7 +268,7 @@ const pairFacts = (group: Group, type: CoinType) =>
 const tagFacts = (tag: Tag) => cached(`t:${tag.slug}`, () => coinsWithTag(tag.slug));
 
 /* ===========================================================================
-   The hub: /coin-value
+   The hub: /coin-info
    ===========================================================================
 
    One page, so its copy is written rather than generated -- but it is written
@@ -282,12 +286,42 @@ const tagFacts = (tag: Tag) => cached(`t:${tag.slug}`, () => coinsWithTag(tag.sl
  * <title> keeps the axes, because that is the string competing in a result
  * list and the two words it adds are the two people type.
  */
-export const HUB_H1 = 'Coin Values & Information';
+/*
+ * INFORMATION FIRST, VALUE SECOND. The owner's decision of 2026-09-22, and it
+ * runs through every generated string from here to the bottom of the file.
+ *
+ * The section was built as a price guide with facts attached and it read like
+ * one: "Coin Values", "Price Guide", "and What They Are Worth" on every
+ * heading, title and question down the tree. What the site actually knows and
+ * can stand behind is the other half -- what a coin is, when it was struck,
+ * where, how many, what it is made of and how to tell it from the one next to
+ * it -- plus one figure it computes rather than guesses, the melt value. So
+ * the headings name the coins and the descriptions name the facts.
+ *
+ * THE <TITLE>S KEEP THE WORD, and that is the owner's correction the same
+ * evening. "Silver coin values" is the phrase somebody types, and the pages
+ * do answer it: a melt figure worked from a live spot price, a researched
+ * graded range where one exists, a scarcity verdict, and a route to looking
+ * one up where none does. An H1 is read by somebody who has already arrived
+ * and can afford to name the subject; a <title> is competing in a result list
+ * and has to name the question. So the H1s lost the word and the titles kept
+ * it. What did NOT come back anywhere is "Price Guide": "value" is the
+ * question this site answers, and "price" is an answer it cannot give,
+ * because it never sees the coin.
+ *
+ * The questions did NOT all follow, and that is deliberate rather than an
+ * oversight. A question a page is marked up as answering has to be a question
+ * the page ANSWERS, which is why a melt-driven group still asks what its coins
+ * are worth -- the metal floor is the answer and it is on the page -- and why
+ * a coin page stopped asking, because its opening sentence states a mint, a
+ * metal and a mintage and never a price.
+ */
+export const HUB_H1 = 'Coin Information & Values';
 
-export const HUB_SEO_TITLE = 'Coin Values by Metal and Denomination';
+export const HUB_SEO_TITLE = 'Coins by Metal and Denomination';
 
 export const HUB_DESCRIPTION =
-  'Coin values organised by metal and denomination. Find what your coin is made of, what that metal is worth today, and whether its date and mint mark add anything.';
+  'Coins organised by metal and denomination. Find out what your coin is, when and where it was struck, how many there are, and what the metal in it is worth today.';
 
 export const HUB_QUESTION = 'How do I find out what my coin is worth?';
 
@@ -308,17 +342,40 @@ export const HUB_INTRO = [
 ];
 
 /* ===========================================================================
-   A composition group: /coin-value/<group>
+   A composition group: /coin-info/<group>
    =========================================================================== */
 
 export const groupH1 = (group: Group): string =>
-  group.h1 ?? titleCase(`${group.name} coin values`);
+  group.h1 ?? titleCase(`${group.name} coins`);
 
+/**
+ * The `<title>`, fitted rather than trimmed.
+ *
+ * It said "Silver Coin Values: Melt Value and Price Guide" and "Clad Coin
+ * Values: Price Guide". "Price Guide" is gone and is not coming back -- this
+ * site does not have one and has decided not to build one. "Coin Values" is
+ * gone from the H1 and stays here, because it is the phrase the page is
+ * competing for and the page does answer it.
+ */
 export const groupSeoTitle = (group: Group): string => {
   if (group.seoTitle) return group.seoTitle;
-  const h1 = titleCase(`${group.name} coin values`);
-  const full = `${h1}: ${group.meltDriven ? 'Melt Value and Price Guide' : 'Price Guide'}`;
-  return full.length <= TITLE_MAX ? full : h1;
+  const keyword = titleCase(`${group.name} coin values`);
+  return fit(
+    group.meltDriven
+      ? [
+          `${keyword}: Dates, Mintages and Melt Value`,
+          `${keyword}: Dates and Melt Value`,
+          `${keyword} by Denomination`,
+          keyword,
+        ]
+      : [
+          `${keyword}: Dates, Mintages and Specifications`,
+          `${keyword}: Dates and Mintages`,
+          `${keyword} by Denomination`,
+          keyword,
+        ],
+    TITLE_MAX,
+  );
 };
 
 /**
@@ -404,7 +461,7 @@ export const groupSections = (group: Group) => {
 };
 
 /* ===========================================================================
-   A denomination within a composition: /coin-value/<group>/<type>
+   A denomination within a composition: /coin-info/<group>/<type>
    ===========================================================================
 
    The deepest archive, and the one with the most URLs behind it: nine groups
@@ -416,13 +473,18 @@ export const groupSections = (group: Group) => {
    =========================================================================== */
 
 export const pairH1 = (group: Group, type: CoinType): string =>
-  `${titleCase(group.name)} ${titleCase(type.namePlural)} and What They Are Worth`;
+  `${titleCase(group.name)} ${titleCase(type.namePlural)}`;
 
 export const pairSeoTitle = (group: Group, type: CoinType): string => {
-  const full = `${titleCase(group.name)} ${titleCase(type.namePlural)}: Value Guide`;
-  return full.length <= TITLE_MAX
-    ? full
-    : `${titleCase(group.name)} ${titleCase(type.namePlural)}`;
+  // The singular, because "silver quarter values" is the phrase and "silver
+  // quarters values" is not English.
+  const keyword = `${titleCase(group.name)} ${titleCase(type.name)} Values`;
+  return fit(
+    pairFacts(group, type).metals.length > 0
+      ? [`${keyword}: Dates, Mintages and Melt Value`, `${keyword}: Dates and Melt Value`, keyword]
+      : [`${keyword}: Dates, Mintages and Specifications`, `${keyword}: Dates and Mintages`, keyword],
+    TITLE_MAX,
+  );
 };
 
 /** `pairQuestion()` lives in coins.ts, with the other derived questions. */
@@ -483,7 +545,7 @@ export const pairSections = (group: Group, type: CoinType) => ({
 });
 
 /* ===========================================================================
-   The tag index: /coin-value/tagged
+   The tag index: /coin-info/tagged
    =========================================================================== */
 
 export const TAGGED_H1 = 'Coin Topics, Series and Countries';
@@ -541,7 +603,7 @@ export const TAG_KIND_SECTIONS: { kind: Tag['kind']; title: string; blurb: strin
 ];
 
 /* ===========================================================================
-   A tag: /coin-value/tagged/<tag>
+   A tag: /coin-info/tagged/<tag>
    ===========================================================================
 
    The unbounded level, and therefore the one the formula matters most on. The
@@ -575,17 +637,42 @@ const metalNamed = (composition: string): Metal | undefined =>
         ? 'silver'
         : undefined;
 
-/** "Junk Silver Coin Values" -- and "Clad Coinage Values", when the name says coin already. */
+/**
+ * "Junk Silver Coin Values" -- the singular subject, for a <title> only.
+ *
+ * "Junk Silver Coins Values" is not English, so the phrase somebody types is
+ * built on the singular and the heading on the plural. Two forms because the
+ * two render sites want different things, not because one is a copy of the
+ * other.
+ */
 const tagSubject = (tag: Tag) =>
   /coins?$|coinage$/i.test(tag.name) ? titleCase(tag.name) : `${titleCase(tag.name)} Coin`;
+
+/**
+ * "Junk Silver Coins", "Key Date Coins", "Clad Coinage".
+ *
+ * The singular form of this stood here until the headings stopped ending in
+ * "Values": "Junk Silver Coin Values" was a noun phrase with a job for its
+ * last word, and taking the last word away leaves one that has to stand as a
+ * heading on its own. A name that already says coins, or that is a mass noun
+ * like "clad coinage", is left alone. The singular form went with the
+ * headings that used it -- a generator with no render site is deleted rather
+ * than kept warm.
+ */
+const tagSubjectPlural = (tag: Tag) =>
+  /coins$|coinage$/i.test(tag.name)
+    ? titleCase(tag.name)
+    : /coin$/i.test(tag.name)
+      ? `${titleCase(tag.name)}s`
+      : `${titleCase(tag.name)} Coins`;
 
 /** "are" or "is", for a phrase that may be a mass noun. */
 const areIs = (tag: Tag) => (tagIsPlural(tag) ? 'are' : 'is');
 
 export const tagH1 = (tag: Tag): string => {
   if (tag.h1) return tag.h1;
-  if (tag.kind === 'series') return `${titleCase(tag.name)} Values by Year`;
-  return `${tagSubject(tag)} Values`;
+  if (tag.kind === 'series') return `${titleCase(tag.name)} Dates and Mint Marks`;
+  return tagSubjectPlural(tag);
 };
 
 export const tagSeoTitle = (tag: Tag): string => {
@@ -593,12 +680,13 @@ export const tagSeoTitle = (tag: Tag): string => {
   return fit(
     tag.kind === 'series'
       ? [
-          `${titleCase(tag.name)} Value: Year and Mint Mark Guide`,
-          `${titleCase(tag.name)} Value Guide`,
+          `${titleCase(tag.name)} Value: Dates, Mint Marks and Mintages`,
+          `${titleCase(tag.name)} Value: Dates and Mint Marks`,
+          `${titleCase(tag.name)} Value by Date`,
         ]
       : [
-          `${tagSubject(tag)} Values: Price Guide by Denomination`,
-          `${tagSubject(tag)} Values: Price Guide`,
+          `${tagSubject(tag)} Values: Dates, Mintages and Melt Value`,
+          `${tagSubject(tag)} Values: Dates and Mintages`,
           `${tagSubject(tag)} Values`,
         ],
     TITLE_MAX,
@@ -622,7 +710,13 @@ export const tagQuestion = (tag: Tag): string => {
     const precious = split.map((era) => metalNamed(era.composition)).find(Boolean);
     if (precious) return `Which ${tag.name}s are ${precious}?`;
   }
-  if (tag.kind === 'series') return `What is a ${tag.name} worth?`;
+  /*
+   * A series with no metal change is answered by its own facts -- the run, the
+   * mints, the designer -- and never by a figure, so the question it claims is
+   * the one it answers. `tagAnswer()` for such a tag opens "struck 1878 to
+   * 1921 at five mints", which is not an answer to "what is it worth".
+   */
+  if (tag.kind === 'series') return `What is a ${tag.name}?`;
   return `What ${areIs(tag)} ${tagCoins(tag)} worth?`;
 };
 
@@ -636,6 +730,31 @@ export const tagAnswer = (tag: Tag): string => {
   if (split) {
     const eras = split.map((era) => `${runLabel(era.years)} issues are ${lower(era.composition)}`);
     return `The metal changed partway through the run: the ${list(eras)}. The date decides which of them you are holding, and the metal decides most of what it is worth.`;
+  }
+
+  /*
+   * A SERIES ANSWERS WITH ITS OWN FACTS, and this branch is why.
+   *
+   * `tagQuestion()` asks "what is a Morgan dollar?" of a series whose metal
+   * never changed, because that is the question the page answers -- the run,
+   * the mints, the designer and the metal are all on it and no price is. This
+   * used to fall through to the value answer below, which put "Morgan dollars
+   * are worth at least the silver in them" under a question that did not ask.
+   * Schema matching the visible page is the rule; this is the same rule one
+   * level up from a coin.
+   */
+  const series = tag.series;
+  if (tag.kind === 'series' && series) {
+    const mints = series.mints.length;
+    const metal =
+      facts.metals.length > 0
+        ? `Every one of them carries ${list(facts.metals)}, stated in troy ounces on each coin's own page`
+        : `None of them carries a precious metal worth recovering`;
+    // The country is read off the coins rather than assumed: this catalogue
+    // already holds Canadian issues, and "United States series" typed in here
+    // would be false on the first one that got a series tag.
+    const subject = facts.countries.length === 1 ? `${facts.countries[0]} series` : 'series';
+    return `The ${tag.name} is ${article(subject)} ${subject} struck ${runLabel(series.years)} at ${count(mints)} ${mints === 1 ? 'mint' : 'mints'}${series.designer ? `, to a design by ${series.designer}` : ''}. ${metal}, and the date and the mint mark are what separate one issue from the next.`;
   }
 
   if (facts.metals.length > 0) {
@@ -736,7 +855,7 @@ export const tagGroups = (tag: Tag): Group[] => groupsForTag(tag.slug);
    FAQ questions
    ===========================================================================
 
-   Every /coin-value page carries exactly one FAQPage question and no two pages
+   Every /coin-info page carries exactly one FAQPage question and no two pages
    carry the same one: Google wants a question marked up once, and two pages
    claiming one question is the site competing with itself for a rich result it
    then loses.
@@ -746,7 +865,7 @@ export const tagGroups = (tag: Tag): Group[] => groupsForTag(tag.slug);
    a list that can disagree with the pages.
    =========================================================================== */
 
-/** Every FAQ question the /coin-value tree will emit, with the page that owns it. */
+/** Every FAQ question the /coin-info tree will emit, with the page that owns it. */
 export function allFaqQuestions(): { question: string; path: string }[] {
   return [
     ...populatedGroups().map((g) => ({ question: groupQuestion(g), path: groupPath(g.slug) })),
@@ -889,7 +1008,7 @@ const pairRow = (group: Group, type: CoinType): CopyRow => ({
 export function allArchiveCopy(): CopyRow[] {
   return [
     {
-      path: '/coin-value',
+      path: '/coin-info',
       what: 'the catalogue hub',
       h1: HUB_H1,
       seoTitle: HUB_SEO_TITLE,
@@ -902,7 +1021,7 @@ export function allArchiveCopy(): CopyRow[] {
       overrides: [],
     },
     {
-      path: '/coin-value/tagged',
+      path: '/coin-info/tagged',
       what: 'the tag index',
       h1: TAGGED_H1,
       seoTitle: TAGGED_SEO_TITLE,

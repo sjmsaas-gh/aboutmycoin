@@ -59,3 +59,10 @@ desktop.ini
 # Staged R2 payload: files too large for git, uploaded by `npm run r2:sync`.
 # See r2/README.md. Never in git.
 r2-assets/
+data/verify/.cache/
+
+# Grade price source responses. `npm run prices` caches every page it reads here
+# and commits the FIGURES, with their URLs and the date, to data/grade-prices.json
+# instead. Two guides times three hundred issues of full HTML is a few hundred
+# megabytes and a diff nobody can read; the owner's decision of 2026-09-21.
+data/prices/.cache/

@@ -1,0 +1,149 @@
+---
+/**
+ * The gold melt price calculator: /tools/coin-calculators/gold-melt-price.
+ *
+ * The silver page's twin, and deliberately the same page with a different
+ * metal: the block is `src/components/MeltCalculator.astro`, the rows are
+ * `src/data/gold-coins.ts`, and this file is the gold copy, the schema and the
+ * links out. Somebody who has learned one of the two has learned the other.
+ *
+ * WHAT IS WORTH KNOWING ABOUT THE FIGURES: melt is very nearly the whole
+ * answer for a common-date double eagle and is a floor, not an estimate, for a
+ * gold dollar or a quarter eagle -- those are worth a multiple of their metal
+ * to a collector. The note under the table says melt is not what a coin sells
+ * for, in the one sentence every melt figure on this site carries, and the
+ * section under it sends the reader to the catalogue for the rest. The registry
+ * header argues why the small denominations are on the table at all.
+ *
+ * The links out go to the hubs rather than to /coin-info/gold, which does not
+ * exist: an archive is built only for a group with coins in it, and the
+ * catalogue has no gold yet. `populatedGroups()` decides that here rather than
+ * a hand-kept assumption, so the day a gold coin lands the links sharpen by
+ * themselves. A static build has no 404 report, so a dead internal link is
+ * forever.
+ */
+import Base from '../../../layouts/Base.astro';
+import MeltCalculator from '../../../components/MeltCalculator.astro';
+import { SITE } from '../../../lib/site';
+import { datasetSchema, webPageSchema } from '../../../lib/schema';
+import { formatUsd, meltBaselineNote, referenceClause, spotPrice } from '../../../lib/spot';
+import { GOLD_COINS } from '../../../data/gold-coins';
+import { groupPath, populatedGroups } from '../../../data/coins';
+import { MELT_ROOT, meltGroupPath } from '../../../lib/melt';
+import { TOOLS_CRUMB } from '../../../lib/tools';
+
+const path = '/tools/coin-calculators/gold-melt-price';
+const h1 = 'Gold Coin Melt Value Calculator';
+const description =
+  'Add up the gold in a drawer of coins, bars and rounds: how many eagles, half eagles, quarter eagles and bullion pieces you have, and what the metal in them is worth.';
+
+const GOLD = 'gold';
+const perOunce = spotPrice(GOLD);
+
+/**
+ * The lot the rows belong to: one string, which the component puts in the
+ * rows' `data-spot-lot` and in the total's `data-spot-lot-total`, so a rename
+ * cannot half-happen.
+ */
+const LOT = 'gold-coins';
+
+/* Only where the archive is really built. See the header. */
+const goldArchive = populatedGroups().some((g) => g.slug === GOLD);
+---
+<Base
+  title={h1}
+  description={description}
+  path={path}
+  crumbs={[
+    TOOLS_CRUMB,
+    { label: 'Coin calculators', href: '/tools/coin-calculators' },
+    { label: 'Gold melt price', href: path },
+  ]}
+  schemas={[
+    webPageSchema({ type: 'WebPage', name: h1, description, path }),
+    // The table is reference data with a stated method, which is what Dataset
+    // is for. No FAQPage: one question is marked up on one page, and this one
+    // asks nothing the melt section does not already answer.
+    datasetSchema({
+      name: `${SITE.name} gold coin and bar content`,
+      description:
+        'Gold content of every United States gold coin, and of the bar and round sizes commonly sold, derived from the weight and fineness of each one, with the value of that content at a named, dated spot price.',
+      path,
+      variableMeasured: [
+        'Coin or bar',
+        'Weight (grams)',
+        'Fineness',
+        'Gold content (troy ounces)',
+        'Melt value (USD)',
+      ],
+      measurementTechnique:
+        'Gold content is the coin’s published weight in grams multiplied by its fineness and divided by 31.1034768 grams per troy ounce, except where the Mint states the gold content and the gross weight follows from the alloy. Melt value is that content multiplied by a single gold spot price, stated and dated on the page. It is the value of the metal, not a price any buyer has offered, and most United States gold coins sell for more than it.',
+      keywords: [
+        'gold coin melt value calculator',
+        'gold coin calculator',
+        'how much gold in a coin',
+        'double eagle gold content',
+      ],
+    }),
+  ]}
+>
+  <article class="container-page pt-8 pb-20" style="--metal: var(--metal-gold)">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+
+      <div class="verdict">
+        <span class="verdict-label">How to use it</span>
+        <p>
+          Type how many of each coin you have; the total at the top is what the
+          gold in them is worth at{' '}
+          <span data-spot="price-unit" data-spot-metal={GOLD}>{formatUsd(perOunce)}/ozt</span
+          ><span data-spot="reference-clause">{referenceClause()}</span>.
+        </p>
+      </div>
+    </div>
+
+    <MeltCalculator rows={GOLD_COINS} metal={GOLD} lot={LOT} />
+
+    <div class="prose-page">
+      <p class="figure-note" style="border-top: 0; padding-top: 0">
+        {meltBaselineNote(GOLD)} Worked at full mint weight, so a worn coin
+        comes to slightly less. United States gold struck before 1834 is not in
+        the table: it is a lighter standard, and every one of those coins is
+        worth a multiple of its metal. Neither are the commemorative and First
+        Spouse issues, nor any foreign gold — a Sovereign, a Napoleon and a
+        Krugerrand are all standards of their own. A bar or a round is worth
+        what its maker stamped on it, which is a weaker fact than a mint
+        specification: gold is the metal fakes are made of, so weigh and measure
+        anything that did not come from a dealer you trust.
+      </p>
+
+      <h2>What a gold coin is worth beyond its metal</h2>
+      <p>
+        The date, the mint and the condition decide the rest, and none of them
+        is on this page. Gold is also the metal counterfeiters bother with, so a
+        coin that has not been weighed and measured is a coin whose melt value
+        is hypothetical.{' '}
+        {goldArchive ? (
+          <Fragment>
+            Look the coin up in <a href={groupPath(GOLD)}>the gold catalogue</a>,
+            or see <a href={meltGroupPath(GOLD)}>gold melt values one coin at a
+            time</a>.
+          </Fragment>
+        ) : (
+          <Fragment>
+            The catalogue has no gold coins in it yet; until it does,{' '}
+            <a href={MELT_ROOT}>the melt section</a> carries the same arithmetic
+            for the metals that are in it.
+          </Fragment>
+        )}
+      </p>
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+        {' '}<a href="/common-questions/what-is-spot-price">What spot price is</a>.
+        {' '}<a href="/common-questions/how-can-i-tell-if-my-coin-is-fake">How to tell if a coin is fake</a>.
+      </p>
+    </div>
+  </article>
+</Base>

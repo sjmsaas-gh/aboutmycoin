@@ -1,0 +1,221 @@
+{
+  "source": {
+    "name": "Numista",
+    "url": "https://numista.com",
+    "note": "Fetched at build time with a research credential and cached here. Nothing under src/ reads it and no page calls it. Refresh with `npm run mintages -- --refresh`."
+  },
+  "series": "peace-dollar",
+  "types": [
+    {
+      "id": 5580,
+      "title": "1 Dollar \"Peace Dollar\"",
+      "composition": "Silver (.900)",
+      "weight": 26.73,
+      "issues": [
+        {
+          "year": 1921,
+          "mark": "",
+          "mintage": 1006473,
+          "pcgs": "7356",
+          "comment": "high relief"
+        },
+        {
+          "year": 1922,
+          "mark": "",
+          "mintage": 51737000,
+          "pcgs": "7357",
+          "comment": "normal relief; see comments"
+        },
+        {
+          "year": 1922,
+          "mark": "",
+          "mintage": 35401,
+          "pcgs": "7383",
+          "comment": "high relief; see comments"
+        },
+        {
+          "year": 1922,
+          "mark": "D",
+          "mintage": 15063000,
+          "pcgs": "7358",
+          "comment": ""
+        },
+        {
+          "year": 1922,
+          "mark": "S",
+          "mintage": 17475000,
+          "pcgs": "7359",
+          "comment": ""
+        },
+        {
+          "year": 1923,
+          "mark": "",
+          "mintage": 30800000,
+          "pcgs": "7360",
+          "comment": ""
+        },
+        {
+          "year": 1923,
+          "mark": "D",
+          "mintage": 6811000,
+          "pcgs": "7361",
+          "comment": ""
+        },
+        {
+          "year": 1923,
+          "mark": "S",
+          "mintage": 19020000,
+          "pcgs": "7362",
+          "comment": ""
+        },
+        {
+          "year": 1924,
+          "mark": "",
+          "mintage": 11811000,
+          "pcgs": "7363",
+          "comment": ""
+        },
+        {
+          "year": 1924,
+          "mark": "S",
+          "mintage": 1728000,
+          "pcgs": "7364",
+          "comment": ""
+        },
+        {
+          "year": 1925,
+          "mark": "",
+          "mintage": 10198000,
+          "pcgs": "7365",
+          "comment": ""
+        },
+        {
+          "year": 1925,
+          "mark": "S",
+          "mintage": 1610000,
+          "pcgs": "7366",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "",
+          "mintage": 1939000,
+          "pcgs": "7367",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "D",
+          "mintage": 2348700,
+          "pcgs": "7368",
+          "comment": ""
+        },
+        {
+          "year": 1926,
+          "mark": "S",
+          "mintage": 6980000,
+          "pcgs": "7369",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "",
+          "mintage": 848000,
+          "pcgs": "7370",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "D",
+          "mintage": 1268000,
+          "pcgs": "7371",
+          "comment": ""
+        },
+        {
+          "year": 1927,
+          "mark": "S",
+          "mintage": 866000,
+          "pcgs": "7372",
+          "comment": ""
+        },
+        {
+          "year": 1928,
+          "mark": "",
+          "mintage": 360349,
+          "pcgs": "7373",
+          "comment": ""
+        },
+        {
+          "year": 1928,
+          "mark": "S",
+          "mintage": 1632000,
+          "pcgs": "7374",
+          "comment": "large \"S\""
+        },
+        {
+          "year": 1928,
+          "mark": "s",
+          "mintage": null,
+          "pcgs": "7374",
+          "comment": "small \"S\""
+        },
+        {
+          "year": 1934,
+          "mark": "",
+          "mintage": 954057,
+          "pcgs": "7375",
+          "comment": ""
+        },
+        {
+          "year": 1934,
+          "mark": "D",
+          "mintage": null,
+          "pcgs": null,
+          "comment": "Double die obverse; see comments"
+        },
+        {
+          "year": 1934,
+          "mark": "D",
+          "mintage": 1569500,
+          "pcgs": "7376",
+          "comment": "large \"D\"; see comments"
+        },
+        {
+          "year": 1934,
+          "mark": "D",
+          "mintage": null,
+          "pcgs": "7376",
+          "comment": "small \"D\"; see comments"
+        },
+        {
+          "year": 1934,
+          "mark": "S",
+          "mintage": 1011000,
+          "pcgs": "7377",
+          "comment": ""
+        },
+        {
+          "year": 1935,
+          "mark": "",
+          "mintage": 1576000,
+          "pcgs": "7378",
+          "comment": ""
+        },
+        {
+          "year": 1935,
+          "mark": "S",
+          "mintage": 1964000,
+          "pcgs": "7379",
+          "comment": "two varieties; see comments"
+        },
+        {
+          "year": 1964,
+          "mark": "D",
+          "mintage": 316076,
+          "pcgs": "507956",
+          "comment": "Entire mintage remelted; numerous restrikes exist"
+        }
+      ]
+    }
+  ]
+}

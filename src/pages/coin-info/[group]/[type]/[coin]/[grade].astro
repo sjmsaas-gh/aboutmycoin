@@ -1,0 +1,466 @@
+---
+/**
+ * One coin in one grade: /coin-info/<group>/<type>/<coin>/<grade>.
+ *
+ * The page that exists because grade is the entire answer on some coins and no
+ * part of it on others. A 1961-D quarter is worth its metal in AG3 and in EF40,
+ * so twenty grade pages would be twenty copies of one page; a 1932-D is worth
+ * eight times as much in Extremely Fine as in Good, and the reader who has just
+ * been told their coin grades XF has a question this site could not previously
+ * answer.
+ *
+ * Which coins fan out, and which grades: `gradedGrades()` in coins.ts, with the
+ * reasoning above it. Every sentence on the page: `src/lib/grade-copy.ts`.
+ * Nothing here is typed per coin, and nothing here is typed twice -- the H1,
+ * the answer, the ladder and the breadcrumb all read the same objects.
+ *
+ * ---------------------------------------------------------------------------
+ * THE BLOCKS, IN ORDER, AND WHAT EACH ONE IS FOR
+ * ---------------------------------------------------------------------------
+ *
+ *   1. The answer      the range, its provenance, and what it means against
+ *                      the rung below. Rendered as a question and an answer,
+ *                      and NOT marked up as one -- see the schemas below.
+ *   2. The grade       what the word on the slab looks like ON THIS COIN,
+ *                      generated from the grade and the series' wear points.
+ *   3. The ladder      this grade against the ones either side, with their
+ *                      figures and their populations. Answers "what if mine is
+ *                      a point better", which is the question the reader has
+ *                      the moment they finish block 2.
+ *   4. The sales       what examples actually fetched, with the house and the
+ *                      month. Before "how to look it up", not after: the sales
+ *                      are the answer and the lookup is the verification.
+ *   5. The lookup      a live sold-comps link and the price-guide row, so a
+ *                      reader can check this page against the market. Sending
+ *                      somebody out to verify is what a site confident in its
+ *                      numbers does.
+ *   6. The floor       the metal, one figure, marked for the browser. It is
+ *                      here because it is what the premium is measured
+ *                      against; it is ONE figure and not a ladder, because the
+ *                      melt section owns that and this page links to it.
+ *
+ * ---------------------------------------------------------------------------
+ * TRAPS THIS TEMPLATE WALKS PAST
+ * ---------------------------------------------------------------------------
+ *
+ *   - No `offers` in the JSON-LD. The page states a price and the Product
+ *     schema still carries none: the site does not sell coins and does not know
+ *     what one will fetch. That rule does not relax because a number appeared.
+ *   - No date on the page. The range carries `LADDER_BASIS` -- undated since
+ *     2026-09-22 -- the melt figure carries `spotBasis()`, which is timed
+ *     because spot really is read at a minute, and nothing carries
+ *     `dateModified`.
+ *   - No melt page per grade. Grade does not change metal content, so the
+ *     mirror stops at the coin and block 6 links to the coin's melt page.
+ *   - One question, one page. `gradeQuestion()` is still registered in
+ *     faq-registry.ts and cannot collide with the coin page's question,
+ *     even though this page no longer carries FAQPage markup: the registry
+ *     guards the visible heading as well as the schema.
+ *   - Grades with none known are absent from the ladder, not listed at zero.
+ *     Prev/next step to the next grade that exists, not the next integer.
+ */
+import Base from '../../../../../layouts/Base.astro';
+import { SITE } from '../../../../../lib/site';
+import {
+  coinMetal,
+  meltValue,
+  formatUsd,
+  spotPrice,
+  spotStamp,
+} from '../../../../../lib/spot';
+import { meltPath } from '../../../../../lib/melt';
+import { articleSchema } from '../../../../../lib/schema';
+import {
+  gradedPairs,
+  gradedValue,
+  gradedGrades,
+  gradedSources,
+  gradeNeighbours,
+  gradePath,
+  gradeQuestion,
+  coinPath,
+  groupPath,
+  typePath,
+  tagPath,
+  groupBySlug,
+  typeBySlug,
+  seriesForCoin,
+  type Coin,
+  type Grade,
+} from '../../../../../data/coins';
+import {
+  gradeH1,
+  gradeSeoTitle,
+  gradeDescription,
+  gradeAnswer,
+  gradeMeaning,
+  gradeMeaningHeading,
+  gradeSpansNote,
+  gradeFormsNote,
+  populationNote,
+  gradeLadderNote,
+  gradeSalesNote,
+  gradeCheckNote,
+  gradeFloorNote,
+  ebaySoldUrl,
+  ebaySoldLabel,
+  rangeText,
+  rangeCell,
+  isPriced,
+  ladderHasFigures,
+  ladderHasPopulations,
+  showsSales,
+  LADDER_GAP_NOTE,
+  usd,
+  LADDER_BASIS,
+  LADDER_HEADING,
+  SALES_HEADING,
+  CHECK_HEADING,
+  FLOOR_HEADING,
+  SOURCES_HEADING,
+  SOURCES_NOTE,
+  FIGURE_SOURCES,
+} from '../../../../../lib/grade-copy';
+
+export function getStaticPaths() {
+  return gradedPairs().map(({ coin, grade }) => ({
+    params: { group: coin.group, type: coin.type, coin: coin.slug, grade: grade.slug },
+    props: { coin, grade },
+  }));
+}
+
+export interface Props { coin: Coin; grade: Grade }
+const { coin, grade } = Astro.props;
+
+// Non-null throughout: getStaticPaths only produces a pair that survived
+// gradedGrades(), which already required the priced row and the series.
+const group = groupBySlug(coin.group)!;
+const type = typeBySlug(coin.type)!;
+const seriesTag = seriesForCoin(coin)!;
+const value = gradedValue(coin, grade)!;
+const ladder = gradedGrades(coin);
+const { below, above } = gradeNeighbours(coin, grade);
+
+const path = gradePath(coin, grade);
+
+/*
+ * The canonical points UP, to the coin. A grade page is one rung of one coin's
+ * ladder: the specifications, the mintage, the metal floor and most of the copy
+ * are the coin's, and twenty rungs competing with their own coin for "1943
+ * wheat penny" is the site bidding against itself. The rung keeps its own page,
+ * its own URL and its own place in the ladder table, for the reader who has
+ * been handed a grade and typed it.
+ */
+const canonicalPathForGrade = coinPath(coin);
+const question = gradeQuestion(coin, grade);
+const shortName = coin.shortName ?? coin.name;
+
+// The metal floor. One figure, rendered from the same functions as every other
+// figure on the site, and marked so the browser rewrites it from /api/spot.
+const metal = coinMetal(coin);
+const melt = metal && {
+  ...metal,
+  value: meltValue(metal.troyOunces, metal.metal)!,
+  stamp: spotStamp(metal.metal),
+};
+
+const sales = value.sales ?? [];
+
+// Whether the ladder table carries a value column at all, and whether the
+// sales block renders. Both read the copy module's own predicates so the
+// registry the build check compares against cannot disagree with the HTML.
+const priced = isPriced(value);
+const showValues = ladderHasFigures(coin);
+const showSales = showsSales(coin, grade);
+const showPopulations = ladderHasPopulations(coin);
+const population = populationNote(coin, grade);
+---
+<Base
+  title={gradeSeoTitle(coin, grade)}
+  description={gradeDescription(coin, grade)}
+  path={path}
+  canonicalPath={canonicalPathForGrade}
+  type="article"
+  crumbs={[
+    { label: 'Coin info', href: '/coin-info' },
+    { label: group.name, href: groupPath(group.slug) },
+    { label: type.namePlural, href: typePath(group.slug, type.slug) },
+    { label: shortName, href: coinPath(coin) },
+    { label: grade.code, href: path },
+  ]}
+  schemas={[
+    articleSchema({
+      headline: gradeH1(coin, grade),
+      description: gradeDescription(coin, grade),
+      path,
+    }),
+    /*
+     * NO FAQPage HERE EITHER, as of 2026-09-23, and it is the owner's decision.
+     *
+     * It was here, on all 21,123 grade pages, and the question it carried was
+     * a formula: "What does <grade> mean on <coin>?". That is a real question
+     * and the page really answers it -- what came off is the MARKUP, not the
+     * heading, not the answer and not the block. All three still render, in
+     * the same words, and `gradeQuestion()` is still registered in
+     * faq-registry.ts so two pages can still never claim one question.
+     *
+     * Three reasons, in the order they matter:
+     *
+     *   1. Google stopped showing FAQ rich results for sites like this one in
+     *      2023 -- they survive only for authoritative government and health
+     *      domains. So the markup bought nothing, and had not for years.
+     *
+     *   2. What it still cost was real. FAQPage is a claim about what a page
+     *      IS, and 21,123 of them, on pages whose questions are one template
+     *      with a grade and a coin substituted in, describe a site that is 93%
+     *      FAQ by page count. That is the scaled-content shape stated in
+     *      machine-readable form, to the one reader that indexes it.
+     *
+     *   3. The coin page, the melt page and the fifteen common questions keep
+     *      theirs, and they are the pages where a question is the subject
+     *      rather than a heading. Concentrating the claim on 700-odd pages
+     *      that are really Q&A is worth more than spreading it over 21,000
+     *      that are really reference entries with a question at the top.
+     *
+     * The Article node stays and is now the only type this page declares,
+     * which is what it always was.
+     *
+     * NO Product HERE. THE PRODUCT STOPS AT THE COIN, exactly as the melt
+     * mirror does -- "grade does not change metal content, so the mirror stops
+     * at the coin" is the rule one section over, and grade does not change the
+     * object either. The owner's decision of 2026-09-22.
+     *
+     * It was here, and it asserted `material` ("90% silver, 10% copper"),
+     * `weight` (6.25 g) and `diameter` (24.3 mm) on a page that renders none
+     * of the three: a grade page carries no specification table, deliberately,
+     * because the coin page owns it. Three invisible claims in machine-
+     * readable form, on 20,876 URLs -- the same mismatch the Dataset on
+     * /coin-info had, at ten thousand times the scale.
+     *
+     * Trimming the fields to the one the page does show would have kept the
+     * deeper problem: a `Product` per (coin x grade) is twenty-odd entities
+     * for one object, each named "... in MS63", and only one of them is a
+     * thing anybody holds. The coin's own Product is that thing, the eyebrow
+     * above the H1 links straight to it, and this page is about what a word on
+     * a slab means.
+     *
+     * The specs are not lost. They are on the coin page, in the table, inside
+     * its Product node, which is the only URL that both states and shows them.
+     */
+  ]}
+>
+  <article class="container-page pt-8 pb-20" style={`--metal: var(--metal-${group.slug})`}>
+    <div class="prose-page">
+      <p class="tile-meta" style="margin: 0 0 0.4rem">
+        <span class="metal-dot" aria-hidden="true"></span>
+        <a href={coinPath(coin)}>{coin.name}</a> &middot; graded {grade.code}
+      </p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{gradeH1(coin, grade)}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+
+      {/* The question and its answer. Rendered, not marked up -- the
+          FAQPage node came off on 2026-09-23; see the schemas above. */}
+      <div class="verdict">
+        <span class="verdict-label">{question}</span>
+        <p>{gradeAnswer(coin, grade)}</p>
+      </div>
+    </div>
+
+    {/* The range as a figure rather than as a sentence, and ONLY where there
+        is a range. It printed "TBD to TBD" over a "Not yet researched on this
+        site" stamp on six and a half thousand pages until the owner made this
+        an information catalogue rather than a price guide: a placeholder set
+        in the largest type on the page is a price page that has failed,
+        however honestly the placeholder is worded. The page now leads with
+        what it knows -- see `LADDER_GAP_NOTE` in grade-copy.ts for the whole
+        argument. */}
+    {priced && (
+      <section class="figure-block not-prose" aria-labelledby="range-heading">
+        <p class="figure-label" id="range-heading">{grade.label}</p>
+        <p class="figure-big">{rangeText(value)}</p>
+        {/* The provenance, undated, and the same string the coin page prints
+            -- the owner's decision of 2026-09-22. */}
+        <p class="figure-stamp">{LADDER_BASIS}</p>
+        {population && <p class="figure-working">{population}</p>}
+      </section>
+    )}
+
+    <div class="prose-page">
+      {/* What the range spans, on a date struck with several reverses. It sits
+          directly under the figure because it is a caveat on that figure and
+          nowhere else; on a date with one design it does not render. */}
+      {gradeSpansNote(coin, grade) && <p>{gradeSpansNote(coin, grade)}</p>}
+
+      {/* The census, where the figure block above did not carry it. How many
+          of this date have been certified at this grade is a fact about the
+          coin and not about its price, so it survives the loss of the range
+          rather than going with it. */}
+      {!priced && population && <p>{population}</p>}
+
+      <h2>{gradeMeaningHeading(grade)}</h2>
+      <p>{gradeMeaning(coin, grade)}</p>
+      {gradeFormsNote(coin, grade) && <p>{gradeFormsNote(coin, grade)}</p>}
+
+      <h2>{LADDER_HEADING}</h2>
+      <p>{gradeLadderNote(coin, grade)}</p>
+    </div>
+
+    <div class="card table-scroll" style="padding: 0.4rem 0; margin-bottom: 0.6rem">
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th style="text-align: left">Grade</th>
+            {showValues && <th style="text-align: right">Value range (USD)</th>}
+            {showPopulations && <th style="text-align: right">Certified</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {ladder.map((g) => {
+            const row = gradedValue(coin, g)!;
+            const here = g.slug === grade.slug;
+            return (
+              <tr class={here ? 'row-current' : undefined}>
+                <td>
+                  {here ? <strong>{g.label}</strong> : <a href={gradePath(coin, g)}>{g.label}</a>}
+                  {here && <span class="tag-this"> &larr; this page</span>}
+                </td>
+                {showValues && <td style="text-align: right">{rangeCell(row)}</td>}
+                {showPopulations && (
+                  <td style="text-align: right">
+                    {/* Not counted is not the same as none, and a blank says
+                        neither. See `Population` in coin-schema.ts. The column
+                        itself only renders where at least one rung IS counted,
+                        so this word always appears beside a real figure. */}
+                    {row.population
+                      ? `${row.population.atGrade.toLocaleString('en-GB')} (${row.population.service})`
+                      : 'Not counted'}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {/* The one place an empty cell still has to be explained, and it is
+          explained once under the table rather than marked in every row. */}
+      {showValues && <p class="figure-stamp" style="padding: 0 1rem">{LADDER_GAP_NOTE}</p>}
+    </div>
+
+    <div class="prose-page">
+      {/* The rung either side, pushed to the two ends of the line rather than
+          set as a list with a middot between them: the arrows already say
+          which way each one goes, and a reader stepping down a ladder reaches
+          for the left edge. `.grade-step-next` carries the auto margin so the
+          next rung stays on the right when there is no previous one -- at the
+          bottom of a ladder, where space-between alone would pull it left and
+          make it read as the way back. */}
+      <p class="answer-line grade-step">
+        {below && <a href={gradePath(coin, below)}>&larr; {below.label}</a>}
+        {above && (
+          <a class="grade-step-next" href={gradePath(coin, above)}>{above.label} &rarr;</a>
+        )}
+      </p>
+
+      {showSales && (
+        <Fragment>
+          <h2>{SALES_HEADING}</h2>
+          <p>{gradeSalesNote(coin, grade)}</p>
+        </Fragment>
+      )}
+    </div>
+
+    {sales.length > 0 && (
+      <div class="card table-scroll" style="padding: 0.4rem 0; margin-bottom: 0.6rem">
+        <table class="fact-table">
+          <thead>
+            <tr><th>Sold</th><th>Where</th><th style="text-align: right">Realized</th></tr>
+          </thead>
+          <tbody>
+            {sales.map((s) => (
+              <tr>
+                <td>{s.when}</td>
+                <td>{s.house}</td>
+                <td style="text-align: right">{usd(s.price)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    <div class="prose-page">
+      <h2>{CHECK_HEADING}</h2>
+      <p>{gradeCheckNote(coin, grade)}</p>
+      <p>
+        <a href={ebaySoldUrl(coin, grade)} rel="nofollow noopener" target="_blank">
+          {ebaySoldLabel(coin, grade)} &rarr;
+        </a>
+      </p>
+    </div>
+
+    {melt && (
+      /* The floor the premium is measured against. ONE figure: the melt page
+         owns the arithmetic and the group archive owns the ladder of spot
+         prices, and a second column of other prices here would restate the sum
+         this page just showed. Marked for spot-dom.ts like every other figure
+         on the site, so the build check can re-derive it from its own
+         attributes. */
+      <section class="figure-block not-prose" aria-labelledby="floor-heading">
+        <p class="figure-label" id="floor-heading">{FLOOR_HEADING}</p>
+        <p
+          class="figure-big"
+          data-spot="value"
+          data-spot-metal={melt.metal}
+          data-spot-ozt={melt.troyOunces}
+        >{formatUsd(melt.value)}</p>
+        <p class="figure-working">
+          {melt.troyOunces} troy oz {melt.metal}
+          {' '}&times;{' '}<span
+            data-spot="price"
+            data-spot-metal={melt.metal}
+          >{formatUsd(spotPrice(melt.metal))}</span> per troy ounce
+        </p>
+        <p class="figure-stamp" data-spot="stamp" data-spot-metal={melt.metal}>{melt.stamp}</p>
+        <p class="figure-note">{gradeFloorNote(coin, grade)}</p>
+        <p class="figure-link">
+          <a href={meltPath(coin)}>Melt value of {coin.name} &rarr;</a>
+        </p>
+      </section>
+    )}
+
+    <div class="prose-page">
+      {/* A coin with no researched figure anywhere on its ladder cites nobody,
+          because it read nobody. A "where these figures come from" heading over
+          a page whose rungs carry no figure is a page claiming provenance it
+          has not got, and the gate stays whatever the sentence under it
+          says. */}
+      {gradedSources(coin).length > 0 && (
+        <Fragment>
+          <h2>{SOURCES_HEADING}</h2>
+          <p>
+            {SOURCES_NOTE.lead}
+            {FIGURE_SOURCES.map((s, i) => (
+              <Fragment>
+                {i > 0 && ', '}
+                <a href={s.url} rel="nofollow noopener" target="_blank">{s.name}</a>
+              </Fragment>
+            ))}
+            {SOURCES_NOTE.tail}
+          </p>
+        </Fragment>
+      )}
+
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+      </p>
+
+      <p>
+        <a href={coinPath(coin)}>{coin.name}: every grade, the metal and the specification &rarr;</a>
+      </p>
+      <p>
+        <a href={tagPath(seriesTag.slug)}>Every {seriesTag.name} date and what it is worth &rarr;</a>
+      </p>
+    </div>
+  </article>
+</Base>

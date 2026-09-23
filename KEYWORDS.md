@@ -21,8 +21,8 @@ same page, never for a second page.
 | Page | Primary phrase | Who types it | Secondary phrases |
 |---|---|---|---|
 | `/` | coin value | Someone holding one coin with no vocabulary for it. Wants a number and a reason to believe it. | what is my coin worth, coin identifier, how much is my coin worth |
-| `/coin-value` | coin values | Same person, one step in: they know the site can answer and want the index. | coin value chart, coin price guide, coin values by year |
-| `/coin-value/tagged` | coin categories | A browser rather than a searcher. Low volume, high internal-linking value. | coin series list, coin types by country |
+| `/coin-info` | coin values | Same person, one step in: they know the site can answer and want the index. | coin value chart, coin price guide, coin values by year |
+| `/coin-info/tagged` | coin categories | A browser rather than a searcher. Low volume, high internal-linking value. | coin series list, coin types by country |
 | `/pricing` | *(none yet)* | Nobody, until SPEC.md decides anything is sold. | |
 | `/melt-value` | coin melt value | Someone with a jar who knows the word "melt". Sent on to whatever their coins are made of. | melt value calculator, what is melt value |
 | `/melt-value/<group>` | silver coin melt value | Someone who knows their coins are silver and wants the whole branch in one place. Its clad twin answers "which coins have no silver". | gold coin melt value, how much silver is in a coin, silver content of coins, coins with no melt value |
@@ -51,7 +51,7 @@ each level follows so a new entry does not have to re-derive it.
 | Series (mint marks) | `<series> mint mark` | where is the mint mark on a morgan dollar | Cannot find the letter. Answered in one sentence on the series page, above the table that needs it. |
 | Tag (country) | `<country> coin values` | canadian coin values | Foreign coin, no idea where to start. |
 | Tag (topic) | the phrase the trade uses | junk silver value | Knows the jargon. Smaller, but converts. |
-| Melt (coin) | `<coin> melt value` | 1964 quarter melt value | Has several of one coin and wants the metal figure, not the coin's story. Generated for every catalogue entry from `src/lib/melt.ts`, at the coin's own address with `/coin-value` swapped for `/melt-value`. |
+| Melt (coin) | `<coin> melt value` | 1964 quarter melt value | Has several of one coin and wants the metal figure, not the coin's story. Generated for every catalogue entry from `src/lib/melt.ts`, at the coin's own address with `/coin-info` swapped for `/melt-value`. |
 | Melt (archive) | `<group> <type> melt value` | silver quarter melt value | The melt tree mirrors the catalogue, so every archive has a twin asking the metal question instead of the price question. |
 
 ### The three phrases the whole site is arranged around

@@ -43,9 +43,21 @@
  *   data-spot="reference-clause"                 ", a reference price…" or ""
  *   data-spot="ladder"      + metal              a <tbody> of multipliers
  *
- * `data-spot-qty` on a node means the quantity input multiplies it. That is
- * how the melt page's calculator works: it does not own an arithmetic of its
- * own, it sets a number and re-runs this.
+ * `data-spot-qty` on a node means a quantity input multiplies it. Empty is the
+ * melt page's single box, `#calc-count`; a value names an input by id, which is
+ * what the silver melt price calculator uses -- one box per row, all on one page. That
+ * is the whole of the calculator: it owns no arithmetic, it sets numbers and
+ * re-runs this.
+ *
+ * `data-spot-lot` groups rows that add up, and `data-spot-lot-total` on a `sum`
+ * or an `ozt` figure is the total of the lot it names. A total cannot be a
+ * figure of its own kind, because what it says depends on the other rows'
+ * quantities rather than on its own attributes -- so before anything is
+ * rendered, the total's `data-spot-sum` (or `data-spot-ozt`) is recomputed from
+ * the rows it covers, and then it renders like any other figure. Which means
+ * the build can write the same attribute for one of each coin, and the check in
+ * `tests/build-smoke.test.mjs` that re-derives every figure from its own
+ * attributes still covers the total.
  *
  * A page with none of these attributes costs one early return.
  */
@@ -69,11 +81,29 @@ import {
 /** The snapshot every figure on the page is currently showing. */
 let snapshot: SpotSnapshot = REFERENCE_SPOT;
 
-/** How many coins the reader says they have. Only the melt page moves it. */
-let quantity = 1;
+/**
+ * How many coins the reader says they have, by the id of the box they typed it
+ * in. A melt page has one box; the silver melt price calculator has one per row.
+ */
+const quantities = new Map<string, number>();
+
+/** The box on a melt page, which carries a bare `data-spot-qty`. */
+const SINGLE_QUANTITY_INPUT = 'calc-count';
 
 /** The largest lot the calculator will multiply out. Mirrors the input's max. */
 const MAX_QUANTITY = 1_000_000;
+
+/**
+ * Which box multiplies this figure, and by how much.
+ *
+ * No attribute means "one of these", not "none of these": a figure that is not
+ * part of a calculator must not collapse when somebody types in a box.
+ */
+const quantityFor = (node: Element): number => {
+  const named = node.getAttribute('data-spot-qty');
+  if (named === null) return 1;
+  return quantities.get(named === '' ? SINGLE_QUANTITY_INPUT : named) ?? 1;
+};
 
 const isMetal = (value: string | null): value is Metal =>
   value !== null && (METALS as string[]).includes(value);
@@ -212,7 +242,7 @@ const textFor = (node: Element): string | undefined =>
       qty: node.hasAttribute('data-spot-qty'),
     },
     snapshot,
-    quantity,
+    quantityFor(node),
   );
 
 /**
@@ -272,9 +302,57 @@ const syncSchema = (before: Map<Element, string>): void => {
   }
 };
 
+/**
+ * Add the rows of each lot up, and write the answer onto the total's own
+ * attributes.
+ *
+ * A total is the one figure whose text is not a function of its own attributes:
+ * it depends on what is typed in every row of its lot. Rather than give it a
+ * kind of its own -- which would put a second arithmetic in this file and take
+ * the total out of the reach of the check that re-derives every figure from its
+ * attributes -- the rows are added up HERE and the answer is written into the
+ * `sum` or `ozt` attribute the total already carries. After that a total is an
+ * ordinary figure and renders like every other one.
+ *
+ * A row belongs to a lot through `data-spot-lot`, carries its own metal and
+ * weight, and names the box that multiplies it. That is the same markup the row
+ * needs to render its own figure, so a lot adds one attribute per row and one
+ * element for the total.
+ */
+const recomputeLots = (): void => {
+  for (const total of document.querySelectorAll('[data-spot-lot-total]')) {
+    const lot = total.getAttribute('data-spot-lot-total');
+    if (!lot) continue;
+
+    const weights = new Map<Metal, number>();
+    for (const row of document.querySelectorAll(`[data-spot-lot="${lot}"]`)) {
+      const metal = row.getAttribute('data-spot-metal');
+      const ozt = Number(row.getAttribute('data-spot-ozt'));
+      if (!isMetal(metal) || !Number.isFinite(ozt)) continue;
+      weights.set(metal, (weights.get(metal) ?? 0) + ozt * quantityFor(row));
+    }
+    if (weights.size === 0) continue;
+
+    const kind = total.getAttribute('data-spot');
+    if (kind === 'sum') {
+      total.setAttribute(
+        'data-spot-sum',
+        [...weights].map(([metal, ozt]) => `${metal}=${ozt}`).join(';'),
+      );
+    } else if (kind === 'ozt' && weights.size === 1) {
+      // A weight is a single number, so a lot spanning two metals has no
+      // `ozt` total to print -- it would be troy ounces of nothing in
+      // particular. The `sum` above is the total such a lot can state.
+      total.setAttribute('data-spot-ozt', String([...weights.values()][0]));
+    }
+  }
+};
+
 /** Rewrite every marked figure on the page. Idempotent, and cheap enough to
- *  re-run on every keystroke in the quantity box. */
+ *  re-run on every keystroke in a quantity box. */
 export const applySpot = (): void => {
+  recomputeLots();
+
   const synced = new Map<Element, string>();
   for (const node of document.querySelectorAll('[data-spot-sync]')) {
     synced.set(node, node.getAttribute('data-spot-sync') ?? '');
@@ -321,38 +399,67 @@ export const fetchSpot = async (): Promise<SpotSnapshot | undefined> => {
 };
 
 /**
- * The quantity box on a melt page: "how many do you have".
+ * The quantity boxes: "how many do you have", once on a melt page and once per
+ * row on the silver melt price calculator.
  *
- * It owns no arithmetic. It sets a number and re-runs the same pass that the
- * price update runs, which is why the figure it drives and the figure the feed
- * drives cannot round differently -- they are one line of code.
+ * They own no arithmetic. A box sets a number and re-runs the same pass that
+ * the price update runs, which is why the figure it drives and the figure the
+ * feed drives cannot round differently -- they are one line of code.
+ *
+ * The boxes are found through the figures rather than by selecting inputs: a
+ * figure names the box that multiplies it, so anything wired here is something
+ * the page actually asked to have wired, and a stray number input elsewhere on
+ * a page is left alone.
  */
-const wireQuantity = (): void => {
-  const input = document.getElementById('calc-count');
-  if (!(input instanceof HTMLInputElement)) return;
+const wireQuantities = (): void => {
+  const ids = new Set<string>();
+  for (const node of document.querySelectorAll('[data-spot-qty]')) {
+    const named = node.getAttribute('data-spot-qty');
+    ids.add(named === '' || named === null ? SINGLE_QUANTITY_INPUT : named);
+  }
 
-  const read = (): void => {
-    // An empty box reads as one coin rather than as zero: somebody who has
-    // just cleared the field to type a new number should not watch the answer
-    // collapse to $0.00 in between keystrokes.
-    const raw = input.value.trim();
-    let n = raw === '' ? 1 : Math.floor(Number(raw));
-    if (!Number.isFinite(n) || n < 0) n = 0;
-    if (n > MAX_QUANTITY) n = MAX_QUANTITY;
-    quantity = n;
-    applySpot();
-  };
+  for (const id of ids) {
+    const input = document.getElementById(id);
+    if (!(input instanceof HTMLInputElement)) continue;
 
-  input.addEventListener('input', read);
-  // A browser that restored a previous value on back-navigation has already
-  // changed the box before this runs.
-  read();
+    /**
+     * What the build shipped this box at, read once, before anything is typed.
+     *
+     * `value` the ATTRIBUTE, not the property: the attribute is what the page
+     * declared and the property is what the reader has since typed. Captured
+     * here rather than read inside the handler so nothing that happens in the
+     * box afterwards can change what "empty" falls back to.
+     */
+    const shipped = Math.floor(Number(input.getAttribute('value')));
+
+    const read = (): void => {
+      // An empty box reads as whatever the page shipped that box at, not as
+      // zero and not as one: a melt page ships its box at one coin, because the
+      // page is about one coin and somebody clearing the field to type a new
+      // number should not watch the answer collapse in between keystrokes; the
+      // silver melt price calculator ships every box at none, where none is what an
+      // empty box plainly means. `shipped` above is that default, so the page
+      // states it once, in the markup, rather than this module carrying a second
+      // copy of a decision that belongs to the page.
+      const raw = input.value.trim();
+      let n = raw === '' ? (Number.isFinite(shipped) ? shipped : 1) : Math.floor(Number(raw));
+      if (!Number.isFinite(n) || n < 0) n = 0;
+      if (n > MAX_QUANTITY) n = MAX_QUANTITY;
+      quantities.set(id, n);
+      applySpot();
+    };
+
+    input.addEventListener('input', read);
+    // A browser that restored a previous value on back-navigation has already
+    // changed the box before this runs.
+    read();
+  }
 };
 
 /**
  * Entry point, called by `SpotLive.astro` on every page.
  *
- * Wires the quantity box first and fetches second, so the calculator works on
+ * Wires the quantity boxes first and fetches second, so a calculator works on
  * a page whose endpoint is unreachable -- the two are independent, and the one
  * that needs no network should not wait on the one that does.
  *
@@ -366,7 +473,7 @@ const wireQuantity = (): void => {
  */
 export const bootSpot = async (): Promise<void> => {
   if (!document.querySelector('[data-spot]')) return;
-  wireQuantity();
+  wireQuantities();
 
   // Attached once per window, not once per boot, so a restore does not stack
   // another listener on top of the one that woke it. Keyed on the window

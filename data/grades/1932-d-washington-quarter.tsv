@@ -1,0 +1,66 @@
+# 1932-D Washington Quarter -- priced ladder
+#
+# This file is the SOURCE. `npm run grades` reads it, validates it and writes
+# src/data/graded-values.ts, which is committed and is what the site imports.
+# Never edit the generated file; edit this one and re-run.
+#
+# coin:   the catalogue slug this ladder belongs to
+# asof:   the date these rows were read, ISO. Every figure on the site is dated
+#         at the figure, and this is that date.
+# source: name | url | what it was used for. One per line, at least one needed.
+#
+# Columns: grade, low, high, pop, finer, service, sales
+#   grade    a slug from GRADES in src/data/grades.ts
+#   low/high USD. A range, never a point -- condition dominates within a grade
+#            and the sources disagree by more than rounding.
+#   pop      certified count AT this grade, blank when nobody published one.
+#            BLANK IS NOT ZERO: below the grade where certification pays for
+#            itself the census counts almost nothing and means nothing.
+#   finer    certified count above this grade
+#   service  who counted: PCGS, NGC
+#   sales    realized prices, price|month year|house, several joined by ';'
+#            Every sale must sit inside low..high -- a range that excludes its
+#            own evidence is a page arguing with itself, and the import throws.
+#
+# NOT IN THIS LADDER, and each one is the gate working rather than an omission:
+#   g6, vg10, vf25, vf35, xf45, au53, au55, ms61
+# Nothing published names a figure for those rungs on this issue -- the guides
+# that quote MS61 quote it inside an MS61-MS62 band, which prices neither. Two
+# of them are worth naming:
+#   au53  one eBay sale at $208 in June 2018 is on record, below the AU50
+#         range from two guides. That is one coin with a problem, not a market.
+#   ms61  had a definition written for it and no figure to hang on it, so the
+#         rung came back out of GRADES as well. It returns when a sheet prices it.
+#
+# A rung needs at least two figures behind it -- a guide value and a realized
+# sale each count as one, and a published band counts as its two ends. The low
+# is the weakest figure found and the high the strongest, so adjacent ranges
+# overlap. That is what the data really looks like at the bottom of this
+# ladder, where three grades of a 1932-D trade inside one $70 band, and it is
+# the reason the ranges are printed as ranges rather than as points.
+#
+coin: 1932-d-washington-quarter
+asof: 2026-09-21
+source: PCGS Auction Prices | https://www.pcgs.com/auctionprices/details/1932-d-ms/5791 | realized prices and certified populations by grade
+source: PCGS CoinFacts, The 1932-D and 1932-S Washington Quarters | https://www.pcgs.com/news/the-1932d-and-1932s-washington-quarters | the mint state population and the auction record
+source: CoinWeek, 1932-D Washington Quarter: A Collector's Guide | https://coinweek.com/1932-d-washington-quarter-a-collectors-guide/ | mintage, survival estimate and the grade bands
+source: USA Coin Book | https://www.usacoinbook.com/coins/2031/quarters/washington/1932-D/ | the upper bound of the circulated ranges
+source: PriceCharting | https://www.pricecharting.com/game/coins-washington-quarter/1932-d | banded retail figures, as a third opinion on the mint state rungs
+#
+grade	low	high	pop	finer	service	sales
+ag3	50	75
+g4	70	125
+vg8	80	145
+f12	84	150	171	5545	PCGS	84|April 2019|Heritage Auctions
+f15	100	150
+vf20	130	205
+vf30	165	210				170|June 2022|Heritage Auctions
+xf40	205	260				207|August 2026|Heritage Auctions
+au50	350	460
+au58	500	600	856	2226	PCGS	504|February 2023|Heritage Auctions
+ms60	1000	1260
+ms62	960	1340	599	1554	PCGS
+ms63	1700	1850				1708|July 2026|Heritage Auctions;1800|June 2024|Stack's Bowers
+ms64	2200	2900	680	97	PCGS	2400|May 2023|Heritage Auctions
+ms65	16200	29500				16200|April 2021|Heritage Auctions;29375|July 2021|Heritage Auctions
+ms66	64500	145000	2	0	PCGS	143750|April 2008|Bowers and Merena;82250|June 2015|Heritage Auctions;74400|January 2018|Heritage Auctions

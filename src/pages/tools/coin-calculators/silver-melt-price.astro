@@ -1,0 +1,145 @@
+---
+/**
+ * The silver melt price calculator: /tools/coin-calculators/silver-melt-price.
+ *
+ * Every United States silver coin as a row, the bar and round sizes people
+ * actually own under them, a quantity box on each, and the total at the top. It is the one page on this site that answers a question
+ * about a HANDFUL of coins rather than about one coin -- which is the question
+ * somebody standing over a jar actually has, and the reason a melt page, which
+ * answers it one issue at a time, is not enough.
+ *
+ * The block itself -- the total, the column heads, the rows and their boxes --
+ * is `src/components/MeltCalculator.astro`, shared with the gold page. This
+ * file is the silver copy, the schema and the links out.
+ *
+ * ---------------------------------------------------------------------------
+ * WHAT IS NOT HERE
+ * ---------------------------------------------------------------------------
+ *
+ *   - no prices per coin beyond the metal. What a silver quarter FETCHES
+ *     depends on its date and its condition; that is the catalogue's job, and
+ *     this page links to it rather than guessing.
+ *   - no key dates, no grading advice, no series history. A reader who needs
+ *     those is one link away and this page would be a worse version of three
+ *     other ones.
+ *   - no spot-price ladder. It is on /melt-value/silver, one section over, as a
+ *     column of multipliers against the whole branch.
+ *   - no coin before 1873 and no Trade dollar, and one line saying so. Those
+ *     carry weights of their own and every one of them is worth multiples of
+ *     its metal, so melt is the wrong answer rather than an imprecise one. The
+ *     same line covers the 99.9% fine dime, quarter, half and dollar struck for
+ *     collectors from 2019, which are a tenth richer than their rows.
+ */
+import Base from '../../../layouts/Base.astro';
+import MeltCalculator from '../../../components/MeltCalculator.astro';
+import { SITE } from '../../../lib/site';
+import { datasetSchema, webPageSchema } from '../../../lib/schema';
+import { formatUsd, meltBaselineNote, referenceClause, spotPrice } from '../../../lib/spot';
+import { SILVER_COINS } from '../../../data/silver-coins';
+import { groupPath, typePath } from '../../../data/coins';
+import { meltGroupPath } from '../../../lib/melt';
+import { TOOLS_CRUMB } from '../../../lib/tools';
+
+const path = '/tools/coin-calculators/silver-melt-price';
+const h1 = 'Silver Coin Melt Value Calculator';
+const description =
+  'Add up the silver in a jar of coins, bars and rounds: how many dimes, quarters, halves, dollars and war nickels you have, and what the metal in them is worth.';
+
+const SILVER = 'silver';
+const perOunce = spotPrice(SILVER);
+
+/**
+ * The lot the rows belong to: one string, which the component puts in the
+ * rows' `data-spot-lot` and in the total's `data-spot-lot-total`, so a rename
+ * cannot half-happen.
+ */
+const LOT = 'silver-coins';
+---
+<Base
+  title={h1}
+  description={description}
+  path={path}
+  crumbs={[
+    TOOLS_CRUMB,
+    { label: 'Coin calculators', href: '/tools/coin-calculators' },
+    { label: 'Melt price', href: path },
+  ]}
+  schemas={[
+    webPageSchema({ type: 'WebPage', name: h1, description, path }),
+    // The table is reference data with a stated method, which is what Dataset
+    // is for. No FAQPage: "what is the melt value of silver coins" is answered
+    // on /melt-value/silver, and one question is marked up on one page.
+    datasetSchema({
+      name: `${SITE.name} silver coin and bar content`,
+      description:
+        'Silver content of every United States silver coin, and of the bar and round sizes commonly sold, derived from the weight and fineness of each one, with the value of that content at a named, dated spot price.',
+      path,
+      variableMeasured: [
+        'Coin or bar',
+        'Weight (grams)',
+        'Fineness',
+        'Silver content (troy ounces)',
+        'Melt value (USD)',
+      ],
+      measurementTechnique:
+        'Silver content is the coin’s published weight in grams multiplied by its fineness and divided by 31.1034768 grams per troy ounce. Melt value is that content multiplied by a single silver spot price, stated and dated on the page. It is the value of the metal, not a price any buyer has offered.',
+      keywords: [
+        'silver coin melt value calculator',
+        'junk silver calculator',
+        'silver coin calculator',
+        'how much silver in a coin',
+      ],
+    }),
+  ]}
+>
+  <article class="container-page pt-8 pb-20" style="--metal: var(--metal-silver)">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true"></div>
+
+      <div class="verdict">
+        <span class="verdict-label">How to use it</span>
+        <p>
+          Type how many of each coin you have; the total at the top is what the
+          silver in them is worth at{' '}
+          <span data-spot="price-unit" data-spot-metal={SILVER}>{formatUsd(perOunce)}/ozt</span
+          ><span data-spot="reference-clause">{referenceClause()}</span>.
+        </p>
+      </div>
+    </div>
+
+    <MeltCalculator rows={SILVER_COINS} metal={SILVER} lot={LOT} />
+
+    <div class="prose-page">
+      <p class="figure-note" style="border-top: 0; padding-top: 0">
+        {meltBaselineNote(SILVER)} Worked at full mint weight, so a worn lot
+        comes to slightly less. A silver dime, quarter or half dollar from a
+        proof set struck between 1992 and 2018 is the same 90% silver as its
+        pre-1965 namesake and goes on the same row; from 2019 those coins are
+        99.9% silver and hold about a tenth more than the row says.
+        Coins struck before 1873, and the Trade dollar that followed them, are
+        not in the table at all: their weights differ by type and every one of
+        them is worth multiples of its silver, so melt is the wrong figure for
+        them rather than an imprecise one. A bar or a round is worth what its
+        maker stamped on it, which is a weaker fact than a mint specification:
+        underweight and plated pieces exist, so weigh anything that did not come
+        from a dealer you trust.
+      </p>
+
+      <h2>What a coin is worth beyond its silver</h2>
+      <p>
+        The date and the condition decide the rest, and neither is on this page.
+        Look the coin up in the catalogue:{' '}
+        <a href={typePath('silver', 'quarter')}>silver quarter values</a>,{' '}
+        <a href={groupPath('silver')}>every silver coin in the catalogue</a>, or{' '}
+        <a href={meltGroupPath('silver')}>silver melt values one coin at a time</a>.
+      </p>
+      <p class="text-sm" style="color: var(--text-muted); margin-top: 2rem">
+        Not an appraisal. {SITE.name} estimates from published specifications
+        and does not authenticate or grade coins.
+        {' '}<a href="/common-questions/what-is-spot-price">What spot price is</a>.
+        {' '}<a href="/common-questions/how-can-i-tell-if-a-coin-is-silver">How to tell if a coin is silver</a>.
+      </p>
+    </div>
+  </article>
+</Base>

@@ -2,7 +2,7 @@
 /**
  * A cross-cutting melt view: /melt-value/tagged/<tag>.
  *
- * The twin of /coin-value/tagged/<tag>, and the half of the structure the
+ * The twin of /coin-info/tagged/<tag>, and the half of the structure the
  * metal-and-denomination tree cannot express. A coin has exactly one address
  * in the tree and any number of tags, so this is the page that gathers a
  * series, a country or a topic back into one list.
@@ -28,6 +28,7 @@
  */
 import Base from '../../../layouts/Base.astro';
 import MeltTile from '../../../components/MeltTile.astro';
+import RevealGrid from '../../../components/RevealGrid.astro';
 import { SITE } from '../../../lib/site';
 import { itemListSchema, webPageSchema, faqSchema } from '../../../lib/schema';
 import { METAL_LABEL, markedUsd, spotStamp } from '../../../lib/spot';
@@ -126,11 +127,11 @@ const tagCoins = /coins?$|coinage$/i.test(tag.name) ? tag.name : `${tag.name} co
     <div class="prose-page" style="margin-bottom: 1.1rem">
       <h2 style="margin-top: 0">{tagCoins.charAt(0).toUpperCase() + tagCoins.slice(1)}</h2>
     </div>
-    <div class="tile-grid">
+    <RevealGrid>
       {coins.map((c) => (
         <MeltTile coin={c} showGroup={groups.length > 1} groupName={c.group} showFigure={false} />
       ))}
-    </div>
+    </RevealGrid>
   </section>
 
   {groups.length > 1 && (

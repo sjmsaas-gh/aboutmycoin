@@ -1,0 +1,18 @@
+---
+/**
+ * The one script that keeps the long archives readable.
+ *
+ * Rendered by `Base.astro` on every page rather than opted into per page, for
+ * the reason `SpotLive.astro` gives: the grids it serves are on both archive
+ * trees, on every tag page and on the coin pages, and a per-page flag fails
+ * silently. `bootReveal()` returns on its first line when the page has no
+ * marked grid on it.
+ *
+ * Not an island. A plain module script that hides some elements and adds a
+ * button -- there is no component here and nothing hydrates.
+ */
+---
+<script>
+  import { bootReveal } from '../lib/reveal-dom';
+  bootReveal();
+</script>

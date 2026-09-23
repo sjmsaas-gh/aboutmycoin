@@ -3,7 +3,7 @@
  *
  * `src/lib/catalog-copy.ts` writes the H1, the <title>, the meta description,
  * the FAQ question, the opening answer, the section headings and the body copy
- * of every page under /coin-value except the coins themselves. There are four
+ * of every page under /coin-info except the coins themselves. There are four
  * archive levels and the tag level is unbounded, so a mistake in here is a
  * mistake on hundreds of pages at once with no hand-written sentence anywhere to
  * notice it. These are the invariants:
@@ -102,7 +102,12 @@ test('a group with no copy written at all still gets a complete page', () => {
       tagsHeading: groupSections(group).tags.heading,
     };
     for (const [field, text] of Object.entries(strings)) {
-      assert.ok(text && text.length > 10, `${where} generated no ${field}`);
+      // The floor is a stub detector, not a style rule. It was `> 10` until the
+      // clad group got its first coins and generated "Clad coins" -- a correct
+      // ten-character heading that the old number rejected for being made of a
+      // short word. What this is actually guarding against is an empty string
+      // or a fragment, and the hole check below does the rest of the work.
+      assert.ok(text && text.length > 5, `${where} generated no ${field}`);
       assert.doesNotMatch(text, /undefined|NaN|\s{2,}/, `${where} ${field} has a hole: "${text}"`);
     }
     assert.ok(groupIntro(group).length >= 2, `${where} generated less than two paragraphs`);

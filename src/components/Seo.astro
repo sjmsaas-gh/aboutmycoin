@@ -7,6 +7,17 @@ export interface Props {
   description: string;
   /** Path only, e.g. "/pricing". The canonical URL is built from it. */
   path?: string;
+  /*
+   * Where this page's canonical points, when that is NOT the page itself.
+   * One use today: a grade page canonicalises to its coin. A grade is a
+   * facet of one coin -- twenty-odd rungs of one ladder, sharing the coin's
+   * specifications, its mintage and its metal floor -- so the coin page is
+   * the page that should rank for the coin, and the rungs are there for the
+   * reader who has been told a grade and arrives with it in hand. Anything
+   * setting this must be reachable some other way, because a canonicalised
+   * page is not one a crawler will index.
+   */
+  canonicalPath?: string;
   /** Absolute or site-relative OG image. Defaults to the site card. */
   image?: string;
   imageAlt?: string;
@@ -29,15 +40,19 @@ const {
   title,
   description,
   path = Astro.url.pathname,
+  canonicalPath = path,
   image = DEFAULT_IMAGE,
-  // RENAME: say what the card shows. The site name alone repeats og:site_name,
-  // and this is what a screen reader announces for the card in a chat app.
-  imageAlt = `${SITE.name}: ${SITE.tagline}.`,
+  // What the card actually shows, which is a Morgan dollar over the name and
+  // the tagline -- the strings here and the ones in
+  // scripts/generate-brand-assets.mjs come from the same two SITE fields, so
+  // they cannot drift. The site name alone would repeat og:site_name, and this
+  // is what a screen reader announces for the card in a chat app.
+  imageAlt = `${SITE.name}: ${SITE.tagline}. A silver Morgan dollar.`,
   type = 'website',
   noindex = false,
 } = Astro.props;
 
-const normalized = path === '/' ? '/' : path.replace(/\/+$/, '');
+const normalized = canonicalPath === '/' ? '/' : canonicalPath.replace(/\/+$/, '');
 const canonical = new URL(normalized, SITE.url).href;
 const imageUrl = new URL(image, SITE.url).href;
 // The suffix rule lives in src/lib/meta.ts, because the length checks have to

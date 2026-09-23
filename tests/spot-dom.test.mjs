@@ -167,6 +167,9 @@ test('the quantity box multiplies the figure and nothing else', async () => {
   const { document, mod } = await boot(page);
 
   const input = document.querySelector('#calc-count');
+  // Read before anything is typed: this page ships its box at one coin, and
+  // that default is what an emptied box falls back to further down.
+  assert.equal(input.getAttribute('value'), '1', 'a melt page no longer ships its box at one coin');
   const total = document.querySelector('#calc-total');
   const ozt = Number(total.getAttribute('data-spot-ozt'));
   const metal = total.getAttribute('data-spot-metal');
@@ -181,9 +184,11 @@ test('the quantity box multiplies the figure and nothing else', async () => {
   // data-spot-qty and must not move when the box does.
   assert.equal(perOunce.textContent, formatUsd(LIVE.prices[metal]));
 
-  // An emptied box reads as one coin rather than as zero: somebody clearing
-  // the field to type a new number should not watch the answer collapse to
-  // $0.00 between keystrokes.
+  // An emptied box reads as whatever the page shipped it at -- one coin here,
+  // because this page is about one coin: somebody clearing the field to type a
+  // new number should not watch the answer collapse to $0.00 between
+  // keystrokes. The calculator ships its boxes at none and gets none; see the
+  // check below.
   input.value = '';
   input.dispatchEvent(new document.defaultView.Event('input'));
   assert.equal(total.textContent, formatUsd(ozt * LIVE.prices[metal]));
@@ -198,7 +203,18 @@ test('a rewritten sentence takes the page’s JSON-LD with it', async () => {
   // the copy of that answer in the page's schema is the old sentence -- and a
   // page whose schema states a different price from its body is the mismatch
   // Google issues manual actions for.
-  const page = pageWith((html) => html.includes('data-spot-sync="'));
+  // A synced sentence carrying a SPOT-DERIVED figure, which is the only kind
+  // the browser rewrites. `data-spot-sync` is on every generated answer, and
+  // two other kinds of sentence carry it: the clad archives answer "None",
+  // correctly, and a clad coin page states a face value of $0.25 that is true
+  // whatever silver does. The day clad got its first coins, those became the
+  // first matching pages in the build and this check started asserting that a
+  // sentence with no spot price in it changed when the spot price did.
+  //
+  // `spotBasis()` is the discriminator, because it is the one phrase that
+  // appears beside every figure worked from a spot price and beside no other
+  // figure on the site.
+  const page = pageWith((html) => /data-spot-sync="[^"]*based on spot prices at/.test(html));
   const { document } = await boot(page);
 
   const node = document.querySelector('[data-spot-sync]');
@@ -327,4 +343,117 @@ test('the caveat on an archive is rewritten with the price above it', async () =
     text(document, `[data-spot="price-unit"][data-spot-metal="${metal}"]`),
     `${formatUsd(LIVE.prices[metal])}/ozt`,
   );
+});
+
+
+test('every melt calculator totals its own rows, box by box', async () => {
+  // The one kind of page where a figure depends on what is typed somewhere
+  // else. Each row has its own box and the total is the sum of all of them, so
+  // the two failures worth pinning are a box that moves the wrong row and a
+  // total that is a second arithmetic rather than the rows added up.
+  //
+  // Run over every calculator in the build rather than the first one found: the
+  // silver and the gold pages are one component with two lists behind it, and a
+  // check that only ever saw one of them would not notice the metal being read
+  // off the wrong place.
+  const pages = PAGES.filter((p) => readFileSync(join(DIST, p), 'utf8').includes('id="lot-total"'));
+  assert.ok(pages.length >= 2, `only ${pages.length} calculator(s) in the build`);
+
+  for (const page of pages) {
+    const { document } = await boot(page);
+
+    const rows = [...document.querySelectorAll('[data-spot-lot]')];
+    assert.ok(rows.length > 2, `${page} was built with almost no rows`);
+
+    // Off the markup, not off the page's name: one component serves both
+    // metals and the metal travels in the attributes.
+    const metal = rows[0].getAttribute('data-spot-metal');
+    const price = LIVE.prices[metal];
+    assert.ok(price, `${page} has rows in an unpriced metal`);
+
+    const total = document.querySelector('#lot-total');
+    const weight = document.querySelector('[data-spot="ozt"][data-spot-lot-total]');
+
+    /** What the rows say the total is, at the quantities now in the boxes. */
+    const expected = () =>
+      rows.reduce((sum, row) => {
+        const input = document.getElementById(row.getAttribute('data-spot-qty'));
+        const raw = input.value.trim();
+        const qty = raw === '' ? Number(input.getAttribute('value')) : Number(raw);
+        return sum + Number(row.getAttribute('data-spot-ozt')) * qty;
+      }, 0);
+
+    // Every box ships at none, so the page opens at nothing rather than at one
+    // of every coin ever struck. A reader has three kinds of coin in a drawer.
+    for (const row of rows) {
+      assert.equal(
+        document.getElementById(row.getAttribute('data-spot-qty')).getAttribute('value'),
+        '0',
+        `${page}: a row does not ship its box empty`,
+      );
+    }
+    assert.equal(expected(), 0);
+    assert.equal(total.textContent, formatUsd(0));
+    assert.equal(weight.textContent, `${formatOzt(0)} troy oz ${metal}`);
+
+    // And the page still states what one of each coin is worth, in its own
+    // column before the box: the figure a reader is checking their coin
+    // against, and the one a reader without JavaScript is reading the page for.
+    // It carries no quantity, so nothing typed moves it -- and it does move
+    // with the price. Scoped to a row: the column heads share these class
+    // names, which is how they share the widths.
+    const each = document.querySelector('.lot-row .lot-each');
+    assert.ok(each, `${page}: a row does not state what one coin is worth`);
+    assert.equal(each.textContent, formatUsd(Number(each.getAttribute('data-spot-ozt')) * price));
+
+    // Type into two rows. Each row's own figure moves, the rows nobody touched
+    // stay where they were, and the total is the sum of all of them.
+    const type = (row, value) => {
+      const input = document.getElementById(row.getAttribute('data-spot-qty'));
+      input.value = String(value);
+      input.dispatchEvent(new document.defaultView.Event('input'));
+    };
+
+    const [first, second, third] = rows;
+    const eachFigure = each.textContent;
+    const untouched = third.textContent;
+    type(first, 5);
+    type(second, 12);
+
+    assert.equal(
+      first.textContent,
+      formatUsd(5 * Number(first.getAttribute('data-spot-ozt')) * price),
+      `${page}: a row does not show its own quantity`,
+    );
+    assert.equal(
+      second.textContent,
+      formatUsd(12 * Number(second.getAttribute('data-spot-ozt')) * price),
+      `${page}: a row does not show its own quantity`,
+    );
+    assert.equal(third.textContent, untouched, `${page}: typing in one row moved another`);
+    assert.equal(eachFigure, each.textContent, `${page}: a quantity moved the per-coin figure`);
+    assert.equal(
+      total.textContent,
+      formatUsd(expected() * price),
+      `${page}: the total is not the sum of the rows`,
+    );
+    assert.equal(weight.textContent, `${formatOzt(expected())} troy oz ${metal}`);
+
+    // Typing zero, and clearing the box, both mean none here -- the box shipped
+    // at none, and spot-dom.ts falls back to what the page shipped rather than
+    // to a constant of its own.
+    type(first, 0);
+    assert.equal(first.textContent, formatUsd(0));
+    assert.equal(total.textContent, formatUsd(expected() * price));
+
+    const firstInput = document.getElementById(first.getAttribute('data-spot-qty'));
+    firstInput.value = '';
+    firstInput.dispatchEvent(new document.defaultView.Event('input'));
+    assert.equal(first.textContent, formatUsd(0), `${page}: an emptied box read as a coin`);
+    assert.equal(total.textContent, formatUsd(expected() * price));
+
+    // And the price still moves everything, with the quantities left alone.
+    const perOunce = document.querySelector(`[data-spot="price"][data-spot-metal="${metal}"]`);
+    assert.equal(perOunce.textContent, formatUsd(price));
+  }
 });

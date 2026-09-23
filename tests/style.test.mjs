@@ -86,9 +86,9 @@ function visibleCopy() {
     const w = `coin "${c.slug}"`;
     push(w, c.name, c.shortName, c.seoTitle, c.bluf, c.description, c.composition,
       c.obverse, c.reverse, c.country, c.faceValue);
-    push(w, ...(c.identify ?? []), ...(c.premiumIf ?? []));
+    push(w, ...(c.identify ?? []));
     push(`${w} keywords`, c.primaryKeyword, ...c.secondaryKeywords);
-    for (const s of c.sections) push(`${w} section "${s.heading}"`, s.heading, ...s.paragraphs,
+    for (const s of c.sections ?? []) push(`${w} section "${s.heading}"`, s.heading, ...s.paragraphs,
       ...(s.steps ?? []).flatMap((st) => [st.name, st.text]));
   }
   // Every archive page's copy as it will actually render: the generated form

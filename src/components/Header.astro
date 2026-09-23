@@ -1,6 +1,7 @@
 ---
 import { SITE } from '../lib/site';
 import Logo from './Logo.astro';
+import SearchBar from './SearchBar.astro';
 import { MELT_ROOT } from '../lib/melt';
 import { QUESTIONS_ROOT } from '../data/questions';
 
@@ -26,23 +27,23 @@ import { QUESTIONS_ROOT } from '../data/questions';
  * there is no conditional here and why a group or tag archive must not be
  * added back without one.
  *
- * Each label matches the page's own H1 -- "Coin Values by Metal and
- * Denomination", "Coin Melt Values", "Common Questions About Coins" -- so the
+ * Each label matches the page's own H1 -- "Coin Information & Values",
+ * "Coin Melt Values", "Common Questions About Coins" -- so the
  * bar and the page a click lands on say the same thing. Two labels for one
  * destination reads as two destinations, which is the same reason the call to
  * action below repeats the wording of the button in the hero.
  *
- * `/coin-tools` is the exception and is a deliberate one: the section is not
- * built yet, so that link is a 404 on every page of the site until it is. It
- * is here at the owner's instruction, and it is the one link in this file
- * exempt from the paragraph above. Build the page or drop the link; do not
- * leave it pointing at nothing for long.
+ * `/tools` was the exception -- the link shipped before the hub did and was a
+ * 404 on every page of the site -- and the hub is now built, which is how
+ * that was settled. The label is the short form of its H1, "Coin Tools &
+ * Calculators", the same way "Coin Info" is the short form of the
+ * catalogue's.
  */
 const links: { label: string; href: string }[] = [
-  { label: 'Coin Values', href: '/coin-value' },
+  { label: 'Coin Info', href: '/coin-info' },
   { label: 'Melt Values', href: MELT_ROOT },
   { label: 'Common Coin Questions', href: QUESTIONS_ROOT },
-  { label: 'Coin Tools', href: '/coin-tools' },
+  { label: 'Coin Tools', href: '/tools' },
 ];
 
 /**
@@ -53,7 +54,19 @@ const links: { label: string; href: string }[] = [
  * actually wants, and it is the same words as the button in the hero on
  * purpose: two labels for one destination reads as two destinations.
  */
-const cta = { href: '/coin-value', label: 'Find my coin' };
+const cta = { href: '/coin-info', label: 'Find my coin' };
+
+/*
+ * The search box sits to the LEFT of that button, and the order is the point:
+ * the button is the site's one call to action and stays where it has always
+ * been, at the end of the bar, while the box is the shortcut past it for
+ * somebody who can already name their coin. Putting the box last would move
+ * the action a reader has learned to aim at.
+ *
+ * Two copies, because a 3rem bar on a phone holds a logo and a button and
+ * nothing else: one in the bar from `md` up, one inside the mobile menu below
+ * it. They carry different ids -- see `SearchBar.astro`.
+ */
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const isActive = (href: string) => path === href || path.startsWith(href + '/');
@@ -96,6 +109,7 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
     </nav>
 
     <div class="ml-auto flex items-center gap-2">
+      <SearchBar id="site-search" class="hidden md:block w-44 lg:w-64" />
       <a href={cta.href} class="btn btn-primary text-[0.875rem] py-1.5 px-3.5">{cta.label}</a>
 
       {/* CSS-only mobile menu: no JavaScript ships on content pages. */}
@@ -105,7 +119,10 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
             <path d="M3 6h18M3 12h18M3 18h18" stroke-linecap="round" />
           </svg>
         </summary>
-        <nav aria-label="Mobile" class="card absolute right-0 top-full mt-2 w-56 p-2 z-50" style="box-shadow: var(--shadow)">
+        <nav aria-label="Mobile" class="card absolute right-0 top-full mt-2 w-64 p-2 z-50" style="box-shadow: var(--shadow)">
+          {/* Only below `md`: above it the bar carries a box already, and two
+              visible fields searching one index is one of them ignored. */}
+          <SearchBar id="menu-search" class="md:hidden px-1 pb-2" />
           {links.map((l) => (
             <a href={l.href} class="block px-3 py-2 rounded-lg hover:bg-[var(--bg-sunken)]">{l.label}</a>
           ))}
@@ -114,3 +131,21 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
     </div>
   </div>
 </header>
+
+{/*
+  The suggestions exist only where a script runs -- there is nothing for a
+  static build to render for a query nobody has typed -- so with JavaScript off
+  the box goes rather than sitting there accepting words and doing nothing. The
+  navigation beside it is the way in. Same decision as the finder in the hero,
+  and the reasoning is in src/lib/search-dom.ts.
+*/}
+<noscript><style>.search { display: none }</style></noscript>
+
+{/*
+  Not an island. A plain module script, on every page because the bar is, in
+  the same shape as SpotLive and RevealMore.
+*/}
+<script>
+  import { bootSearch } from '../lib/search-dom';
+  bootSearch();
+</script>

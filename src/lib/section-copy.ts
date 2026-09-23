@@ -1,7 +1,7 @@
 /**
  * The blurb under a card section's heading, on both hubs.
  *
- * /coin-value and /melt-value offer the same four ways in -- metal, series,
+ * /coin-info and /melt-value offer the same four ways in -- metal, series,
  * country, topic -- and they now introduce each one with the same sentence.
  * That is a deliberate exception to the rule that no paragraph appears on two
  * pages, made because the two sections are a mirror and a reader who has

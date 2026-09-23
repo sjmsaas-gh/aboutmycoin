@@ -2,7 +2,7 @@
  * How long a title and a description may be, and the rule that fits one.
  *
  * Both halves of the catalogue generate these by the hundred -- `catalog-copy.ts`
- * for /coin-value, `melt.ts` for /melt-value -- so "somebody will shorten it if
+ * for /coin-info, `melt.ts` for /melt-value -- so "somebody will shorten it if
  * it is too long" is not available as a plan. The limits live here, in one
  * module both sections and the SEO component read, and a build check measures
  * the HTML that actually shipped.
@@ -83,7 +83,7 @@ export const fit = (candidates: string[], max: number): string =>
  *
  * Archive H1s and titles are title case rather than the sentence case STYLE.md
  * asks for elsewhere, and that is the "deliberate keyword match" exception in
- * the same rule: "Silver Coin Values" is the phrase, and the page is competing
+ * the same rule: "Silver Coins" is the phrase, and the page is competing
  * for it.
  */
 const lower = (s: string) => s.toLowerCase();
@@ -103,3 +103,29 @@ export const titleCase = (s: string): string =>
     )
     .join(' ');
 
+
+/**
+ * "a" or "an", for a phrase that begins with a four-digit year.
+ *
+ * A year is read aloud, and the sound of the reading decides the article, not
+ * the digit: 1878 is "eighteen seventy-eight" and takes "an". Every generated
+ * sentence on this site that names a coin begins with its year, so "A 1878-CC
+ * Morgan dollar" is the opening of the bluf, the melt answer, the meta
+ * description and every one of that coin's grade pages -- eighty-five coins
+ * times a dozen sentences, all of them wrong, and none of them wrong for the
+ * Washington quarter, which is why the article was a constant until the second
+ * series arrived. The same trap as `letterArticle` in `coin-copy.ts`, one field
+ * to the left.
+ *
+ * Only the eleven-hundreds and the eighteen-hundreds take "an"; "nineteen",
+ * "twenty", "ten", "twelve" and "two thousand" all begin with a consonant. A
+ * phrase that does not start with a year gets "a", because every caller here
+ * had "a" written into it and this function exists to fix the years rather than
+ * to guess at English generally.
+ */
+export const article = (phrase: string, capital = false): string => {
+  const year = /^(\d{4})\b/.exec(phrase.trim());
+  const leading = year ? Number(year[1].slice(0, 2)) : 0;
+  const an = leading === 11 || leading === 18;
+  return an ? (capital ? 'An' : 'an') : capital ? 'A' : 'a';
+};

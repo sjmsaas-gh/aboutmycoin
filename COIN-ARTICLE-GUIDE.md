@@ -22,11 +22,11 @@ only if the first answers hold them.
 | 2 | **The answer** | `bluf` | Two sentences. Also the FAQPage `acceptedAnswer` |
 | 3 | **Melt value** | `silverOzt`/`goldOzt` × `spot.ts` | Big figure, the working, a dateline, one sentence |
 | 4 | **Coin info** | the spec fields + `obverse`/`reverse`/`struckAt` | Rows only, no prose |
-| 5 | **Is it worth more than melt?** | `commonality`, `mintage`, `premiumIf` | Three-word verdict, badge + mintage, one paragraph |
+| 5 | **Is it worth more than melt?** | `commonality`, `mintage` | Three-word verdict, badge + mintage. No prose |
 | 6 | **The series** | the series tag's `SeriesInfo` | Years, designer, key dates, metal eras |
 | 7 | **Other years** | siblings sharing the series tag | Tiles when they exist; series archive link always |
 | 8 | **Graded** | `GRADED_PAGES_AVAILABLE` | Dark until the route exists |
-| 9 | **Depth** | `sections` | Optional. One is plenty, zero is fine |
+| 9 | **Depth** | `sections` | Optional. One fact true of this coin alone, or none |
 | 10 | **Footer** | disclaimer, tags | No date: see below |
 
 Blocks 3, 6, 7 and 8 render nothing at all when their data is absent — a coin
@@ -70,23 +70,19 @@ Nothing to write. It is generated from `silverOzt` / `goldOzt` and
 same on every coin page on the site. If it needs rewording, it is reworded in
 `spot.ts` and every page changes together.
 
-## `premiumIf`
+## The verdict, and why there is nothing under it
 
-Short **lowercase noun phrases**, not sentences, and **no commas inside an
-item**. The page folds the list into one line ("Worth more than melt only if it
-is a, b, or c."), so an item containing a comma reads as two items and an item
-with its own capital or full stop reads as a fragment. Use "such as" or a
-parenthesis where a comma is tempting.
+Nothing to write. Section 5 is `PREMIUM_VERDICT[commonality]`, the badge and
+the mintage, and that is the whole section.
 
-The cases where this coin genuinely beats its metal. Usually three:
-uncirculated, proof, verified error. If there is a fourth, it is probably a date
-and belongs in the series' `keyDates`.
-
-**Only the positive cases.** An earlier draft also listed what does *not* add
-value — toning, a shiny surface, long ownership — and it was cut. The page's job
-is to tell the reader what makes a coin worth more, not to argue with what they
-were hoping for. If a reader's coin is not on the `premiumIf` list, the answer
-is already complete.
+There used to be a `premiumIf` list folded into one line beneath it — "Worth
+more than melt only if it is uncirculated with full original lustre, certified
+by PCGS or NGC rather than raw, or a verified mint error." It was cut at the
+owner's instruction. The verdict is the sentence somebody who found a coin in
+a jar came for, and a paragraph under it hedging the three-word answer takes
+the one moment the page has their attention and spends it on the exceptions.
+The grade table below already prices the uncirculated case, and an error is a
+different coin.
 
 ## `obverse`, `reverse`, `struckAt`
 
@@ -101,10 +97,26 @@ confidently wrong about the object in the reader's hand.
 Optional depth, at the bottom, for the minority still reading. One section is
 usually plenty and zero is acceptable.
 
+**A section carries the one fact that is true of this coin and of no other.**
+That is the whole test. The 1960 Philadelphia quarter has the smallest mintage
+of the decade; the 1961 has the first proof run over three million; the 1962-D
+has the widest two-mint split. An issue with nothing of its own omits the field
+and its page ends at the pull quote, which is a complete page — the answer, the
+metal figure, the specification, the verdict and the series all render above it
+and none of them came from here.
+
+`validateTaxonomy()` fails the build on two coins sharing a heading or a
+paragraph, and on a heading with no paragraphs under it. That check is what
+makes the field safe to leave empty: the cheapest way to fill it would
+otherwise be to copy the section from the coin next door, so the only moves
+left are to write something true of this issue alone or to write nothing.
+Reaching for a near-duplicate is the signal that the honest answer was nothing.
+
 Do not write a section that the structured fields already answer. Two were cut
 from the 1964 quarter for exactly this: "how to work out what yours is worth"
 (the melt block shows the working) and "when it is worth more than its silver"
-(`premiumIf`). If a section restates a field, delete the section.
+(the verdict and the grade table). If a section restates a field, delete the
+section.
 
 ## `values`
 

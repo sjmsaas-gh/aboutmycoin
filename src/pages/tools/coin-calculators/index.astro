@@ -1,0 +1,84 @@
+---
+/**
+ * The calculator hub: /tools/coin-calculators.
+ *
+ * A list of the calculators, and nothing else. It holds no arithmetic of its
+ * own and states no figure: a hub that shows a number is a hub competing with
+ * the page that owns it.
+ *
+ * The list is hand-written because there is nothing to generate it from -- a
+ * calculator is a page with a mechanism, not a row in a registry, and two of
+ * them do not make a taxonomy. When there is a third, this is where it goes.
+ */
+import Base from '../../../layouts/Base.astro';
+import { itemListSchema, webPageSchema } from '../../../lib/schema';
+import { TOOLS_CRUMB, TOOLS_ROOT } from '../../../lib/tools';
+
+const path = `${TOOLS_ROOT}/coin-calculators`;
+const h1 = 'Coin Calculators';
+const bluf =
+  'Work out what the metal in a handful of coins is worth, at a spot price the page states and dates.';
+const description =
+  'Calculators for coin metal: add up the silver or the gold in a handful of United States coins and see what it is worth at a stated, dated spot price.';
+
+/*
+ * The section's own crumb: sentence case, and not `h1`. It is the name the two
+ * calculators under this page already give it in their own trails, and one
+ * section cannot be "Coin Calculators" on the hub and "Coin calculators" a
+ * level down.
+ */
+const crumb = { label: 'Coin calculators', href: path };
+
+/** The calculators, in the order they are useful to somebody sorting coins. */
+const CALCULATORS = [
+  {
+    href: `${path}/silver-melt-price`,
+    name: 'Silver coin melt value calculator',
+    teaser:
+      'Every United States silver coin, with a box for how many of each you have and the total at the top.',
+  },
+  {
+    href: `${path}/gold-melt-price`,
+    name: 'Gold coin melt value calculator',
+    teaser:
+      'The same, for gold: the classic denominations and the bullion, with what the metal in each is worth.',
+  },
+];
+---
+<Base
+  title={h1}
+  description={description}
+  path={path}
+  crumbs={[TOOLS_CRUMB, crumb]}
+  schemas={[
+    webPageSchema({ type: 'CollectionPage', name: h1, description, path }),
+    itemListSchema({
+      name: h1,
+      description,
+      items: CALCULATORS.map((c) => ({ name: c.name, path: c.href })),
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+      <p class="text-lg"><strong>{bluf}</strong></p>
+      <p>
+        Also see the <a href="/tools/cheat-sheets">coin cheat sheets</a>, which
+        answer which dates in a series are the scarce ones.
+      </p>
+    </div>
+  </section>
+
+  <section class="container-page pb-16">
+    <div class="tile-grid">
+      {CALCULATORS.map((c) => (
+        <a href={c.href} class="tile">
+          <h2>{c.name}</h2>
+          <p>{c.teaser}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,439 @@
+---
+/**
+ * One cheat sheet: /tools/cheat-sheets/<slug>.
+ *
+ * The template, in the order a reader uses it: the name; what the coin is;
+ * the notes; condition; the dates, ranked scarcest first; common errors; rare
+ * errors.
+ *
+ * Every section is thin on purpose -- two sentences, two sentences, one line
+ * over the date table, nothing over the error tables. This is a lookup table
+ * read standing over a jar, not an article. If a section seems to need an
+ * explanation, the explanation belongs on the series page, a coin page or a
+ * common question. Do not add subcopy.
+ *
+ * A sheet with nothing in it renders the stub instead. Either way the page is
+ * noindex until the registry says it is both written AND checked, which is
+ * also what keeps it out of the sitemap (astro.config.mjs).
+ *
+ * Headings title-case `name`; copy uses it as stored. See the field.
+ *
+ * No designer and no mint-mark location: those are the series tag page's, and
+ * a build check fails on a heading here that goes looking for them. The metal
+ * eras are the one exception and they live in `notes`, because "which of
+ * these are silver" is the sorting question this page exists to answer and a
+ * reader over a jar needs it before anything else. Three lines, capped in the
+ * registry; anything longer has become the series page. Nothing here sorts or sums -- the registry validates the date order,
+ * so a mintage typed an order of magnitude wrong fails the build instead of
+ * being sorted into a plausible position.
+ */
+import Base from '../../../layouts/Base.astro';
+import { webPageSchema } from '../../../lib/schema';
+import {
+  CHEAT_SHEETS,
+  CHEAT_SHEETS_H1,
+  CHEAT_SHEETS_ROOT,
+  cheatSheetCondition,
+  cheatSheetDescription,
+  cheatDateHref,
+  cheatSheetCommonErrors,
+  cheatSheetErrorsH2,
+  cheatSheetH1,
+  cheatSheetIndexable,
+  cheatSheetOpening,
+  cheatSheetPath,
+  cheatSheetRareErrorsH2,
+  cheatSheetRun,
+  cheatSheetTeaser,
+  cheatSheetTitle,
+  type CheatSheet,
+} from '../../../data/cheat-sheets';
+import { populatedTags, tagPath } from '../../../data/coins';
+import { titleCase } from '../../../lib/meta';
+import { TOOLS_CRUMB } from '../../../lib/tools';
+
+export function getStaticPaths() {
+  return CHEAT_SHEETS.map((sheet) => ({ params: { slug: sheet.slug }, props: { sheet } }));
+}
+
+export interface Props { sheet: CheatSheet }
+const { sheet } = Astro.props;
+
+const path = cheatSheetPath(sheet);
+const h1 = cheatSheetH1(sheet);
+const description = cheatSheetDescription(sheet);
+
+/* Only when the tag archive is really built: a tag has no page until a coin
+   carries it, and a static build cannot report the 404. */
+const seriesLive = sheet.seriesTag !== undefined && populatedTags().some((t) => t.slug === sheet.seriesTag);
+const seriesHref = seriesLive ? tagPath(sheet.seriesTag!) : undefined;
+
+/* Siblings, so no sheet is a page with no way out but the breadcrumb. */
+const others = CHEAT_SHEETS.filter((s) => s.slug !== sheet.slug);
+
+/* Registry order. Already ranked scarcest first, and validated, so no sort. */
+const dates = sheet.dates ?? [];
+const commonErrors = cheatSheetCommonErrors(sheet);
+const rareErrors = sheet.rareErrors ?? [];
+/* Standing facts that change what gets set aside -- which years are silver,
+   which years were never struck. First, because they narrow the pile before
+   condition does. Registry order; the page does not sort or add to them. */
+const notes = sheet.notes ?? [];
+
+/* The print button sits over the first table there is, which is the date
+   table on every sheet written so far and the error table if one ever has no
+   dates. It prints the tables and nothing else -- see the print rules at the
+   foot of this file. */
+const printSection = dates.length > 0
+  ? 'dates'
+  : commonErrors.length > 0
+    ? 'errors'
+    : rareErrors.length > 0
+      ? 'rare-errors'
+      : undefined;
+const printLabel = `Print ${titleCase(sheet.name)} cheat sheet`;
+
+/** The trade's three words, as a reader meets them rather than as a slug. */
+const RANK_LABEL: Record<string, string> = {
+  key: 'Key date',
+  'semi-key': 'Semi-key',
+  better: 'Better date',
+};
+---
+<Base
+  title={cheatSheetTitle(sheet)}
+  description={description}
+  path={path}
+  noindex={!cheatSheetIndexable(sheet)}
+  crumbs={[
+    TOOLS_CRUMB,
+    { label: 'Cheat sheets', href: CHEAT_SHEETS_ROOT },
+    { label: titleCase(sheet.name), href: path },
+  ]}
+  schemas={[
+    webPageSchema({
+      type: 'WebPage',
+      name: h1,
+      description,
+      path,
+    }),
+  ]}
+>
+  <section class="container-page pt-8 pb-10">
+    <div class="prose-page">
+      <p class="text-sm" style="color: var(--text-muted); margin-bottom: 0.35rem">
+        <a href={CHEAT_SHEETS_ROOT}>{CHEAT_SHEETS_H1}</a>
+      </p>
+      <h1 class="text-4xl sm:text-5xl" style="margin-bottom: 0.85rem">{h1}</h1>
+      <div class="reeded" aria-hidden="true" style="--metal: var(--accent)"></div>
+
+      {sheet.written ? (
+        <p class="text-lg">{cheatSheetOpening(sheet)}</p>
+      ) : (
+        <>
+          <p class="text-lg">
+            <strong>
+              The {sheet.name} was struck {cheatSheetRun(sheet)}. This cheat sheet
+              of its key dates, mint marks and varieties is not written yet.
+            </strong>
+          </p>
+          <p>
+            When it is, it will list every {sheet.name} date and mint mark worth
+            setting aside, what to look for on each one, and nothing else. Until
+            then this page states only what it can stand behind, which is the
+            run above.
+          </p>
+          {seriesHref ? (
+            <p>
+              What there is on the series so far &mdash; the run, the mint marks
+              and where to find them, the key dates and the varieties &mdash; is
+              on the <a href={seriesHref}>{sheet.name} page</a> in the catalogue.
+            </p>
+          ) : (
+            <p>
+              In the meantime, the <a href="/coin-info">coin value catalogue</a>
+              covers the coins that have been researched, filed by what they are
+              made of, and the <a href="/melt-value">melt value</a> pages work out
+              what the metal in one is worth.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  </section>
+
+  {sheet.written && (
+    <article class="container-page pb-4 sheet-tables">
+      {/* The H1 is up in the section the print rules drop, and a printed
+          table of dates with no coin named on it is a page nobody can file. */}
+      <p class="prose-page print-only print-title">{h1}</p>
+
+      {notes.length > 0 && (
+        <div class="prose-page sheet-notes-block">
+          <h2 style="margin-top: 0">Notes</h2>
+          <ul class="sheet-notes">
+            {notes.map((note) => <li>{note}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Then condition: it takes no knowledge, and sorting by eye narrows the pile. */}
+      <div class="prose-page">
+        <h2 style={notes.length > 0 ? undefined : 'margin-top: 0'}>Condition</h2>
+        <p>{cheatSheetCondition(sheet)}</p>
+      </div>
+
+      {dates.length > 0 && (
+        <>
+          <div class="prose-page heading-row">
+            <h2 id="dates">Dates</h2>
+            {printSection === 'dates' && (
+              <button type="button" class="btn btn-secondary print-button" onclick="window.print()">{printLabel}</button>
+            )}
+          </div>
+          <div class="prose-page">
+            <p>Dates and mint marks to be on the look out for.</p>
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th style="text-align: right">Mintage</th>
+                  <th class="rank-cell">Rank</th>
+                  <th class="note-cell">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* A row whose coin is in the catalogue is a link across its
+                    whole width, and looks exactly like one whose coin is not:
+                    thirty-two underlined blue rows would read as thirty-two
+                    things to do rather than as a table to scan. The date cell
+                    carries the only real link -- the rest are the same target
+                    again, so they are taken out of the tab order and hidden
+                    from assistive tech, which would otherwise announce four
+                    identical links per row. */}
+                {dates.map((d) => {
+                  const href = cheatDateHref(sheet, d);
+                  const mintage = d.mintage.toLocaleString('en-GB');
+                  return (
+                    <tr>
+                      <td class="mark-cell nowrap-cell">
+                        {href ? <a class="row-link" href={href}>{d.label}</a> : d.label}
+                      </td>
+                      <td style="text-align: right">
+                        {href ? <a class="row-link" href={href} tabindex="-1" aria-hidden="true">{mintage}</a> : mintage}
+                      </td>
+                      <td class="nowrap-cell rank-cell">
+                        {href ? <a class="row-link" href={href} tabindex="-1" aria-hidden="true">{RANK_LABEL[d.rank]}</a> : RANK_LABEL[d.rank]}
+                      </td>
+                      <td class="note-cell">
+                        {href ? <a class="row-link" href={href} tabindex="-1" aria-hidden="true">{d.reason}</a> : d.reason}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {commonErrors.length > 0 && (
+        <>
+          <div class="prose-page heading-row">
+            <h2 id="errors">{cheatSheetErrorsH2(sheet)}</h2>
+            {printSection === 'errors' && (
+              <button type="button" class="btn btn-secondary print-button" onclick="window.print()">{printLabel}</button>
+            )}
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table error-table">
+              <thead>
+                <tr><th>Error</th><th>What settles it</th></tr>
+              </thead>
+              <tbody>
+                {commonErrors.map((e) => (
+                  <tr>
+                    <td class="mark-cell nowrap-cell">{e.label}</td>
+                    <td>
+                      {e.check}
+                      <span class="row-caution">{e.caution}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {rareErrors.length > 0 && (
+        <>
+          <div class="prose-page heading-row">
+            <h2 id="rare-errors">{cheatSheetRareErrorsH2(sheet)}</h2>
+            {printSection === 'rare-errors' && (
+              <button type="button" class="btn btn-secondary print-button" onclick="window.print()">{printLabel}</button>
+            )}
+          </div>
+          <div class="card table-scroll fact-card" style="padding: 0.4rem 0">
+            <table class="fact-table error-table">
+              <thead>
+                <tr><th>Error</th><th>What settles it</th></tr>
+              </thead>
+              <tbody>
+                {rareErrors.map((e) => (
+                  <tr>
+                    <td class="mark-cell nowrap-cell">{e.label}</td>
+                    <td>
+                      {e.check}
+                      <span class="row-caution">{e.caution}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* The sources a sheet names are recorded in the registry and checked
+          against there; the page does not spend a line reciting them. */}
+      {seriesHref && (
+        <div class="prose-page">
+          <p class="text-sm" style="color: var(--text-muted)">
+            More on the series: <a href={seriesHref}>{sheet.name}</a>.
+          </p>
+        </div>
+      )}
+    </article>
+  )}
+
+  <section class="container-page pb-20">
+    <div class="prose-page">
+      <h2>Other cheat sheets</h2>
+    </div>
+    <div class="tile-grid" style="margin-top: 1.25rem">
+      {others.map((s) => (
+        <a href={cheatSheetPath(s)} class="tile">
+          <h3>{cheatSheetH1(s)}</h3>
+          <p>{cheatSheetTeaser(s)}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  /* The heading and its print button share a baseline; on a narrow screen the
+     button drops under the heading rather than squeezing it. */
+  .heading-row {
+    /* Full container width, not the 44rem prose column: the button lines up
+       with the right edge of the table it prints, which is the wider thing
+       below it. The heading keeps .prose-page for its typography. */
+    max-width: none;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    /* The heading's own bottom margin, moved onto the row. The h2 has to give
+       it up to share a baseline with the button, so the row has to carry it
+       instead -- and it is the same 0.75rem `.prose-page h2` uses, so the gap
+       under a heading is identical whether or not it sits in a row. Without
+       this the two error tables butt straight against their headings; the
+       date table hides the bug because a line of copy follows its heading. */
+    margin-bottom: 0.75rem;
+  }
+  .heading-row h2 { margin-bottom: 0; }
+  /* A heading with a table directly under it gets the room a line of copy
+     would have left. 0.75rem is the gap `.prose-page h2` leaves before a
+     paragraph, and a paragraph's own descenders and leading make that read as
+     a gap; a bordered card starts at its border and reads as touching. The
+     date table hides this too -- it has a line of copy over it -- so the rule
+     is on the card, which is the thing that changes, rather than on the row.
+     Print resets it: the print h2 rule sets the spacing there. */
+  .heading-row + .card { margin-top: 0.5rem; }
+  .print-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .print-only { display: none; }
+
+  /* A short run of one-line facts, not a bulleted essay. The list is tight
+     because it sits between the opening and the first table. */
+  .sheet-notes {
+    margin: 0.6rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .sheet-notes li { margin: 0.3rem 0; }
+
+  /* Print: the tables and nothing else.
+     The sheet is already a lookup table, so the printed form is that table on
+     paper -- no header, no navigation, no prose, no siblings. The page name is
+     the one thing added back, because a sheet of dates with no coin named on
+     it cannot be filed. Everything is hidden by position rather than by a
+     class on each element, so a section added later is dropped by default
+     rather than printed by accident. */
+  @media print {
+    body > *:not(main) { display: none !important; }
+    main > *:not(.sheet-tables) { display: none !important; }
+    /* Every prose block goes: the condition sentence, the line over the date
+       table, the link to the series. What stays is a heading row and its
+       table, plus the title added below -- and the notes, which are the one
+       run of prose that is lookup content rather than commentary. Somebody
+       sorting a jar of halves on paper needs the 1964 cut-off as much as they
+       need the dates, and it is three lines. */
+    .sheet-tables > .prose-page:not(.heading-row):not(.print-title):not(.sheet-notes-block),
+    .print-button { display: none !important; }
+
+    .print-only { display: block; }
+    .print-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0 0 0.9rem;
+    }
+
+    /* On screen the card scrolls sideways and the page does not; on paper
+       there is nothing to scroll into, so the table gets the full width. */
+    .sheet-tables .card.table-scroll {
+      overflow: visible !important;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+      padding: 0 !important;
+      margin-bottom: 1.2rem;
+    }
+    .sheet-tables .prose-page { max-width: none; }
+    .sheet-tables h2 {
+      font-size: 1.05rem;
+      margin: 0.8rem 0 0.4rem;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .sheet-tables table { width: 100%; border-collapse: collapse; }
+    /* On paper the print h2 rule sets the spacing; the screen row margin
+       would be added to it. */
+    .heading-row { margin-bottom: 0; }
+    .heading-row + .card { margin-top: 0; }
+    .sheet-notes { margin: 0 0 0.9rem; font-size: 10pt; }
+    .sheet-notes li { margin: 0.15rem 0; }
+    .sheet-tables th,
+    .sheet-tables td {
+      border-bottom: 1px solid #999;
+      padding: 0.25rem 0.4rem;
+      font-size: 10pt;
+      vertical-align: top;
+    }
+    .sheet-tables tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sheet-tables thead { display: table-header-group; }
+    /* A row that is a link is a row on paper: no underline, no blue. */
+    .sheet-tables a { color: inherit !important; text-decoration: none !important; }
+    .sheet-tables .row-caution { display: block; }
+  }
+</style>

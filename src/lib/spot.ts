@@ -229,6 +229,21 @@ export const spotPrice = (metal: Metal, snap: SpotSnapshot = REFERENCE_SPOT): nu
   snap.prices[metal];
 
 /**
+ * Grams in a troy ounce, exactly.
+ *
+ * Here because it is the other half of the melt arithmetic: a specification is
+ * published in grams and a spot price is quoted per troy ounce, so anything
+ * that turns one into the other divides by this. The catalogue stores a coin's
+ * silver weight already converted, but `src/data/silver-coins.ts` derives it
+ * from the published weight and fineness, and a conversion factor typed twice
+ * is a conversion factor that can be typed wrong once.
+ *
+ * Full precision, not the 31.1035 the prose on `/common-questions` quotes: that
+ * figure is rounded for a reader, this one is multiplied by a thousand coins.
+ */
+export const GRAMS_PER_TROY_OUNCE = 31.1034768;
+
+/**
  * Metal value of one coin: troy ounces times spot. Undefined when the coin
  * carries no precious-metal weight, which is the signal not to render the
  * section at all rather than to render a zero.

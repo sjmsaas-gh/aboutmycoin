@@ -14,9 +14,6 @@
 #                              the edge, so a content fix is live immediately
 #                              while repeat visits still cost one 304.
 #
-# The X-Robots-Tag line below is the PRE-LAUNCH LOCKDOWN. Delete it on launch,
-# in all three host configs. See src/lib/site.ts.
-#
 # CSP: add a CDN origin to img-src / connect-src / font-src here (and in the
 # other two configs) the moment SITE.assetOrigin stops being empty. A blocked
 # asset under CSP fails silently in production and works fine in dev.
@@ -30,7 +27,6 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; worker-src 'self' blob:; child-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests
-  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable

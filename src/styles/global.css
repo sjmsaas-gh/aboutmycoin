@@ -606,6 +606,18 @@
     gap: 0.9rem;
     grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
   }
+  /* A tile folded away by the reveal script. `.tile` sets `display: block`,
+     which outranks the user-agent rule for [hidden], so the grid says it
+     again. Without this the attribute is set and nothing disappears. */
+  .tile-grid > [hidden] {
+    display: none;
+  }
+  /* The button the script adds under a folded grid. */
+  .reveal-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
   .tile {
     display: block;
     background-color: var(--bg-raised);
@@ -911,6 +923,21 @@
     color: var(--text);
   }
 
+  /* Prev and next on a grade page: one at each end of the line, because the
+     arrows point outwards and a row of two links centred on a middot makes
+     the reader read both to find the one they want. The auto margin is what
+     keeps the next rung on the right at the bottom of a ladder, where it is
+     the only link on the row. */
+  .grade-step {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.6rem 1.5rem;
+  }
+  .grade-step > .grade-step-next {
+    margin-left: auto;
+  }
+
   /* The pull quote under the premium block. Deliberately unlike the .verdict
      box at the top of the page -- no fill, no border box, a single rule down
      the left -- because it is the one sentence on the page that is not a
@@ -961,6 +988,74 @@
     vertical-align: top;
   }
   .fact-table .mark-cell { font-weight: 600; }
+  /* A cheat sheet's first two columns are labels, not prose: "1909-S VDB"
+     broken over two lines stops being the thing you match against the coin in
+     your hand, and "Semi-key" wrapping to "Semi-" reads as a different word.
+     The table already scrolls sideways inside .table-scroll, so nothing is
+     lost by refusing to wrap them. */
+  .fact-table .nowrap-cell { white-space: nowrap; }
+  /* A phone gets the date and the mintage and nothing else. The note and the
+     rank both read as prose beside them and push the two columns the sheet
+     exists for off the edge; the list is already ranked scarcest first, so the
+     order carries what the rank word said. Dropped, not shrunk. */
+  @media (max-width: 640px) {
+    .fact-table .note-cell,
+    .fact-table .rank-cell { display: none; }
+  }
+  /* An error row is a label and two sentences, which is not a table shape on a
+     phone: two columns leave the prose a thumb wide and the label scrolling
+     sideways. Under 640px the row stacks -- label, then the test, then the
+     caution -- and the header, which then labels nothing, is taken out of the
+     flow rather than hidden, so a screen reader still reads it. */
+  @media (max-width: 640px) {
+    .fact-table.error-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .fact-table.error-table,
+    .fact-table.error-table tbody,
+    .fact-table.error-table tr,
+    .fact-table.error-table td { display: block; width: 100%; }
+    .fact-table.error-table tr {
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .fact-table.error-table tr:first-child { border-top: 0; }
+    .fact-table.error-table td { border-top: 0; padding: 0 1rem; }
+    .fact-table.error-table .mark-cell {
+      white-space: normal;
+      margin-bottom: 0.3rem;
+    }
+  }
+  /* A date row whose coin has a catalogue page is clickable across the whole
+     row, and is not allowed to LOOK clickable: the colour and the underline a
+     link normally earns would turn a table meant to be scanned into a column
+     of decisions, and the rows that happen to have a page written are not the
+     rows worth reading first. The cell keeps its own colour and weight; the
+     cursor and a hover tint are the whole affordance. The anchor fills its
+     cell so the target is the row rather than the words in it.
+
+     Focus is the exception. A keyboard reader gets one link per row -- the
+     date -- and it has to be visible, so the ring is not suppressed. */
+  .fact-table td:has(> a.row-link) { padding: 0; }
+  .fact-table a.row-link {
+    display: block;
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    /* The cell's own padding, moved onto the anchor, so the whole cell is the
+       target. Not a negative margin: that would spill each row's hit area over
+       the row above it, and a click near a boundary would open the wrong
+       coin's page -- a misdirection nobody would report as a bug. */
+    padding: 0.6rem 1rem;
+  }
+  .fact-table tr:has(a.row-link):hover td {
+    background: color-mix(in oklab, var(--metal, var(--accent)) 6%, transparent);
+  }
+
   /* The era this very coin belongs to, marked in the series table. */
   .fact-table .row-current td { background: color-mix(in oklab, var(--metal, var(--accent)) 7%, transparent); }
   .tag-this { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
@@ -1039,6 +1134,83 @@
   .badge-key { color: var(--bad); }
 
   /* -------------------------------------------------------------------------
+     THE HEADER SEARCH
+     -------------------------------------------------------------------------
+     A field in the bar and a list that drops under it. The list is shipped
+     empty and hidden and is filled by src/lib/search-dom.ts; with no script
+     the whole control is hidden by the <noscript> rule in Header.astro, so
+     nothing here ever paints an empty dropdown.
+
+     The field is deliberately shorter than a .field elsewhere on the site: the
+     bar is 3rem tall and a full-height input in it makes the header look like
+     a form. */
+  .search { position: relative; }
+  .search-input {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.875rem;
+  }
+
+  /* Pinned to the right edge of the box and allowed to be wider than it: the
+     box is 11rem in the bar and a coin's name is not. Capped against the
+     viewport so the copy inside the mobile menu cannot run off a narrow
+     screen. */
+  .search-results {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    left: auto;
+    z-index: 10;
+    width: max(100%, 20rem);
+    max-width: calc(100vw - 1.5rem);
+    max-height: min(70vh, 26rem);
+    overflow-y: auto;
+    margin: 0;
+    padding: 0.25rem;
+    list-style: none;
+    box-shadow: var(--shadow);
+  }
+  /* .card sets a display of its own, which outranks the user-agent rule for
+     [hidden] -- the same collision the tile grids hit. */
+  .search-results[hidden] { display: none; }
+
+  .search-result a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: var(--radius);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+  /* The highlighted row and the hovered row look the same on purpose: the
+     arrow keys and the pointer are moving one selection, not two. */
+  .search-result[aria-selected='true'] a,
+  .search-result a:hover {
+    background-color: var(--bg-sunken);
+  }
+  .search-result-title { min-width: 0; overflow-wrap: anywhere; }
+  /* What the page is, in one word. Quiet, because it is the answer to a
+     question the reader has not asked yet. */
+  .search-result-kind {
+    flex: none;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .search-note {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+  .search-note a { color: var(--accent); }
+
+  /* -------------------------------------------------------------------------
      THE HOME PAGE
      -------------------------------------------------------------------------
      Three things the rest of the site does not need: the hero figure, the
@@ -1080,9 +1252,10 @@
     :root:not([data-theme='light']) .hero-figure::before { display: none; }
   }
 
-  /* The finder. Two selects and a button, on one row where there is room and
-     stacked where there is not -- the denomination select is the narrow one
-     because its options are one word. */
+  /* The finder. Three selects and a button: stacked on a phone, two rows on a
+     small screen, one row where there is room. The coin select is the wide
+     one because its options are whole coin names; the year is the narrow one
+     because every option is four digits. */
   .finder {
     display: grid;
     gap: 0.75rem;
@@ -1090,8 +1263,20 @@
     align-items: end;
     max-width: 34rem;
   }
+  /* Two rows: denomination and year share the first, the coin and the button
+     the second. Four controls on one row inside 34rem would leave the coin
+     names clipped, and the coin name is the one a reader checks. */
   @media (min-width: 30rem) {
-    .finder { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) auto; }
+    .finder { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .finder-coin { grid-column: 1; }
+    .finder-go { grid-column: 2; }
+  }
+  @media (min-width: 64rem) {
+    .finder {
+      max-width: 46rem;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.5fr) minmax(0, 1.3fr) auto;
+    }
+    .finder-coin, .finder-go { grid-column: auto; }
   }
   .finder-field { min-width: 0; }
   .finder .label { font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }

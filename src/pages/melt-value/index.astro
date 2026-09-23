@@ -2,7 +2,7 @@
 /**
  * The melt root: /melt-value.
  *
- * The twin of /coin-value, and deliberately the same page furniture in the
+ * The twin of /coin-info, and deliberately the same page furniture in the
  * same order: the same first decision (what is the coin made of), the same
  * tile grid, the same cross-cutting pills, the same full listing at the
  * bottom. A reader who has browsed one of the two sections has already
@@ -15,7 +15,7 @@
  *
  * This page used to list metals and nothing else, on the argument that a hub
  * listing the catalogue stops working at a thousand coins. That argument is
- * still true and it is still unhandled -- it is equally true of /coin-value,
+ * still true and it is still unhandled -- it is equally true of /coin-info,
  * which lists every coin here too. When the catalogue outgrows a single grid,
  * both hubs get the same treatment in the same change; solving it on one of
  * them only would put the two sections out of step, which is the thing this
@@ -26,12 +26,10 @@
  */
 import Base from '../../layouts/Base.astro';
 import TileCard from '../../components/TileCard.astro';
-import { SITE } from '../../lib/site';
 import {
   itemListSchema,
   webPageSchema,
   faqSchema,
-  datasetSchema,
 } from '../../lib/schema';
 import { METAL_LABEL, spotStamp } from '../../lib/spot';
 import {
@@ -98,21 +96,23 @@ const otherTags = tags
       items: groups.map((g) => ({ name: meltGroupH1(g), path: meltGroupPath(g.slug) })),
     }),
     faqSchema([{ q: MELT_HUB_QUESTION, a: answer }]),
-    datasetSchema({
-      name: `${SITE.name} coin melt values`,
-      description:
-        'Precious-metal content and melt value for every coin in the catalogue. Each entry states the metal, the content in troy ounces and the value of that content at a named, dated spot price.',
-      path,
-      variableMeasured: [
-        'Metal',
-        'Metal content (troy ounces)',
-        'Spot price used (USD per troy ounce)',
-        'Melt value (USD)',
-      ],
-      measurementTechnique:
-        'Melt value is the coin’s actual precious-metal weight in troy ounces, taken from published mint specifications, multiplied by a single spot price per metal that is stated and dated on every page. It is the value of the metal, not a price any buyer has offered.',
-      keywords: ['coin melt value', 'silver coin melt value', 'silver content of coins', 'spot price'],
-    }),
+    /*
+     * NO Dataset HERE, and that is the rule in schema.ts applied rather than
+     * relaxed: `variableMeasured` must list columns the page genuinely
+     * renders.
+     *
+     * This hub declared four of them -- the metal, the content in troy ounces,
+     * the spot price used and the melt value -- and renders none of them: it
+     * is nine cards. They were real when the hub listed every coin on the
+     * site. The cards rewrite took the list out ("There is no 'all coins'
+     * section"), and the schema stayed behind describing a page that no longer
+     * exists.
+     *
+     * CollectionPage over an ItemList is what a hub of cards is, and it is
+     * already above. The Dataset facts are still asserted where they are shown
+     * -- on the group archives, on the calculators and on every coin page's
+     * Product node.
+     */
   ]}
 >
   <section class="container-page pt-8 pb-8">
@@ -131,7 +131,7 @@ const otherTags = tags
         {' '}<a href="/common-questions/what-is-spot-price">what spot price is</a>,
         and why every figure in this section is dated. What a coin is worth as
         a coin is the other half of the answer, and it is in
-        {' '}<a href="/coin-value">the catalogue</a>.
+        {' '}<a href="/coin-info">the catalogue</a>.
       </p>
     </div>
   </section>
@@ -142,9 +142,9 @@ const otherTags = tags
         <h2 style="margin-top: 0">The catalogue is still being built</h2>
         <p>
           A melt page appears here for every coin that is added, at the same
-          address as its catalogue entry with <code>/coin-value</code> swapped
+          address as its catalogue entry with <code>/coin-info</code> swapped
           for <code>/melt-value</code>, and no other edit.
-          <a href="/coin-value">The catalogue</a> is where entries land first.
+          <a href="/coin-info">The catalogue</a> is where entries land first.
         </p>
       </div>
     </section>

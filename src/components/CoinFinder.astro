@@ -1,19 +1,32 @@
 ---
 /**
- * The hero's finder: denomination, then coin, then go.
+ * The hero's finder: denomination, then year, then coin, then go.
  *
  * The one action this site wants is "find my coin", and a button that says so
  * is a promise; a control that does it is the product. This is the product, in
- * the smallest honest form: two selects and a submit.
+ * the smallest honest form: three selects and a submit.
  *
- * It CANNOT dead-end. Both lists are built from the catalogue at build time, so
+ * It CANNOT dead-end. Every list is built from the catalogue at build time, so
  * every option leads to a page that exists -- there is no free-text box, no
  * "no results" state and no search index to keep in step. A visitor whose coin
  * is not in the catalogue sees that it is not on the list, which is the truth,
  * rather than typing it in and being told nothing was found.
  *
- * The script is eleven lines, inline, and does one thing: hide the coins that
- * belong to another denomination, then navigate on submit. No island, no
+ * THE YEAR STEP IS WHAT MAKES THE LAST LIST READABLE, and it went in when the
+ * catalogue reached 717 coins. Denomination alone leaves 318 quarters in one
+ * dropdown, which is a wall rather than a choice; denomination and year
+ * together leave at most eight coins anywhere in the catalogue and three or
+ * four almost everywhere, because what is left is the mint marks and the
+ * finishes of one date. Do not fold the year back in to save a select.
+ *
+ * The year is the right second question for the same reason the finder exists
+ * at all. This site's larger audience has one coin in hand and no vocabulary
+ * -- they cannot be asked whether it is a Washington or a Morgan, and they do
+ * not know what a mint mark is. The date is stamped on the coin and they can
+ * read it. Denomination they know from its size and what it says on it.
+ *
+ * The script does one thing: hide the options that belong to another
+ * denomination or another year, then navigate on submit. No island, no
  * framework, no hydration -- the catalogue pages ship zero JavaScript and this
  * is not the page to break that habit on.
  *
@@ -31,32 +44,66 @@ import { COINS, TYPES, coinPath } from '../data/coins';
  */
 const types = TYPES.filter((t) => COINS.some((c) => c.type === t.slug));
 
-/** Every coin, grouped under its denomination for the second select. */
+/**
+ * Every coin, tagged with its denomination and year for the two cascades.
+ *
+ * `years.from` rather than a range: every entry in the catalogue is one
+ * issue of one year, and a coin whose `to` differed would be a series, which
+ * is a tag and has its own page.
+ */
 const options = types.flatMap((t) =>
   COINS.filter((c) => c.type === t.slug).map((c) => ({
     type: t.slug,
+    year: c.years.from,
     label: c.shortName ?? c.name,
     path: coinPath(c),
   })),
 );
 
+/**
+ * The years each denomination was struck in, oldest first -- ascending
+ * because a reader scans for a date they already know rather than browsing
+ * from the top, and a run of years reads the way a timeline does.
+ */
+const years = types.map((t) => ({
+  type: t.slug,
+  list: [...new Set(options.filter((o) => o.type === t.slug).map((o) => o.year))].sort((a, b) => a - b),
+}));
+
 const first = types[0]?.slug ?? '';
+const firstYear = years[0]?.list[0];
 ---
 {options.length > 0 && (
   <>
-    <form class="finder" id="coin-finder" action="/coin-value" method="get">
-      <div class="finder-field">
+    <form class="finder" id="coin-finder" action="/coin-info" method="get">
+      <div class="finder-field finder-type">
         <label class="label" for="finder-type">Denomination</label>
         <select class="field" id="finder-type" name="type">
           {types.map((t) => <option value={t.slug}>{t.name}</option>)}
         </select>
       </div>
 
-      <div class="finder-field">
+      <div class="finder-field finder-year">
+        <label class="label" for="finder-year">Year</label>
+        <select class="field" id="finder-year" name="year">
+          {years.map((y) =>
+            y.list.map((n) => (
+              <option value={n} data-type={y.type} hidden={y.type !== first}>{n}</option>
+            )),
+          )}
+        </select>
+      </div>
+
+      <div class="finder-field finder-coin">
         <label class="label" for="finder-coin">Coin</label>
         <select class="field" id="finder-coin" name="coin">
           {options.map((o) => (
-            <option value={o.path} data-type={o.type} hidden={o.type !== first}>{o.label}</option>
+            <option
+              value={o.path}
+              data-type={o.type}
+              data-year={o.year}
+              hidden={o.type !== first || o.year !== firstYear}
+            >{o.label}</option>
           ))}
         </select>
       </div>
@@ -67,7 +114,7 @@ const first = types[0]?.slug ?? '';
     <noscript>
       <style>#coin-finder { display: none }</style>
       <p class="mt-2">
-        <a href="/coin-value">Browse the catalogue by metal and denomination</a>
+        <a href="/coin-info">Browse the catalogue by metal and denomination</a>
         — the finder above needs JavaScript, this does not.
       </p>
     </noscript>
@@ -77,24 +124,40 @@ const first = types[0]?.slug ?? '';
         const form = document.getElementById('coin-finder');
         if (!form) return;
         const type = form.querySelector('#finder-type');
+        const year = form.querySelector('#finder-year');
         const coin = form.querySelector('#finder-coin');
         /* `hidden` rather than removing the options: the full list stays in
            the DOM, so switching denomination back and forth never has to
            rebuild it and never loses an entry. */
-        const sync = () => {
+        const show = (select, keep) => {
           let firstVisible = null;
-          for (const o of coin.options) {
-            o.hidden = o.dataset.type !== type.value;
+          for (const o of select.options) {
+            o.hidden = !keep(o);
             if (!o.hidden && !firstVisible) firstVisible = o;
           }
-          if (firstVisible) coin.value = firstVisible.value;
+          /* Only when the selection has been hidden. A reader who picks 1964
+             on a quarter and then switches to the dime keeps 1964, which is
+             the year they are holding -- the denomination changed, the coin
+             in their hand did not. */
+          if (firstVisible && (!select.selectedOptions[0] || select.selectedOptions[0].hidden)) {
+            select.value = firstVisible.value;
+          }
+          return firstVisible !== null;
         };
-        type.addEventListener('change', sync);
+        const syncYears = () => {
+          show(year, (o) => o.dataset.type === type.value);
+          syncCoins();
+        };
+        const syncCoins = () => {
+          show(coin, (o) => o.dataset.type === type.value && o.dataset.year === year.value);
+        };
+        type.addEventListener('change', syncYears);
+        year.addEventListener('change', syncCoins);
         form.addEventListener('submit', (e) => {
           e.preventDefault();
           if (coin.value) window.location.assign(coin.value);
         });
-        sync();
+        syncYears();
       })();
     </script>
   </>
