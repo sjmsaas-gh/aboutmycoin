@@ -58,7 +58,7 @@
 # the SWR. Here the SWR is the point -- an older price, labelled with its date,
 # beats no price.
 /api/spot
-  Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400
+  Cache-Control: public, max-age=300, s-maxage=1800, stale-while-revalidate=86400
 
 # Every other endpoint takes a key, a token or a message, and none of those may
 # sit in a shared cache. This block comes after /api/spot because the more

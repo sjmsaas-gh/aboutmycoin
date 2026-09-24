@@ -21,9 +21,9 @@
  * IT COSTS NOTHING AND IT CANNOT FAIL THE BUILD
  * ---------------------------------------------------------------------------
  *
- * The cached document is a public JSON file. Reading it spends no metals.dev
- * allowance — the feed is never touched here, and this script holds no
- * credential at all. That is the whole reason the build is allowed to read it.
+ * The cached document is a public JSON file. Reading it touches no price feed,
+ * and this script holds no credential at all. That is the whole reason the
+ * build is allowed to read it.
  *
  * And every failure is a no-op: no `SPOT_CACHE_URL`, no network, a slow
  * response, a malformed body, a document older than the committed one. In every
@@ -52,8 +52,10 @@
  *     one number that is stamped with its own timestamp on every page it
  *     appears on, and that no human chose.
  *
- * What would genuinely cross the line is the build calling metals.dev. That is
- * metered, per-deploy, and uncountable. It does not happen here and must not.
+ * What would genuinely cross the line is the build calling the price feed. The
+ * feed bans an IP that calls it too often, a build runs on somebody else's IP
+ * on every deploy, and the count would be invisible. It does not happen here
+ * and must not.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -118,7 +120,8 @@ const updated = source
     const rows = METALS.map((metal) => `    ${metal}: ${snapshot.prices[metal]},`).join('\n');
     return `${open}${rows}${close}`;
   })
-  .replace(/(\n  asOf: ')[^']*(')/, `$1${snapshot.asOf}$2`);
+  .replace(/(\n  asOf: ')[^']*(')/, `$1${snapshot.asOf}$2`)
+  .replace(/(\n  source: ')[^']*(')/, `$1${snapshot.source}$2`);
 
 if (!updated.includes(`asOf: '${snapshot.asOf}'`)) {
   skip('src/data/spot-snapshot.ts has changed shape; update this script');

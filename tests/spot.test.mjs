@@ -45,10 +45,10 @@ import {
   referenceClause,
 } from '../src/lib/spot.ts';
 import { SPOT_SNAPSHOT } from '../src/data/spot-snapshot.ts';
-import { handleSpot, refreshDecision } from '../src/server/spot.ts';
+import { handleSpot, hookDue, refreshDecision } from '../src/server/spot.ts';
 
-/** The feed's name, which must never appear in anything a reader sees. */
-const SPOT_SOURCE_LITERAL = 'metals.dev';
+/** The feeds' names, which must never appear in anything a reader sees. */
+const SPOT_SOURCE_LITERALS = ['gold-api', 'metals.dev'];
 
 /** A snapshot that is nothing like the reference one, for the rescale checks. */
 const LIVE = {
@@ -114,10 +114,10 @@ test('the Vercel adapter actually answers, on a real Node server', async () => {
   // back at all.
   const { default: handler } = await import('../api/spot.ts');
 
-  // The adapter reads process.env at request time. A developer with a real key
-  // exported would otherwise spend one of the month's feed calls on `npm test`.
+  // The adapter reads process.env at request time. A shell that happened to
+  // carry VERCEL_ENV=production would otherwise call the real feed on `npm test`.
   const saved = { ...process.env };
-  delete process.env.METALS_DEV_API_KEY;
+  delete process.env.VERCEL_ENV;
   delete process.env.BLOB_READ_WRITE_TOKEN;
   delete process.env.SPOT_CACHE_URL;
   delete process.env.SPOT_DEPLOY_HOOK_URL;
@@ -207,25 +207,26 @@ test('nothing reachable from api/ imports without an extension', () => {
 });
 
 test('the feed is reached one way only, and never through the cache URL', () => {
-  // The endpoint does hold the feed key -- it is what refreshes the cached
-  // document. What must stay true is that there is exactly ONE path to the feed,
-  // the guarded refresh, so the clock and the budget cannot be bypassed. A
-  // second call site would be a second way to spend the month's allowance.
+  // The endpoint refreshes the cached document from the feed. What must stay
+  // true is that there is exactly ONE path to the feed, the guarded refresh, so
+  // the clock and the budget cannot be bypassed. A second call site would be a
+  // second way to hammer a feed that bans an IP for it.
   const handler = readFileSync('src/server/spot.ts', 'utf8');
-  assert.ok(!/api\.metals\.dev/.test(handler), 'the handler builds its own feed URL');
+  assert.ok(!/api\.gold-api\.com|api\.metals\.dev/.test(handler), 'the handler builds its own feed URL');
   assert.equal(
-    (handler.match(/fetchMetalsDev\(/g) ?? []).length,
+    (handler.match(/fetchGoldApi\(/g) ?? []).length,
     1,
     'the feed is called from somewhere other than refresh() -- there is one call site',
   );
-  // And the key is never put in a URL by anything here: a key in a URL is a key
-  // in the platform's logs, the CDN's logs and the next request's Referer. The
-  // one place it is allowed is the feed request itself, in metals-dev.ts.
+  // And no key is ever put in a URL by anything here: a key in a URL is a key
+  // in the platform's logs, the CDN's logs and the next request's Referer.
   assert.ok(!/api_key/.test(handler), 'the handler puts a key in a URL');
 
   const example = readFileSync('.env.example', 'utf8');
   assert.ok(example.includes('SPOT_CACHE_URL='), '.env.example does not document the cache URL');
-  assert.ok(example.includes('METALS_DEV_API_KEY='), '.env.example does not document the feed key');
+  // The feed takes no key. A documented one would send somebody to sign up for
+  // an account the site does not use.
+  assert.ok(!example.includes('METALS_DEV_API_KEY='), '.env.example still documents the retired feed key');
   assert.ok(!example.includes('SPOT_API_KEY='), '.env.example still documents the retired key');
 });
 
@@ -277,7 +278,9 @@ test('every provenance string is the one phrase, with a time and no vendor', () 
   // figure was.
   for (const text of [spotStamp('silver'), spotCaveat('silver'), spotStripNote()]) {
     assert.ok(text.includes(spotAsOfLabel()), 'a provenance string omits the reading time');
-    assert.ok(!text.includes(SPOT_SOURCE_LITERAL), 'a provenance string names the feed');
+    for (const name of SPOT_SOURCE_LITERALS) {
+      assert.ok(!text.includes(name), 'a provenance string names the feed');
+    }
   }
 });
 
@@ -485,11 +488,13 @@ test('with no cache configured the endpoint asks nobody', async () => {
 
 test('a cache URL that is really a price feed is refused, unfetched', async () => {
   // The mistake this exists to stop: somebody "simplifying" the arrangement by
-  // pointing this straight at the upstream, which bills per call and would be
-  // hit once per region per hour until the month's allowance was gone. And a
+  // pointing this straight at the upstream, which would then be hit once per
+  // region per half hour with no clock and no budget in front of it. And a
   // key in a URL is a key in this platform's logs, the CDN's logs and the next
   // request's Referer.
   const refused = [
+    'https://api.gold-api.com/price/XAG',
+    'https://gold-api.com/price/XAG',
     'https://api.metals.dev/v1/latest?api_key=secret&currency=USD&unit=toz',
     'https://metals.dev/v1/latest',
     'https://cache.example/spot.json?api_key=secret',
@@ -517,15 +522,16 @@ test('a cache URL that is really a price feed is refused, unfetched', async () =
 });
 
 /* ---------------------------------------------------------------------------
-   Refreshing the cache, and not spending the allowance
+   Refreshing the cache, and not hammering the feed
    ---------------------------------------------------------------------------
 
    There is no cron: the endpoint refreshes the cached document when it has gone
-   stale. The feed allows a hundred calls a MONTH, so what is pinned below is
-   every reason NOT to call it. These are the tests that stand between a
-   mistake and a suspended feed account.
+   stale. The feed bans an IP that calls it more than once a second, so what is
+   pinned below is every reason NOT to call it. These are the tests that stand
+   between a mistake and a banned IP.
    --------------------------------------------------------------------------- */
 
+const MINUTE = 60_000;
 const HOUR = 3_600_000;
 const NOW = new Date('2027-01-20T12:00:00Z');
 /**
@@ -538,25 +544,63 @@ const NOW = new Date('2027-01-20T12:00:00Z');
 const THIS_MONTH = new Date().toISOString().slice(0, 7);
 const doc = (over = {}) => ({
   ...CACHED,
-  fetchedAt: new Date(NOW.getTime() - 1 * HOUR).toISOString(),
+  fetchedAt: new Date(NOW.getTime() - 10 * MINUTE).toISOString(),
   month: THIS_MONTH,
   calls: 3,
   ...over,
 });
 
+/**
+ * What gold-api.com answers, one symbol per request. `asOf` on the reading is
+ * the OLDEST of the three times, so they differ here on purpose.
+ */
+const FEED_PRICES = { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 };
+const FEED_TIMES = {
+  XAG: '2027-01-20T11:58:30Z',
+  XAU: '2027-01-20T11:58:00Z',
+  XPT: '2027-01-20T11:59:10Z',
+};
+const FEED_AS_OF = '2027-01-20T11:58:00.000Z';
+const FEED_PRICE_BY_SYMBOL = {
+  XAG: FEED_PRICES.silver,
+  XAU: FEED_PRICES.gold,
+  XPT: FEED_PRICES.platinum,
+};
+const isFeed = (url) => url.includes('gold-api.com');
+const feedResponse = (url) => {
+  const symbol = url.split('/').pop();
+  return new Response(
+    JSON.stringify({
+      currency: 'USD',
+      currencySymbol: '$',
+      exchangeRate: 1.0,
+      name: symbol,
+      price: FEED_PRICE_BY_SYMBOL[symbol],
+      symbol,
+      updatedAt: FEED_TIMES[symbol],
+    }),
+  );
+};
+/** What every test that is allowed to refresh passes. */
+const LIVE_ENV = {
+  SPOT_CACHE_URL: 'https://cache.example/spot.json',
+  feedEnabled: true,
+  feedGapMs: 0,
+};
+
 /** The same fixture, but dated to NOW's month, for the decisions that pass NOW. */
 const docAtNow = (over = {}) => doc({ month: NOW.toISOString().slice(0, 7), ...over });
 
 test('the clock decides when a call is spent', () => {
-  // The ordinary case: one refresh a day, and nothing in between.
+  // The ordinary case: one refresh every half hour, and nothing in between.
   assert.equal(refreshDecision(docAtNow(), NOW).refresh, false);
   assert.equal(
-    refreshDecision(docAtNow({ fetchedAt: new Date(NOW.getTime() - 19 * HOUR).toISOString() }), NOW)
+    refreshDecision(docAtNow({ fetchedAt: new Date(NOW.getTime() - 29 * MINUTE).toISOString() }), NOW)
       .refresh,
     false,
   );
   assert.equal(
-    refreshDecision(docAtNow({ fetchedAt: new Date(NOW.getTime() - 21 * HOUR).toISOString() }), NOW)
+    refreshDecision(docAtNow({ fetchedAt: new Date(NOW.getTime() - 31 * MINUTE).toISOString() }), NOW)
       .refresh,
     true,
   );
@@ -577,14 +621,13 @@ test('the clock decides when a call is spent', () => {
 
 test('the schedule reads fetchedAt, never asOf -- the weekend bug', () => {
   // The subtle one. `asOf` is the feed's own reading time, which barely moves
-  // while the metals market is shut. A document fetched an hour ago whose
+  // while the metals market is shut. A document fetched ten minutes ago whose
   // prices were read on Friday must NOT look overdue on Sunday: scheduling off
   // `asOf` would refresh on every cache miss all weekend, each call returning
-  // the same Friday timestamp it had just rejected, and spend the month's
-  // allowance in two days.
+  // the same Friday timestamp it had just rejected.
   const friday = new Date(NOW.getTime() - 60 * HOUR).toISOString();
   const decision = refreshDecision(
-    docAtNow({ asOf: friday, fetchedAt: new Date(NOW.getTime() - HOUR).toISOString() }),
+    docAtNow({ asOf: friday, fetchedAt: new Date(NOW.getTime() - 10 * MINUTE).toISOString() }),
     NOW,
   );
   assert.equal(decision.refresh, false, 'a stale asOf triggered a refresh');
@@ -593,53 +636,47 @@ test('the schedule reads fetchedAt, never asOf -- the weekend bug', () => {
 test('the monthly ceiling is a fuse the clock cannot talk past', () => {
   const overdue = new Date(NOW.getTime() - 40 * HOUR).toISOString();
   // Overdue by the clock, but out of budget: no call.
-  const spent = refreshDecision(docAtNow({ fetchedAt: overdue, calls: 60 }), NOW);
+  const spent = refreshDecision(docAtNow({ fetchedAt: overdue, calls: 3_000 }), NOW);
   assert.equal(spent.refresh, false);
   assert.match(spent.reason, /monthly call limit/);
-  assert.equal(refreshDecision(docAtNow({ fetchedAt: overdue, calls: 59 }), NOW).refresh, true);
+  assert.equal(refreshDecision(docAtNow({ fetchedAt: overdue, calls: 2_999 }), NOW).refresh, true);
 
   // The count resets when the month does, and a count from another month never
   // holds a refresh back.
   assert.equal(
-    refreshDecision(docAtNow({ fetchedAt: overdue, month: '1999-12', calls: 99 }), NOW).refresh,
+    refreshDecision(docAtNow({ fetchedAt: overdue, month: '1999-12', calls: 9_999 }), NOW).refresh,
     true,
   );
 });
 
 test('a stale cache is refreshed, published and served', async () => {
-  const FEED = {
-    status: 'success',
-    currency: 'USD',
-    unit: 'toz',
-    metals: { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 },
-    timestamps: { metal: '2027-01-20T11:58:00.000Z' },
-  };
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
 
   const written = [];
   const { result, calls } = await withFetch(
     (url) =>
-      url.includes('metals.dev')
-        ? new Response(JSON.stringify(FEED), { headers: { 'x-api-usage': '7' } })
-        : new Response(JSON.stringify(stale)),
+      isFeed(url) ? feedResponse(url) : new Response(JSON.stringify(stale)),
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         writeCache: async (body) => written.push(JSON.parse(body)),
       }),
   );
 
-  assert.equal(calls.length, 2, 'the endpoint did not read the cache and then the feed');
-  assert.ok(calls[1].includes('api.metals.dev'), 'the feed was not called');
-  // The units are asked for explicitly: an account default of grams would
-  // multiply every melt value on the site by 31.
-  assert.ok(calls[1].includes('currency=USD') && calls[1].includes('unit=toz'));
+  // The cache, then one call per metal, in METALS order.
+  assert.deepEqual(calls, [
+    'https://cache.example/spot.json',
+    'https://api.gold-api.com/price/XAG',
+    'https://api.gold-api.com/price/XAU',
+    'https://api.gold-api.com/price/XPT',
+  ]);
 
   // The reader gets the new figures, unrounded, in the same request.
   const body = await result.json();
-  assert.deepEqual(body.prices, FEED.metals);
-  assert.equal(body.asOf, FEED.timestamps.metal);
+  assert.deepEqual(body.prices, FEED_PRICES);
+  // One timestamp claims all three prices, so it is the oldest of the three.
+  assert.equal(body.asOf, FEED_AS_OF);
+  assert.equal(body.source, 'gold-api.com');
   assert.equal(body.live, false);
   // And nothing but the four snapshot fields: the bookkeeping never leaks into
   // a response.
@@ -649,7 +686,7 @@ test('a stale cache is refreshed, published and served', async () => {
   // carries the old prices under a new fetchedAt, the second the new reading.
   assert.equal(written.length, 2, 'the claim or the record is missing');
   const published = written.at(-1);
-  assert.deepEqual(published.prices, FEED.metals);
+  assert.deepEqual(published.prices, FEED_PRICES);
   assert.equal(published.calls, stale.calls + 1);
   assert.equal(published.month, THIS_MONTH);
   // fetchedAt is when WE called, asOf is when the prices were read. Scheduling
@@ -663,19 +700,12 @@ test('a refresh pokes the deploy hook, so the built pages catch up', async () =>
   // a reader without it, keep whatever the last BUILD rendered -- and that only
   // changes when the site is rebuilt. Without this the crawler-facing price is
   // as old as the last deploy.
-  const FEED = {
-    status: 'success',
-    currency: 'USD',
-    unit: 'toz',
-    metals: { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 },
-    timestamps: { metal: '2027-01-20T11:58:00.000Z' },
-  };
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   const order = [];
 
   const { calls } = await withFetch(
     (url, init) => {
-      if (url.includes('metals.dev')) return new Response(JSON.stringify(FEED));
+      if (isFeed(url)) return feedResponse(url);
       if (url.includes('deploy')) {
         order.push(`hook:${init?.method}`);
         return new Response('', { status: 201 });
@@ -684,8 +714,7 @@ test('a refresh pokes the deploy hook, so the built pages catch up', async () =>
     },
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         deployHookUrl: 'https://api.vercel.com/v1/integrations/deploy/prj_x/y',
         writeCache: async () => order.push('write'),
       }),
@@ -702,8 +731,8 @@ test('a refresh pokes the deploy hook, so the built pages catch up', async () =>
 });
 
 test('the deploy hook is never poked when nothing was refreshed', async () => {
-  // Once a day, not once a request: it fires only behind the clock and the
-  // budget, which is what stops a deploy per visitor.
+  // Never once a request: it fires only behind the clock, the budget and its
+  // own daily interval, which is what stops a deploy per visitor.
   const fresh = doc({ fetchedAt: new Date().toISOString() });
   await withFetch(
     (url) => {
@@ -712,8 +741,7 @@ test('the deploy hook is never poked when nothing was refreshed', async () => {
     },
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         deployHookUrl: 'https://api.vercel.com/v1/integrations/deploy/prj_x/y',
         writeCache: async () => assert.fail('a fresh cache was rewritten'),
       }),
@@ -724,18 +752,96 @@ test('the deploy hook is never poked when nothing was refreshed', async () => {
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   await withFetch(
     (url) => {
-      if (url.includes('metals.dev')) return new Response('no', { status: 500 });
+      if (isFeed(url)) return new Response('no', { status: 500 });
       assert.ok(!url.includes('deploy'), 'a failed refresh triggered a deploy');
       return new Response(JSON.stringify(stale));
     },
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         deployHookUrl: 'https://api.vercel.com/v1/integrations/deploy/prj_x/y',
         writeCache: async () => assert.fail('a failed refresh published a document'),
       }),
   );
+});
+
+test('the price refreshes every half hour, the site rebuilds once a week', async () => {
+  // A deploy is a full build of every page. Poked on every refresh it would be
+  // forty-eight builds a day to move a figure the browser already corrects, so
+  // the document records when it last poked and a refresh inside a week of
+  // that refreshes the price and leaves the build alone.
+  assert.equal(hookDue(undefined, NOW), true, 'the first refresh must rebuild');
+  assert.equal(hookDue(docAtNow({ hookedAt: '' }), NOW), true);
+  assert.equal(
+    hookDue(docAtNow({ hookedAt: new Date(NOW.getTime() - 6 * 24 * HOUR).toISOString() }), NOW),
+    false,
+  );
+  assert.equal(
+    hookDue(docAtNow({ hookedAt: new Date(NOW.getTime() - 7 * 24 * HOUR).toISOString() }), NOW),
+    true,
+  );
+  // A hook time in the future is a clock fault, and must not rebuild on every
+  // refresh until real time catches up.
+  assert.equal(
+    hookDue(docAtNow({ hookedAt: new Date(NOW.getTime() + HOUR).toISOString() }), NOW),
+    false,
+  );
+
+  // And end to end: an overdue price with a recent hook is refreshed, recorded,
+  // and never reaches the hook -- and the record keeps the old hook time.
+  const hookedAt = new Date(Date.now() - 2 * HOUR).toISOString();
+  const stale = doc({ fetchedAt: new Date(Date.now() - 40 * MINUTE).toISOString(), hookedAt });
+  const written = [];
+  const { result, calls } = await withFetch(
+    (url) => {
+      if (isFeed(url)) return feedResponse(url);
+      assert.ok(!url.includes('deploy'), 'a half-hourly refresh rebuilt the site');
+      return new Response(JSON.stringify(stale));
+    },
+    () =>
+      ask({
+        ...LIVE_ENV,
+        deployHookUrl: 'https://api.vercel.com/v1/integrations/deploy/prj_x/y',
+        writeCache: async (body) => written.push(JSON.parse(body)),
+      }),
+  );
+  assert.equal(calls.filter(isFeed).length, 3, 'the price was not refreshed');
+  assert.deepEqual((await result.json()).prices, FEED_PRICES);
+  assert.equal(written.length, 2);
+  assert.ok(written.every((d) => d.hookedAt === hookedAt), 'the hook time moved without a poke');
+});
+
+test('a refresh that pokes the hook records when it did, in the claim', async () => {
+  // Recorded in the claim, before anything can fail, for the reason the clock
+  // is: a hook that fails is retried a week later, not on the next refresh.
+  const stale = doc({ fetchedAt: new Date(Date.now() - 40 * MINUTE).toISOString() });
+  const written = [];
+  await withFetch(
+    (url) =>
+      isFeed(url)
+        ? feedResponse(url)
+        : url.includes('deploy')
+          ? new Response('', { status: 201 })
+          : new Response(JSON.stringify(stale)),
+    () =>
+      ask({
+        ...LIVE_ENV,
+        deployHookUrl: 'https://api.vercel.com/v1/integrations/deploy/prj_x/y',
+        writeCache: async (body) => written.push(JSON.parse(body)),
+      }),
+  );
+  assert.equal(written.length, 2);
+  for (const d of written) {
+    assert.ok(Math.abs(Date.parse(d.hookedAt) - Date.now()) < 5_000, 'the poke was not recorded');
+  }
+});
+
+test('the adapter lets only a production deployment call the feed', () => {
+  // The feed takes no key, so the key can no longer be what keeps a preview
+  // off it. A preview with a store connected would otherwise refresh and write
+  // over production's document.
+  const adapter = readFileSync('api/spot.ts', 'utf8');
+  assert.match(adapter, /feedEnabled: process\.env\.VERCEL_ENV === 'production'/);
 });
 
 test('a broken deploy hook never costs the reader their figures', async () => {
@@ -743,36 +849,28 @@ test('a broken deploy hook never costs the reader their figures', async () => {
   // hook that is down, slow or misconfigured loses the rebuild and nothing
   // else. An http URL is refused outright: it is a capability, and one that
   // travels in clear is one anybody on the path can replay.
-  const FEED = {
-    status: 'success',
-    currency: 'USD',
-    unit: 'toz',
-    metals: { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 },
-    timestamps: { metal: '2027-01-20T11:58:00.000Z' },
-  };
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
 
   for (const hook of ['https://hook.example/deploy', 'http://hook.example/deploy']) {
     const written = [];
     const { result } = await withFetch(
       (url) => {
-        if (url.includes('metals.dev')) return new Response(JSON.stringify(FEED));
+        if (isFeed(url)) return feedResponse(url);
         if (url.includes('deploy')) throw new Error('hook is down');
         return new Response(JSON.stringify(stale));
       },
       () =>
         ask({
-          SPOT_CACHE_URL: 'https://cache.example/spot.json',
-          METALS_DEV_API_KEY: 'k',
+          ...LIVE_ENV,
           deployHookUrl: hook,
           writeCache: async (body) => written.push(JSON.parse(body)),
         }),
     );
     assert.equal(result.status, 200);
-    assert.deepEqual((await result.json()).prices, FEED.metals, 'a dead hook cost the new prices');
+    assert.deepEqual((await result.json()).prices, FEED_PRICES, 'a dead hook cost the new prices');
     // The claim and the record. Both happen before the hook is touched.
     assert.equal(written.length, 2, 'a dead hook stopped the document being published');
-    assert.deepEqual(written.at(-1).prices, FEED.metals);
+    assert.deepEqual(written.at(-1).prices, FEED_PRICES);
   }
 });
 
@@ -780,7 +878,7 @@ test('a store that rejects writes costs ZERO feed calls', async () => {
   // This happened in production: the Blob store was created private, every
   // `put` threw, and because BOTH guards live in the document that could not be
   // written, `fetchedAt` never advanced and the call counter never persisted.
-  // Every single request spent a metals.dev call while the endpoint went on
+  // Every single request spent a feed call while the endpoint went on
   // answering 200 with correct-looking figures. Nothing surfaced it.
   //
   // The fix is ordering: the bookkeeping is claimed BEFORE the feed is called,
@@ -791,7 +889,7 @@ test('a store that rejects writes costs ZERO feed calls', async () => {
   for (let request = 0; request < 5; request += 1) {
     const { result } = await withFetch(
       (url) => {
-        if (url.includes('metals.dev')) {
+        if (isFeed(url)) {
           feedCalls += 1;
           return new Response(JSON.stringify({ status: 'success' }));
         }
@@ -799,8 +897,7 @@ test('a store that rejects writes costs ZERO feed calls', async () => {
       },
       () =>
         ask({
-          SPOT_CACHE_URL: 'https://cache.example/spot.json',
-          METALS_DEV_API_KEY: 'k',
+          ...LIVE_ENV,
           writeCache: async () => {
             throw new Error('Vercel Blob: Cannot use public access on a private store');
           },
@@ -815,54 +912,51 @@ test('a store that rejects writes costs ZERO feed calls', async () => {
 });
 
 test('the claim is written before the feed is called', async () => {
-  const FEED = {
-    status: 'success',
-    currency: 'USD',
-    unit: 'toz',
-    metals: { silver: 70.1234, gold: 4100.5678, platinum: 1500.999 },
-    timestamps: { metal: '2027-01-20T11:58:00.000Z' },
-  };
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   const order = [];
 
   await withFetch(
     (url) => {
-      if (url.includes('metals.dev')) {
+      if (isFeed(url)) {
         order.push('feed');
-        return new Response(JSON.stringify(FEED));
+        return feedResponse(url);
       }
       return new Response(JSON.stringify(stale));
     },
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         writeCache: async (body) => order.push(`write:${JSON.parse(body).calls}`),
       }),
   );
 
   // Claim, then spend, then record. Both writes carry the same incremented
   // count: the claim is what reserves it.
-  assert.deepEqual(order, [`write:${stale.calls + 1}`, 'feed', `write:${stale.calls + 1}`]);
+  assert.deepEqual(order, [
+    `write:${stale.calls + 1}`,
+    'feed',
+    'feed',
+    'feed',
+    `write:${stale.calls + 1}`,
+  ]);
 });
 
-test('a feed that fails after the claim waits a day, not a request', async () => {
+test('a feed that fails after the claim waits half an hour, not a request', async () => {
   // The other half of claiming first. The call is already counted and
   // `fetchedAt` is already advanced, so a feed that is down costs one attempt
-  // a day rather than one per request -- and the claim carries the previous
+  // per interval rather than one per request -- and the claim carries the previous
   // prices under the previous `asOf`, so nothing a reader sees is invented.
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   const written = [];
 
   const { result } = await withFetch(
     (url) =>
-      url.includes('metals.dev')
+      isFeed(url)
         ? new Response('down', { status: 503 })
         : new Response(JSON.stringify(stale)),
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         writeCache: async (body) => written.push(JSON.parse(body)),
       }),
   );
@@ -879,13 +973,12 @@ test('a feed that fails after the claim waits a day, not a request', async () =>
 test('a fresh cache is served without touching the feed', async () => {
   const { result, calls } = await withFetch(
     (url) => {
-      assert.ok(!url.includes('metals.dev'), 'the feed was called for a fresh cache');
+      assert.ok(!isFeed(url), 'the feed was called for a fresh cache');
       return new Response(JSON.stringify(doc({ fetchedAt: new Date().toISOString() })));
     },
     () =>
       ask({
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         writeCache: async () => assert.fail('a fresh cache was rewritten'),
       }),
   );
@@ -900,42 +993,84 @@ test('a failed refresh serves the stale figures rather than nothing', async () =
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   for (const feedReply of [
     () => new Response('nope', { status: 429 }),
-    () => new Response(JSON.stringify({ status: 'error', error: 'bad key' })),
-    // The unit check: a feed quoting grams must not be written.
+    () => new Response(JSON.stringify({ error: 'unknown symbol' })),
+    // The unit bounds: silver quoted per gram is about two dollars, and must
+    // not be written as the price of an ounce.
     () =>
       new Response(
-        JSON.stringify({ status: 'success', currency: 'USD', unit: 'g', metals: { silver: 2 } }),
+        JSON.stringify({
+          currency: 'USD',
+          exchangeRate: 1,
+          price: 2.04,
+          symbol: 'XAG',
+          updatedAt: '2027-01-20T11:58:00Z',
+        }),
+      ),
+    // Another currency, which the feed can be asked for by path.
+    () =>
+      new Response(
+        JSON.stringify({
+          currency: 'EUR',
+          exchangeRate: 0.92,
+          price: 58.1,
+          symbol: 'XAG',
+          updatedAt: '2027-01-20T11:58:00Z',
+        }),
+      ),
+    // The wrong metal under the right URL.
+    () =>
+      new Response(
+        JSON.stringify({
+          currency: 'USD',
+          exchangeRate: 1,
+          price: 4100,
+          symbol: 'XAU',
+          updatedAt: '2027-01-20T11:58:00Z',
+        }),
       ),
     () => {
       throw new Error('ETIMEDOUT');
     },
   ]) {
+    // The writer accepts, so the claim goes through and the feed is really
+    // reached. A writer that refused would stop the refresh before the feed and
+    // this would test nothing about the feed's answers.
+    const written = [];
+    let feedCalls = 0;
     const { result } = await withFetch(
-      (url) => (url.includes('metals.dev') ? feedReply() : new Response(JSON.stringify(stale))),
+      (url) => {
+        if (!isFeed(url)) return new Response(JSON.stringify(stale));
+        feedCalls += 1;
+        return feedReply();
+      },
       () =>
         ask({
-          SPOT_CACHE_URL: 'https://cache.example/spot.json',
-          METALS_DEV_API_KEY: 'k',
-          writeCache: async () => assert.fail('a failed refresh still published a document'),
+          ...LIVE_ENV,
+          writeCache: async (body) => written.push(JSON.parse(body)),
         }),
     );
+    assert.equal(feedCalls, 1, 'the feed was not reached, or a bad answer was not refused at once');
+    assert.equal(written.length, 1, 'a failed refresh published more than its claim');
+    assert.deepEqual(written[0].prices, CACHED.prices, 'a failed refresh published new prices');
     assert.equal(result.status, 200);
     assert.deepEqual(await result.json(), CACHED, 'a failed refresh lost the cached figures');
   }
 });
 
-test('no key and no writer means read-only, which is what a preview is', async () => {
-  // A preview deployment reads production's document and spends none of the
-  // month's allowance. Configuring half of it must not half-work.
+test('no flag or no writer means read-only, which is what a preview is', async () => {
+  // A preview deployment reads production's document and never writes over it.
+  // Configuring half of it must not half-work.
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   for (const env of [
     { SPOT_CACHE_URL: 'https://cache.example/spot.json' },
-    { SPOT_CACHE_URL: 'https://cache.example/spot.json', METALS_DEV_API_KEY: 'k' },
+    { SPOT_CACHE_URL: 'https://cache.example/spot.json', feedEnabled: true },
+    // A writer with the feed not switched on: a preview with a store connected.
+    { SPOT_CACHE_URL: 'https://cache.example/spot.json', feedEnabled: false, writeCache: async () => {} },
     { SPOT_CACHE_URL: 'https://cache.example/spot.json', writeCache: async () => {} },
   ]) {
     const { result, calls } = await withFetch(
       (url) => {
-        assert.ok(!url.includes('metals.dev'), 'the feed was called with no writer configured');
+        assert.ok(!isFeed(url), 'the feed was called with no writer configured');
         return new Response(JSON.stringify(stale));
       },
       () => ask(env),
@@ -951,13 +1086,12 @@ test('a HEAD request never spends a call', async () => {
   const stale = doc({ fetchedAt: new Date(Date.now() - 40 * HOUR).toISOString() });
   const { calls } = await withFetch(
     (url) => {
-      assert.ok(!url.includes('metals.dev'), 'a HEAD request called the feed');
+      assert.ok(!isFeed(url), 'a HEAD request called the feed');
       return new Response(JSON.stringify(stale));
     },
     () =>
       handleSpot(new Request('https://example.com/api/spot', { method: 'HEAD' }), {
-        SPOT_CACHE_URL: 'https://cache.example/spot.json',
-        METALS_DEV_API_KEY: 'k',
+        ...LIVE_ENV,
         writeCache: async () => assert.fail('a HEAD request published a document'),
       }),
   );
@@ -978,7 +1112,7 @@ test('the store is told to cache the document for a minute, not a month', () => 
   assert.match(handler, /cache: 'no-store'/, 'the cache read may be served a stale copy');
 });
 
-test('the endpoint is cached for an hour, and the rule is written once', async () => {
+test('the endpoint is cached for half an hour, and the rule is written once', async () => {
   // The whole point of the endpoint: one document allowed to be younger than
   // the HTML around it. Four places state that -- the response, and the three
   // host configs -- and all four have to be this one string.
@@ -1032,7 +1166,7 @@ test('the cache rule survives being read by a cache', () => {
 
 test('the price is the only thing on the site cached in hours rather than days', () => {
   // The arrangement only works because the endpoint outlives nothing. If the
-  // HTML rule were ever tightened to the endpoint's hour, the whole second
+  // HTML rule were ever tightened to the endpoint's half hour, the whole second
   // rendering would be pointless; if the endpoint's were loosened to the
   // HTML's day, it would be useless. The gap between them is the feature.
   const vercel = JSON.parse(readFileSync('vercel.json', 'utf8'));

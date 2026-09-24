@@ -14,7 +14,7 @@
  * So the figure is rendered twice. The build renders the reference table from
  * `spot.ts`, dated and caveated, and that is what a crawler indexes and what a
  * reader without JavaScript sees. Then this module fetches `/api/spot` -- one
- * small JSON document, cached for an hour rather than a day -- and rewrites
+ * small JSON document, cached for half an hour rather than a day -- and rewrites
  * the figures in place.
  *
  * Every string it writes comes from the same functions in `spot.ts` that the
@@ -469,7 +469,7 @@ const wireQuantities = (): void => {
  * ago and, on a melt page, still shows whatever quantity they had typed. The
  * re-run is cheap -- inside `max-age` the browser answers the fetch out of its
  * own cache without a request -- and it is the only path on the site that can
- * show a figure older than the endpoint's own hour.
+ * show a figure older than the endpoint's own half hour.
  */
 export const bootSpot = async (): Promise<void> => {
   if (!document.querySelector('[data-spot]')) return;

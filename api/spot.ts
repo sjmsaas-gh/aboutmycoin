@@ -44,15 +44,15 @@
  *      log line, nothing to search for. Hence the translation below.
  *
  * The runtime is not a free choice here, but the cost is small: the response is
- * cached for an hour at the edge, so this function runs about once an hour per
- * region and a cold start on that path is invisible next to a figure the page
+ * cached for half an hour at the edge, so this function runs about twice an
+ * hour per region and a cold start on that path is invisible next to a figure the page
  * is already displaying.
  *
  * Hand-rolling the Blob write with `fetch` to stay on the edge was considered
  * and rejected. The R2 client in `scripts/r2/` is hand-rolled against AWS
  * SigV4, which is a published, stable specification; Blob's wire format is an
  * internal contract with a version header on it, and reimplementing that for a
- * once-a-day write is a silent breakage waiting for a version bump.
+ * half-hourly write is a silent breakage waiting for a version bump.
  *
  * ---------------------------------------------------------------------------
  * SETTING IT UP
@@ -61,7 +61,8 @@
  *   1. Create a Blob store in the Vercel dashboard (Storage -> Blob) and
  *      connect it to this project. That injects `BLOB_READ_WRITE_TOKEN`; do not
  *      paste it in by hand.
- *   2. Set `METALS_DEV_API_KEY` in the Production scope.
+ *   2. Nothing else: the feed (gold-api.com) takes no key, and the adapter
+ *      only lets a Production deployment call it.
  *   3. Deploy, then request `/api/spot` once. There is no cached document yet,
  *      so the handler calls the feed, writes `spot.json`, and the response
  *      carries the new figures.
@@ -128,16 +129,17 @@ export default async function handler(
 
   const result = await handleSpot(webRequest, {
     SPOT_CACHE_URL: process.env.SPOT_CACHE_URL,
-    METALS_DEV_API_KEY: process.env.METALS_DEV_API_KEY,
+    // Production only. Vercel sets VERCEL_ENV on every deployment; a preview
+    // reads production's cached document and never writes over it, and a local
+    // run (no VERCEL_ENV at all) never calls the feed either.
+    feedEnabled: process.env.VERCEL_ENV === 'production',
     // Optional. A Vercel Deploy Hook, so the static pages are rebuilt with the
     // new price after a refresh -- which is the only way the figure a crawler
     // sees ever changes. Absent means the built-in reading stays as old as the
     // last deploy.
     deployHookUrl: process.env.SPOT_DEPLOY_HOOK_URL,
     // Absent when no store is connected, which the handler treats as "read the
-    // cache, never refresh it" — the correct behaviour for a preview
-    // deployment, which then reads production's document and spends none of the
-    // month's allowance.
+    // cache, never refresh it".
     writeCache: token
       ? async (body: string) => {
           await put(CACHE_PATHNAME, body, {

@@ -1401,7 +1401,9 @@ test('no page states a metal price without the time it was read', () => {
     const html = read(page);
     // Never the vendor's name, anywhere: provenance for a reader is the time,
     // not who sells the feed.
-    assert.ok(!html.includes('metals.dev'), `${page} names the price feed`);
+    for (const feed of ['gold-api', 'metals.dev']) {
+      assert.ok(!html.includes(feed), `${page} names the price feed`);
+    }
     if (!/data-spot="(value|price|sum|ozt|stamp)"/.test(html)) continue;
     assert.ok(
       html.includes(spotBasis()),

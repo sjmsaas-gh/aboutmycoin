@@ -39,7 +39,7 @@ system dependencies or fonttools installed:
 ```bash
 npm run assets       # favicon/logo/OG rasters from the SVG mark (needs sharp)
 npm run fonts        # re-subset the webfonts (needs `pip install fonttools brotli`)
-npm run spot         # refresh the built-in metal prices from metals.dev
+npm run spot         # refresh the built-in metal prices from gold-api.com
 ```
 
 `npm run dev` serves the marketing pages with no configuration at all. The
@@ -163,7 +163,7 @@ it, which is exactly the shape the no-backend constraint allows.
 | `/api/subscribe` | `src/server/subscribe.ts` | `RESEND_API_KEY`, `RESEND_SEGMENT_ID`, `RESEND_SIGNUP_EVENT`, `CONTACT_SIGNING_SECRET` |
 | `/api/checkout` | `src/server/checkout.ts` | Stripe keys — see `.env.example` |
 | `/api/stripe-webhook` | `src/server/stripe-webhook.ts` | Stripe keys — see `.env.example` |
-| `/api/spot` | `src/server/spot.ts` | `SPOT_CACHE_URL`, `METALS_DEV_API_KEY`, `BLOB_READ_WRITE_TOKEN` — all optional |
+| `/api/spot` | `src/server/spot.ts` | `SPOT_CACHE_URL`, `BLOB_READ_WRITE_TOKEN` — both optional; the feed takes no key |
 
 Each one answers 503 and says so when its variables are missing, rather than
 accepting input and dropping it. The sign-up box shares the contact form's
@@ -171,7 +171,7 @@ signing secret on purpose: a token from either proves the same fact.
 
 ### `/api/spot` is the exception to all of that
 
-It is the only endpoint whose answer is meant to be **cached** — an hour at the
+It is the only endpoint whose answer is meant to be **cached** — half an hour at the
 edge, where the HTML beside it is cached for a day — the only one that takes no
 environment at all, and the only one that cannot fail for want of
 configuration. All three follow from what it is for.
@@ -185,23 +185,23 @@ rewrites every marked figure on the page. Both halves call the same functions in
 
 **Where the prices come from.** The endpoint serves a cached snapshot — the JSON
 document at `SPOT_CACHE_URL`, a Vercel Blob object — and refreshes it from
-metals.dev when the last refresh was more than twenty hours ago. There is no
+gold-api.com when the last refresh was more than thirty minutes ago. There is no
 cron: the reader who happens to arrive after the interval pays for the refresh,
 and everybody after them is served from the cache. Setup steps are in
 `.env.example`.
 
 **Why not just call the feed per request, with a long cache in front of it.**
-Because the CDN cache is per-region and is purged on every deploy, so a
-day-long `s-maxage` costs *(active regions) × (1 + deploys)* calls a day rather
-than one — and the feed's free tier is a hundred calls a **month**. Worse, a
-stateless function cannot count its own calls, so the overspend is invisible
-until the account is suspended. Two guards in `src/server/spot.ts` make it
+Because the CDN cache is per-region, is purged on every deploy and is bypassed
+by a query string, and the feed bans an IP that sends "multiple requests per
+second". It is unmetered and needs no key — it replaced metals.dev, whose free
+tier was a hundred calls a **month** — but a stateless function cannot count its
+own calls, so the first sign of a runaway would be the ban. Two guards in `src/server/spot.ts` make it
 countable instead, and both keep their state in the cached document:
 
 | Guard | What it stops |
 | --- | --- |
 | `fetchedAt`, the time of the last **feed call** | Refreshing more often than the interval. It is deliberately a different field from `asOf`, the time the prices were *read*: `asOf` barely moves while the metals market is shut, so scheduling off it would refresh on every cache miss all weekend, each call returning the same Friday timestamp it had just rejected. |
-| A month-to-date call count | Everything else. It is a fuse rather than a knob: if it trips, the clock check has broken, and the log says so while the site goes on serving the last good figures. |
+| A month-to-date refresh count | Everything else. It is a fuse rather than a knob: if it trips, the clock check has broken, and the log says so while the site goes on serving the last good figures. |
 
 Neither makes the refresh atomic — two requests in the same moment can both
 refresh, wasting one call, rarely. `ifMatch` on the write is the fix if the
@@ -216,11 +216,13 @@ feed.
 **Keeping the built-in figure fresh.** It only changes when the site is rebuilt,
 so two things keep it current without anyone remembering to. `npm run build`
 runs `scripts/prebuild-spot.mjs` first, which takes the figure from the cached
-document — a public file, so no API key and no metered call — and falls back to
-the committed reading on any failure, including no network. And a successful
-daily refresh pokes `SPOT_DEPLOY_HOOK_URL`, which rebuilds the site with the
-price it just fetched. About one deploy a day, and it cannot loop: a build never
-calls the feed, and a deploy never calls `/api/spot`.
+document — a public file, so no credential and no feed call — and falls back to
+the committed reading on any failure, including no network. And the first
+successful refresh of each week pokes `SPOT_DEPLOY_HOOK_URL`, which rebuilds the
+site with the price it just fetched. The price readers with JavaScript see
+refreshes every half hour and never waits for a build; the baked-in figure is
+rebuilt at most once a week (`hookedAt` in the cached document), and it cannot loop: a build never calls the feed, and a deploy never
+calls `/api/spot`.
 
 That prebuild fetch is a deliberate exception to the rule that builds do not
 fetch. The three reasons behind that rule are in `src/data/coin-catalog.ts` and
@@ -238,9 +240,9 @@ display in `formatUsd()` — so a figure a page prints is rounded from the numbe
 its arithmetic used.
 
 It is also the one endpoint on the **Node** runtime rather than edge, because
-`@vercel/blob` imports `undici` and cannot be bundled for the edge. Behind an
-hour-long edge cache this function runs about once an hour per region, so a cold
-start there is invisible.
+`@vercel/blob` imports `undici` and cannot be bundled for the edge. Behind a
+half-hour edge cache this function runs about twice an hour per region, so a
+cold start there is invisible.
 
 `astro dev` does not serve `api/*.ts`, so the fetch 404s under `npm run dev`
 and every page shows the built-in figures — which is the fallback working, not
@@ -251,7 +253,7 @@ Cache lifetimes, shortest to longest:
 | | Held for | Why |
 | --- | --- | --- |
 | `/api/spot` in the browser | 5 minutes | a browsing session costs one request, not one per page |
-| `/api/spot` at the edge | 1 hour | one invocation per hour per region, whatever the traffic |
+| `/api/spot` at the edge | 30 minutes | one invocation per half hour per region, whatever the traffic; matches the refresh interval |
 | …then stale while revalidating | 24 hours | an older price, labelled with its date, beats no price |
 | the HTML | 1 day (stale for a week) | it holds weights and words, which do not move |
 | `/_astro/*`, the rewriting module | a year, immutable | content-hashed |

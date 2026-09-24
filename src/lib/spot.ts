@@ -19,7 +19,7 @@
  *     the page falls back to when the endpoint is down. It is honest because
  *     it states its own price and date rather than claiming to be current.
  *   - the BROWSER fetches `/api/spot`, which is a small JSON document cached
- *     for an hour at the edge rather than a day, and rewrites every figure on
+ *     for half an hour at the edge rather than a day, and rewrites every figure on
  *     the page through `src/lib/spot-dom.ts`.
  *
  * Both halves call the functions in THIS file, which is the point: a figure
@@ -161,13 +161,15 @@ export const SPOT_ENDPOINT = '/api/spot';
 /**
  * How long a spot response may be reused at the edge, in seconds.
  *
- * An hour. The point of the endpoint is that it is the one document on the
- * site allowed to be younger than the HTML around it, and an hour is short
- * enough that a figure is never wrong by more than a normal day's drift while
- * still collapsing every visitor in that hour onto one upstream fetch -- which
- * is what keeps a metered feed inside a free tier later.
+ * Half an hour, matching how often `/api/spot` refreshes from the feed
+ * (`REFRESH_AFTER_MINUTES` in `src/server/spot.ts`). The point of the endpoint
+ * is that it is the one document on the site allowed to be younger than the
+ * HTML around it; an edge lifetime longer than the refresh interval would hide
+ * the refresh, and a shorter one would invoke the function to read a document
+ * that cannot have changed. It still collapses every visitor in that half hour
+ * onto one invocation per region.
  */
-export const SPOT_MAX_AGE_SECONDS = 3600;
+export const SPOT_MAX_AGE_SECONDS = 1800;
 
 /**
  * How long the BROWSER may reuse it without asking, in seconds.
@@ -176,9 +178,9 @@ export const SPOT_MAX_AGE_SECONDS = 3600;
  * than one per page. At zero -- where this started -- every navigation
  * revalidates, and since the response carries no ETag every revalidation is a
  * full round trip for a figure that cannot have moved: the edge is only
- * refreshing it hourly.
+ * refreshing it every half hour.
  *
- * The staleness this buys back is five minutes on top of an hour, against a
+ * The staleness this buys back is five minutes on top of half an hour, against a
  * number the page dates to the day. If that ever stops being an acceptable
  * trade -- a feed that updates by the second, a page that quotes a spread --
  * set it to 0 and every navigation revalidates again.
@@ -199,7 +201,7 @@ export const SPOT_BROWSER_MAX_AGE_SECONDS = 300;
  * combination is contradictory, and a strict CDN resolves it by dropping the
  * SWR. That would be the wrong way round here. This endpoint's whole position
  * is that an older answer, labelled with its date, beats no answer -- so when
- * the hour is up and the upstream is slow or down, serving the last good
+ * the half hour is up and the upstream is slow or down, serving the last good
  * snapshot while it refreshes in the background is the behaviour, not a
  * degradation of it.
  */

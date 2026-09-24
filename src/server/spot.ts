@@ -5,7 +5,7 @@
  *
  * The one document on this site that is allowed to be younger than the HTML
  * around it. Everything else is static and cached at the edge for a day; this
- * is cached for an hour, and it is the whole reason a price can change without
+ * is cached for half an hour, and it is the whole reason a price can change without
  * a deploy.
  *
  * Host-agnostic like the rest of `src/server`: plain Web `Request`/`Response`,
@@ -19,7 +19,7 @@
  *
  * There is no cron. The endpoint reads the cached document at `SPOT_CACHE_URL`
  * and serves it; if that document is missing or the last feed call was more
- * than REFRESH_AFTER_HOURS ago, it calls the feed once, writes the result back
+ * than REFRESH_AFTER_MINUTES ago, it calls the feed once, writes the result back
  * to the cache, and serves the new figures. Cache-aside, in other words: the
  * reader who happens to arrive after the interval pays for the refresh, and
  * every reader after them is served from the cache.
@@ -35,24 +35,28 @@
  * WHY THE FEED IS NOT CALLED PER REQUEST, AND THE TWO GUARDS
  * ---------------------------------------------------------------------------
  *
- * The feed allows a hundred calls a MONTH. Per-request would spend that in
- * minutes and per-edge-region-per-hour would spend it in a day, so every call
- * has to pass two independent checks:
+ * The feed (gold-api.com, since 2026-09-24) is unmetered, but its terms ban an
+ * IP that sends "multiple requests per second", and a per-request call would
+ * do exactly that the first time the page was busy. The metals.dev feed before
+ * it allowed a hundred calls a month, and the guards below were built for that;
+ * they are kept because the failure they stop is the same shape — a feed
+ * hammered until it refuses us — even though the limit is now a ban rather than
+ * a bill. So every call has to pass two independent checks:
  *
  *   1. THE CLOCK. `fetchedAt` in the cached document records when WE last
  *      called the feed, and a refresh is only due when that is older than
- *      REFRESH_AFTER_HOURS. It is a separate field from `asOf` on purpose, and
- *      this is the subtle one: `asOf` is the feed's own reading time, which
+ *      REFRESH_AFTER_MINUTES. It is a separate field from `asOf` on purpose,
+ *      and this is the subtle one: `asOf` is the feed's own reading time, which
  *      barely moves over a weekend when the metals market is shut. Scheduling
  *      off `asOf` would see a Friday timestamp all Sunday, decide a refresh was
- *      overdue on every cache miss, and spend the month's allowance in a
+ *      overdue on every cache miss, and call the feed on every request all
  *      weekend — each call returning the same Friday timestamp it had just
  *      rejected.
- *   2. THE BUDGET. The document also carries a month-to-date call count, and no
- *      refresh happens past MONTHLY_CALL_LIMIT. The clock check alone is
+ *   2. THE BUDGET. The document also carries a month-to-date refresh count, and
+ *      no refresh happens past MONTHLY_CALL_LIMIT. The clock check alone is
  *      enough in the ordinary case; the budget is what stands between a
  *      mistake — a shortened interval, a cache that has stopped accepting
- *      writes so `fetchedAt` never advances — and a suspended feed account.
+ *      writes so `fetchedAt` never advances — and a banned IP.
  *
  * Both live in the cached document rather than in memory, because a function
  * instance is not a place to keep state: there are many of them, they are cold
@@ -83,9 +87,9 @@
  * labelled: every snapshot carries the time it was read and every page prints
  * it.
  *
- * The API key is read here and never leaves. The browser talks to this origin
- * and nothing else, so no feed's domain reaches `connect-src` in the three host
- * configs and `/privacy` needs no new line.
+ * The browser talks to this origin and nothing else, so no feed's domain
+ * reaches `connect-src` in the three host configs and `/privacy` needs no new
+ * line.
  */
 import {
   REFERENCE_SPOT,
@@ -93,31 +97,43 @@ import {
   parseSpot,
   type SpotSnapshot,
 } from '../lib/spot.js';
-import { fetchMetalsDev } from './metals-dev.js';
+import { fetchGoldApi } from './gold-api.js';
 
 /**
- * How old the last feed call may be before a refresh is due, in hours.
+ * How old the last feed call may be before a refresh is due, in minutes.
  *
- * Twenty: once a day, with four hours of slack so a reader arriving at the same
- * hour on consecutive days is not turned away by a few minutes. ~31 calls a
- * month against an allowance of a hundred.
- *
- * TO REFRESH HOURLY, set this to 1 — and raise MONTHLY_CALL_LIMIT with it, and
- * check the feed's plan first: an hour's interval is about 730 calls a month,
- * which is seven times the free tier. The limit below is what stops that
- * becoming a suspended account rather than a bill.
+ * Thirty, the owner's choice of 2026-09-24. It is matched by the edge lifetime
+ * of this endpoint's own response (`SPOT_MAX_AGE_SECONDS` in `src/lib/spot.ts`):
+ * a refresh interval shorter than the edge cache would be work nobody sees.
  */
-const REFRESH_AFTER_HOURS = 20;
+const REFRESH_AFTER_MINUTES = 30;
 
 /**
- * The hard ceiling on feed calls in a calendar month.
+ * The hard ceiling on refreshes in a calendar month.
  *
- * Sixty against an allowance of a hundred, which is twice what the interval
- * above should ever need. It is not a tuning knob, it is a fuse: if it ever
- * trips, something has gone wrong with the clock check and the log line says
- * so, while the site goes on serving the last good figures.
+ * A thirty-minute interval is at most 1,488 refreshes in a 31-day month, and
+ * only if somebody reads the site every half hour around the clock. This is
+ * twice that. It is not a tuning knob, it is a fuse: if it ever trips,
+ * something has gone wrong with the clock check and the log line says so,
+ * while the site goes on serving the last good figures.
  */
-const MONTHLY_CALL_LIMIT = 60;
+const MONTHLY_CALL_LIMIT = 3_000;
+
+/**
+ * How often a refresh may also rebuild the site, in hours.
+ *
+ * Once a week, the owner's choice of 2026-09-24. The price a reader with
+ * JavaScript sees refreshes every half hour through this endpoint and never
+ * waits for a build; what a rebuild moves is only the figure baked into the
+ * HTML, for crawlers and readers without JavaScript, and a week is fresh
+ * enough for that — every page prints the time its figure was read. A deploy is
+ * a full build of every page, so rebuilding with every refresh would be
+ * forty-eight builds a day. A week less four hours, so the same hour a week
+ * later is not turned away by a few minutes. Tracked in the document as
+ * `hookedAt`, for the same reason the clock is: no function instance can
+ * remember it.
+ */
+const DEPLOY_HOOK_AFTER_HOURS = 7 * 24 - 4;
 
 /** How long to wait for the cached document. The fallback is already correct. */
 const CACHE_TIMEOUT_MS = 2_000;
@@ -133,11 +149,21 @@ export interface SpotEnv {
    */
   SPOT_CACHE_URL?: string;
   /**
-   * Feed credential. Absent means the cache is read but never refreshed, which
-   * is what a preview deployment should do: it reads production's cache and
-   * spends none of the allowance.
+   * Whether this deployment may call the feed at all. Absent or false means the
+   * cache is read but never refreshed, which is what a preview deployment should
+   * do: it reads production's cache and never writes over it.
+   *
+   * This used to be the feed's API key, which only production held. The feed
+   * that replaced it has no key, so the decision is now an explicit flag the
+   * adapter sets from the host's own notion of production — the default points
+   * the safe way.
    */
-  METALS_DEV_API_KEY?: string;
+  feedEnabled?: boolean;
+  /**
+   * The pause between the per-metal feed calls, in milliseconds. Leave unset:
+   * the default is what keeps the feed's rate rule. Tests set it to zero.
+   */
+  feedGapMs?: number;
   /**
    * Publish a new cache document. Supplied by the adapter, because where a
    * document can be written is the one genuinely host-specific thing here.
@@ -154,8 +180,8 @@ export interface SpotEnv {
    * without this it is as old as the last deploy — months, potentially, and a
    * six-month-old silver price in a search result discredits the page it is on.
    *
-   * It fires at most once a day, because it fires only when a refresh actually
-   * happened and a refresh is behind the clock and the budget. It cannot loop:
+   * It fires at most once a week (DEPLOY_HOOK_AFTER_HOURS), and only on a refresh
+   * that actually happened. It cannot loop:
    * the build reads the cached document rather than the feed, and a deploy does
    * not call this endpoint.
    *
@@ -176,9 +202,11 @@ export interface SpotEnv {
 export interface SpotCacheDocument extends SpotSnapshot {
   /** When WE last called the feed. Schedules the next refresh; see the header. */
   fetchedAt: string;
-  /** Feed calls so far this calendar month, UTC. */
+  /** Refreshes so far this calendar month, UTC. */
   month: string;
   calls: number;
+  /** When a refresh last poked the deploy hook, or '' if none has. */
+  hookedAt: string;
 }
 
 /** The current month as the document records it. */
@@ -200,7 +228,9 @@ function refuseCacheUrl(url: string): string | undefined {
     return 'not an absolute URL';
   }
   if (parsed.protocol !== 'https:') return 'not https';
-  if (/(^|\.)metals\.dev$/i.test(parsed.hostname)) return 'points at the price feed itself';
+  if (/(^|\.)(gold-api\.com|metals\.dev)$/i.test(parsed.hostname)) {
+    return 'points at a price feed itself';
+  }
   for (const key of parsed.searchParams.keys()) {
     if (/api[-_]?key|token|secret/i.test(key)) return 'carries a credential in the query string';
   }
@@ -248,6 +278,7 @@ async function readCache(env: SpotEnv): Promise<SpotCacheDocument | undefined> {
     fetchedAt: typeof body.fetchedAt === 'string' ? body.fetchedAt : '',
     month: typeof body.month === 'string' ? body.month : '',
     calls: typeof body.calls === 'number' && Number.isFinite(body.calls) ? body.calls : 0,
+    hookedAt: typeof body.hookedAt === 'string' ? body.hookedAt : '',
   };
 }
 
@@ -255,7 +286,7 @@ async function readCache(env: SpotEnv): Promise<SpotCacheDocument | undefined> {
  * Whether to spend a feed call, and why not when the answer is no.
  *
  * Separate from the refresh itself so the decision is testable on its own: it
- * is the part that protects the allowance, and it has to be correct without a
+ * is the part that protects the feed, and it has to be correct without a
  * network.
  */
 export function refreshDecision(
@@ -272,15 +303,28 @@ export function refreshDecision(
   const last = Date.parse(doc.fetchedAt);
   if (Number.isNaN(last)) return { refresh: true, reason: 'cached document records no fetch time' };
 
-  const ageHours = (now.getTime() - last) / 3_600_000;
+  const ageMinutes = (now.getTime() - last) / 60_000;
   // A fetchedAt in the future is a clock problem somewhere. Refusing is the
   // safe direction: the alternative refreshes on every request until the real
   // time catches up.
-  if (ageHours < 0) return { refresh: false, reason: `cached fetch time is in the future` };
-  if (ageHours < REFRESH_AFTER_HOURS) {
-    return { refresh: false, reason: `last fetch was ${ageHours.toFixed(1)}h ago` };
+  if (ageMinutes < 0) return { refresh: false, reason: `cached fetch time is in the future` };
+  if (ageMinutes < REFRESH_AFTER_MINUTES) {
+    return { refresh: false, reason: `last fetch was ${ageMinutes.toFixed(0)}m ago` };
   }
-  return { refresh: true, reason: `last fetch was ${ageHours.toFixed(1)}h ago` };
+  return { refresh: true, reason: `last fetch was ${ageMinutes.toFixed(0)}m ago` };
+}
+
+/**
+ * Whether this refresh should also rebuild the site. Decided BEFORE the claim,
+ * so the claim can record it: a hook that is poked and then fails is not
+ * retried for a week, which is the same trade the clock makes for the feed —
+ * and a missed rebuild costs only the crawler-facing figure, which is dated.
+ */
+export function hookDue(doc: SpotCacheDocument | undefined, now = new Date()): boolean {
+  const last = Date.parse(doc?.hookedAt ?? '');
+  if (Number.isNaN(last)) return true;
+  const ageHours = (now.getTime() - last) / 3_600_000;
+  return ageHours < 0 ? false : ageHours >= DEPLOY_HOOK_AFTER_HOURS;
 }
 
 /**
@@ -292,12 +336,13 @@ async function refresh(
   doc: SpotCacheDocument | undefined,
   now = new Date(),
 ): Promise<SpotSnapshot | undefined> {
-  const apiKey = env.METALS_DEV_API_KEY;
   const write = env.writeCache;
-  if (!apiKey || !write) return undefined;
+  if (env.feedEnabled !== true || !write) return undefined;
 
   const month = monthKey(now);
   const calls = (doc?.month === month ? doc.calls : 0) + 1;
+  const poke = hookDue(doc, now);
+  const hookedAt = poke ? now.toISOString() : (doc?.hookedAt ?? '');
 
   // CLAIM THE CALL BEFORE SPENDING IT.
   //
@@ -308,16 +353,16 @@ async function refresh(
   // fails — a misconfigured store, a revoked token — spends a call on EVERY
   // request. Both guards are inert in that state, because both of them live in
   // the document that cannot be written. There is nothing to notice it, either:
-  // the endpoint goes on answering 200 with correct figures while the month's
-  // allowance drains.
+  // the endpoint goes on answering 200 with correct figures while the feed is
+  // called on every request until it bans us.
   //
   // Claiming first inverts every one of those failures into a safe one:
   //
   //   - a broken writer now costs ZERO feed calls. It throws here, before the
   //     feed is touched, and the reader is served the figures already on hand.
   //   - a feed that fails after the claim leaves `fetchedAt` advanced, so the
-  //     next attempt is a day away rather than on the next request. A day of
-  //     slightly older prices is the right price to pay for not hammering a
+  //     next attempt is half an hour away rather than on the next request.
+  //     Slightly older prices are the right price to pay for not hammering a
   //     feed that is down.
   //   - two requests racing are far less likely to both reach the feed, since
   //     the first one writes before it calls.
@@ -336,31 +381,30 @@ async function refresh(
       fetchedAt: now.toISOString(),
       month,
       calls,
+      hookedAt,
     } satisfies SpotCacheDocument),
   );
 
-  const { snapshot, usage } = await fetchMetalsDev(apiKey);
+  const { snapshot } = await fetchGoldApi(
+    env.feedGapMs === undefined ? {} : { gapMs: env.feedGapMs },
+  );
 
   const next: SpotCacheDocument = {
     ...snapshot,
     fetchedAt: now.toISOString(),
     month,
     calls,
+    hookedAt,
   };
 
   await write(JSON.stringify(next));
-  // The count this site kept and the count the feed reports, together: they
-  // should track, and a gap between them is the only visible sign of a second
-  // thing spending the allowance.
-  console.log(
-    `[spot] refreshed from the feed; ${calls} call(s) this month by this site` +
-      `${usage === undefined ? '' : `, ${usage} reported by the feed`}`,
-  );
+  console.log(`[spot] refreshed from the feed; ${calls} refresh(es) this month`);
 
-  // Rebuild the static pages so the figure a crawler sees catches up too. After
-  // the write, never before: a deploy that raced the write would read the old
-  // document and bake in the price this call just replaced.
-  await pokeDeployHook(env);
+  // Rebuild the static pages so the figure a crawler sees catches up too — once
+  // a week, not every refresh. After the write, never before: a deploy that raced
+  // the write would read the old document and bake in the price this call just
+  // replaced.
+  if (poke) await pokeDeployHook(env);
 
   return snapshot;
 }
@@ -372,7 +416,7 @@ async function refresh(
  * Deliberately awaited rather than left dangling: a promise not awaited in a
  * serverless function is a promise the runtime may kill when the response is
  * sent, which would make this work on a warm instance and not on a cold one —
- * the worst kind of intermittent. It costs one request, once a day, on the one
+ * the worst kind of intermittent. It costs one request, once a week, on the one
  * invocation that was already calling a price feed.
  */
 async function pokeDeployHook(env: SpotEnv): Promise<void> {
@@ -398,7 +442,7 @@ async function pokeDeployHook(env: SpotEnv): Promise<void> {
     );
   } catch (err) {
     // The prices are refreshed and published either way. All that is lost is
-    // the rebuild, and the next refresh tries again a day later.
+    // the rebuild, and the next refresh tries again a week later.
     console.error(`[spot] deploy hook failed: ${err}`);
   }
 }

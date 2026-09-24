@@ -42,7 +42,7 @@
 # --- Crawler-facing files: short edge TTL so a fix propagates fast -----------
 
 # The one endpoint on this site whose answer is meant to be cached, and the one
-# document allowed to be younger than the HTML around it: an hour at the edge
+# document allowed to be younger than the HTML around it: half an hour at the edge
 # against a day for everything else. That is what lets a spot price change
 # without a deploy -- see src/lib/spot.ts. The value must match the
 # Cache-Control that src/server/spot.ts sets on the response itself, and the
@@ -56,7 +56,7 @@
 [[headers]]
   for = "/api/spot"
   [headers.values]
-    Cache-Control = "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+    Cache-Control = "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400"
 
 # Every other endpoint takes a key, a token or a message. None of those may sit
 # in a shared cache, and the catch-all below would otherwise hand them the

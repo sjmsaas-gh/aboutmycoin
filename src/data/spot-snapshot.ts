@@ -10,7 +10,7 @@
  *
  * The live path is a cache that `/api/spot` reads and that something outside
  * this repository writes -- see the header of `src/server/spot.ts`. A reader's
- * figure comes from there within the hour. This file exists because a static
+ * figure comes from there within the half hour. This file exists because a static
  * build has to render a number before any browser has asked for one:
  *
  *   - it is what a crawler indexes and what a reader with no JavaScript keeps;
@@ -45,9 +45,9 @@
  */
 export const SPOT_SNAPSHOT = {
   prices: {
-    silver: 66.2985,
-    gold: 4373.005,
-    platinum: 1800.295,
+    silver: 63.986,
+    gold: 4284.399902,
+    platinum: 1750,
   },
   /**
    * When these prices were read, as a full ISO timestamp.
@@ -56,7 +56,7 @@ export const SPOT_SNAPSHOT = {
    * these says "based on spot prices at 20 September 2026 23:27 UTC". A
    * reader who knows the minute knows how much to trust the number.
    */
-  asOf: '2026-09-20T23:27:11.568Z',
+  asOf: '2026-09-24T16:17:55.000Z',
   /**
    * Where the numbers came from.
    *
@@ -66,7 +66,7 @@ export const SPOT_SNAPSHOT = {
    * renders it: a reader deciding whether to trust a melt figure needs the
    * time it was read, not a vendor's name.
    */
-  source: 'metals.dev',
+  source: 'gold-api.com',
   /**
    * Whether this claims to be a real-time quote. It is not: it is a reading
    * taken at `asOf`, and the wording on every page says so.

@@ -1368,55 +1368,76 @@ rules.
   rate-limited, nothing configured: all of them fall back, none of them 503.
 - **The endpoint refreshes the cache; it does not call the feed per request, and
   there is no cron.** `/api/spot` serves the cached document at
-  `SPOT_CACHE_URL` and calls metals.dev only when a refresh is due. Do not
-  "simplify" this to a direct call behind a long CDN cache: the edge cache is
-  per-region and is purged on every deploy, so that costs *(regions) × (1 +
-  deploys)* calls a day against an allowance of a hundred a **month**, and a
-  stateless function cannot count its own calls, so the overspend is invisible
-  until the feed account is suspended.
+  `SPOT_CACHE_URL` and calls the feed only when a refresh is due, every thirty
+  minutes. Do not "simplify" this to a direct call behind a CDN cache: the edge
+  cache is per-region, is purged on every deploy and is bypassed by any query
+  string, and the feed (gold-api.com) bans an IP that sends "multiple requests
+  per second". A stateless function cannot count its own calls, so the ban
+  would be the first sign.
+- **The feed is gold-api.com, and it has no key. The owner's decision of
+  2026-09-24.** It replaced metals.dev, whose hundred calls a MONTH made every
+  refresh a budget decision. gold-api.com's real-time endpoint is unmetered,
+  needs no account, permits commercial use on a public website in its terms,
+  and matched Kitco's quote to the tenth of a cent when both were read in the
+  same minute. It has no SLA, which is what the fallback reading is for. It
+  prices one metal per request, so `fetchGoldApi()` calls them in sequence a
+  second apart — the rate rule again — and stamps the reading with the OLDEST
+  of the three times, because one `asOf` claims all three prices.
 - **Two guards decide whether a call is spent, and both keep their state in the
   cached document.** A function instance is not a place to keep state: there are
   many, they are cold, and none sees what the others did. The guards are the
-  time of the last feed call and a month-to-date call count, and
+  time of the last feed call and a month-to-date refresh count, and
   `tests/spot.test.mjs` pins every reason not to call.
 - **`fetchedAt` schedules the refresh; `asOf` is what the page prints.** They
   are separate fields for one reason: `asOf` is the feed's own reading time,
   which barely moves while the metals market is shut. Scheduling off it would
   see a Friday timestamp all Sunday, decide a refresh was overdue on every cache
-  miss, and spend the month's allowance in a weekend — each call returning the
-  same timestamp it had just rejected.
+  miss, and call the feed on every request all weekend — each call returning
+  the same timestamp it had just rejected.
 - **The monthly call ceiling is a fuse, not a tuning knob.** If it trips, the
   clock check has stopped working. Raise it only together with the refresh
-  interval, and check the feed's plan first: an hourly interval is about 730
-  calls a month.
+  interval: thirty minutes is at most 1,488 refreshes a month and the fuse is
+  twice that.
+- **The refresh interval and the endpoint's edge lifetime are one number.**
+  `REFRESH_AFTER_MINUTES` in `src/server/spot.ts` and `SPOT_MAX_AGE_SECONDS` in
+  `src/lib/spot.ts` are both thirty minutes. An edge cache longer than the
+  interval hides the refresh; a shorter one invokes the function to read a
+  document that cannot have changed. Change one, change both — and the three
+  host configs with them.
 - **The store must be told to cache the document for a minute.** Vercel Blob
   defaults to a month, which would leave the handler reading a copy from before
   its own last write — seeing an old `fetchedAt`, and refreshing on every
   invocation for a month. The read is `cache: 'no-store'` for the same reason.
-- **The feed has exactly one call site.** `fetchMetalsDev()` in
-  `src/server/metals-dev.ts`, called from `refresh()` and from `npm run spot`. A
-  second call site is a second way to spend the allowance, and a test counts
+- **The feed has exactly one call site.** `fetchGoldApi()` in
+  `src/server/gold-api.ts`, called from `refresh()` and from `npm run spot`. A
+  second call site is a second way to hammer the feed, and a test counts
   them. The cache URL is never it: the endpoint refuses a URL that is not https,
   points at a feed, or carries an `api_key` — a key in a URL is a key in the
   platform's logs, the CDN's logs and the next request's `Referer`.
-- **A preview deployment gets no feed key.** Without one the endpoint reads
-  production's document and refreshes nothing, which is what a branch should do
-  rather than spend the month's allowance.
+- **Only a production deployment calls the feed.** It used to be the key that
+  kept a preview off it, and the feed that replaced it has none, so the adapter
+  sets `feedEnabled` from `VERCEL_ENV === 'production'` — a variable Vercel sets
+  itself, and absent everywhere else, so the default points the safe way. A
+  preview reads production's document and never writes over it.
 - **The built-in figure only changes when the site is rebuilt, so a refresh
-  triggers a build.** A successful daily refresh pokes `SPOT_DEPLOY_HOOK_URL`,
-  and `npm run build` takes its figure from the cached document rather than the
+  triggers a build — once a week, not once a refresh.** The first successful
+  refresh after `DEPLOY_HOOK_AFTER_HOURS` pokes `SPOT_DEPLOY_HOOK_URL`, and
+  `npm run build` takes its figure from the cached document rather than the
   committed file. Without that pair, the price a crawler and a no-JavaScript
-  reader see is as old as the last deploy. It fires at most once a day because
-  it fires only behind the clock and the budget, and it cannot loop: a build
-  never calls the feed, and a deploy never calls `/api/spot`. The hook URL is a
-  capability — never log it.
+  reader see is as old as the last deploy. The price refreshes every half hour
+  and the site must not rebuild with it, so the document records `hookedAt` —
+  in the claim, before anything can fail — and the hook is due a week after it,
+  the owner's choice of 2026-09-24. That is the crawler-facing figure only: the
+  price a reader with JavaScript sees is refreshed every half hour by
+  `/api/spot` and never waits for a build. It cannot loop: a build never calls the feed, and a deploy never
+  calls `/api/spot`. The hook URL is a capability — never log it.
 - **The build may read the cached price, and nothing else.** That is a
   deliberate exception to the rule that builds do not fetch, and the reasoning
   is in `scripts/prebuild-spot.mjs`: reproducibility is not wanted for a price,
   the document is public so the build stays credential-free, and every failure
   is a no-op that falls back to the committed reading. What would genuinely
-  cross the line is the build calling metals.dev — metered, per-deploy and
-  uncountable. It does not, and must not.
+  cross the line is the build calling the feed — per-deploy, uncountable, and
+  from an IP the feed may ban. It does not, and must not.
 - **`src/data/spot-snapshot.ts` is the fallback, not the update path.** It is
   what the static build bakes into every page — what a crawler indexes, what a
   reader with no JavaScript keeps — and what the endpoint serves when the cache
@@ -1454,13 +1475,13 @@ rules.
   the SWR is the behaviour this endpoint wants most — an older price, labelled
   with its date, beats no price when the upstream is slow or down.
 - **The gap between the two cache lifetimes is the feature.** The HTML is held
-  for a day and the price for an hour. Tighten the first or loosen the second
+  for a day and the price for half an hour. Tighten the first or loosen the second
   and the second rendering has nothing left to do; a test asserts the gap
   still exists.
 - **A restored page catches up.** Back/forward-cache restores do not re-run
   module scripts, so `bootSpot()` listens for `pageshow` with `persisted` —
   the only path on the site that can show a figure older than the endpoint's
-  own hour.
+  own half hour.
 - **The browser talks to this origin and nothing else.** A feed is fetched by
   `/api/spot`, never by the page, so no feed's domain ever enters `connect-src`
   in the three host configs, no key ever enters a client bundle, and `/privacy`

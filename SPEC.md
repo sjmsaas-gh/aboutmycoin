@@ -64,12 +64,14 @@ trustworthy, and the first things that quietly stop being true.
   is willing to stand behind. Until there is, every coin page says so plainly
   in its own section. Whatever the source is, it has to support naming itself
   on the page: SPEC requires every valuation to show its working.
-- **A spot-price source.** Settled: metals.dev, reached through a cache that
-  `/api/spot` refreshes itself. The endpoint serves the cached snapshot and calls
-  the feed only when the last call was over twenty hours old, which needs no
-  cron and keeps a hundred-calls-a-month allowance countable — the time of the
-  last call and a month-to-date count both live in the cached document, because
-  a function instance keeps no state. `src/data/spot-snapshot.ts` is the
+- **A spot-price source.** Settled: gold-api.com (since 2026-09-24; metals.dev
+  before it), reached through a cache that `/api/spot` refreshes itself. The
+  feed takes no key, is unmetered, permits commercial display in its terms, and
+  tracks Kitco's quote. The endpoint serves the cached snapshot and calls the
+  feed only when the last call was over thirty minutes old, which needs no cron
+  and keeps the calls countable under the feed's one-request-a-second rule —
+  the time of the last call and a month-to-date count both live in the cached
+  document, because a function instance keeps no state. `src/data/spot-snapshot.ts` is the
   fallback the static build renders. It needs **no** CSP change, no `/privacy`
   change and no `src/lib/third-parties.ts` entry: the call is server-side with
   nothing of the reader's in it, and the browser only ever talks to this origin.

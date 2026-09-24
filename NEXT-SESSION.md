@@ -2048,19 +2048,24 @@ that may not exist yet.
    its honest "graded price ranges are not published yet" section. Do not fill
    the field from a scrape nobody can name on the page.
 
-   *Spot metal prices* — **built.** metals.dev, through a cache the endpoint
-   refreshes itself. `/api/spot` serves the JSON document at `SPOT_CACHE_URL` (a
-   Vercel Blob object) and calls the feed only when the last call was more than
-   twenty hours ago, writing the result back. No cron: the reader who arrives
-   after the interval pays for the refresh. Two guards keep the metered feed
-   inside a hundred calls a month — the time of the last call and a month-to-date
+   *Spot metal prices* — **built.** gold-api.com since 2026-09-24 (metals.dev
+   before it), through a cache the endpoint refreshes itself. `/api/spot` serves
+   the JSON document at `SPOT_CACHE_URL` (a Vercel Blob object) and calls the
+   feed only when the last call was more than thirty minutes ago, writing the
+   result back. No cron: the reader who arrives after the interval pays for the
+   refresh. The feed has no key and no meter; two guards keep it inside its
+   one-request-a-second rule — the time of the last call and a month-to-date
    count, both stored in the cached document — and every failure path serves the
-   best snapshot on hand at 200.
+   best snapshot on hand at 200. The deploy hook fires at most once a week
+   (`hookedAt`), not on every half-hourly refresh; the JavaScript price does not
+   wait for it. Only a Production deployment
+   (`VERCEL_ENV`) calls the feed.
 
-   **What is left is four dashboard steps, in `.env.example`:** create and
-   connect a Blob store, set `METALS_DEV_API_KEY` in Production only, hit
-   `/api/spot` once so the first document is written, then copy that object's URL
-   into `SPOT_CACHE_URL`. Do not stop after the third: a document whose URL the
+   **What is left is three dashboard steps, in `.env.example`:** create and
+   connect a Blob store, hit `/api/spot` once on Production so the first
+   document is written, then copy that object's URL into `SPOT_CACHE_URL`.
+   `METALS_DEV_API_KEY` is retired — delete it from the Vercel dashboard if it
+   was ever set. Do not stop after the second: a document whose URL the
    handler has not been given is a document whose call count it cannot read.
    Until then the endpoint serves the built-in reading and nothing is broken.
 
